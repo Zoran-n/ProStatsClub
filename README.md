@@ -316,13 +316,7 @@ Application desktop pour suivre les statistiques de votre club EA FC Pro Clubs. 
 - **Sidebar redimensionnable** : drag sur le bord pour ajuster la largeur de la sidebar favoris/canaux — dimension persistée
 - **Tour guidé interactif** : bouton "?" dans le header qui lance un overlay de tutoriel étape par étape sur la vue courante (tooltips positionnés sur les éléments)
 
-### ⚙️ Technique
 
-- **Web Worker** : délocaliser les calculs lourds (agrégats recharts, tri de 2000 matchs, CSV export) hors du thread UI pour fluidifier l'interface
-- **Tests unitaires** : couverture Jest/Vitest des fonctions de calcul de stats (score composite, agrégats, ranking, régression linéaire)
-- **Logs exportables** : système de logs niveaux (debug/info/warn/error) avec filtre par niveau, téléchargeable depuis Mon Profil
-- **Mise à jour delta du cache** : ne re-télécharger que les matchs postérieurs au dernier connu — réduire la bande passante à chaque sync
-- **Chiffrement du fichier de settings** : option d'activer le chiffrement AES du `settings.json` pour protéger webhook, gamertag et données personnelles
 
 
 
