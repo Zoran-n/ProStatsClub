@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Users, Swords, BarChart3, Timer, GitCompare, Star, ChevronDown, Search, RefreshCw, Send, User } from "lucide-react";
+import { Users, Swords, BarChart3, Timer, GitCompare, Star, ChevronDown, Search, RefreshCw, Send, User, Brain } from "lucide-react";
 import { useAppStore, type ActiveTab } from "../../store/useAppStore";
 import { SearchTab } from "../Sidebar/SearchTab";
 import { useClub } from "../../hooks/useClub";
@@ -191,13 +191,32 @@ function HorizontalSidebar() {
               cursor: "pointer", fontSize: 12, fontWeight: sidebarTab === "myprofile" ? 600 : 400,
               transition: "color 0.1s, border-color 0.1s", whiteSpace: "nowrap", flexShrink: 0,
             }}
-            onMouseEnter={(e) => { if (sidebarTab !== "profile") (e.currentTarget as HTMLElement).style.color = "var(--text)"; }}
-            onMouseLeave={(e) => { if (sidebarTab !== "profile") (e.currentTarget as HTMLElement).style.color = "var(--muted)"; }}
+            onMouseEnter={(e) => { if (sidebarTab !== "myprofile") (e.currentTarget as HTMLElement).style.color = "var(--text)"; }}
+            onMouseLeave={(e) => { if (sidebarTab !== "myprofile") (e.currentTarget as HTMLElement).style.color = "var(--muted)"; }}
           >
             <User size={15} />
             <span>Profil</span>
           </button>
         )}
+
+        {/* Analyse tab */}
+        <button role="tab" aria-selected={sidebarTab === "analyse"}
+          onClick={() => setSidebarTab("analyse")}
+          style={{
+            display: "flex", alignItems: "center", gap: 5,
+            padding: "0 12px", height: "100%",
+            background: "none", border: "none",
+            borderBottom: `2px solid ${sidebarTab === "analyse" ? "var(--accent)" : "transparent"}`,
+            color: sidebarTab === "analyse" ? "var(--text)" : "var(--muted)",
+            cursor: "pointer", fontSize: 12, fontWeight: sidebarTab === "analyse" ? 600 : 400,
+            transition: "color 0.1s, border-color 0.1s", whiteSpace: "nowrap", flexShrink: 0,
+          }}
+          onMouseEnter={(e) => { if (sidebarTab !== "analyse") (e.currentTarget as HTMLElement).style.color = "var(--text)"; }}
+          onMouseLeave={(e) => { if (sidebarTab !== "analyse") (e.currentTarget as HTMLElement).style.color = "var(--muted)"; }}
+        >
+          <Brain size={15} />
+          <span>Analyse</span>
+        </button>
       </div>
 
       <div style={{ flex: 1 }} />
@@ -482,6 +501,21 @@ function VerticalSidebar() {
             </div>
           </>
         )}
+
+        {/* Analyse IA */}
+        <div className="category-header" style={{ marginTop: 8 }}>
+          <ChevronDown size={10} style={{ marginRight: 2 }} />
+          ANALYSE
+        </div>
+        <div
+          className={`channel-item ${sidebarTab === "analyse" ? "active" : ""}`}
+          onClick={() => setSidebarTab("analyse")}
+          role="button" tabIndex={0}
+          onKeyDown={(e) => { if (e.key === "Enter") setSidebarTab("analyse"); }}
+          style={{ cursor: "pointer" }}>
+          <Brain size={18} style={{ color: sidebarTab === "analyse" ? "var(--accent)" : "var(--muted)", flexShrink: 0 }} />
+          <span>Analyse IA</span>
+        </div>
       </div>
 
       <VerticalUserPanel />
@@ -634,6 +668,21 @@ function VerticalLaunchSidebar() {
             </div>
           </>
         )}
+
+        {/* Analyse IA */}
+        <div className="category-header" style={{ marginTop: 8 }}>
+          <ChevronDown size={10} style={{ marginRight: 2 }} />
+          ANALYSE
+        </div>
+        <div
+          className={`channel-item ${sidebarTab === "analyse" ? "active" : ""}`}
+          onClick={() => setSidebarTab("analyse")}
+          role="button" tabIndex={0}
+          onKeyDown={(e) => { if (e.key === "Enter") setSidebarTab("analyse"); }}
+          style={{ cursor: "pointer" }}>
+          <Brain size={18} style={{ color: sidebarTab === "analyse" ? "var(--accent)" : "var(--muted)", flexShrink: 0 }} />
+          <span>Analyse IA</span>
+        </div>
       </div>
     </>
   );
