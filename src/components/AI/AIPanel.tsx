@@ -1,5 +1,5 @@
-import React from 'react';
-import { Brain, TrendingUp, Target, AlertTriangle, CheckCircle2, ChevronRight, Zap } from 'lucide-react';
+
+import { Brain, Target, Zap } from 'lucide-react';
 import { AISummary, AIGoal, PredictionResult } from '../../utils/aiEngine';
 
 interface AIPanelProps {
@@ -9,7 +9,7 @@ interface AIPanelProps {
   compact?: boolean;
 }
 
-export function AIPanel({ summary, goals, prediction, compact }: AIPanelProps) {
+export function AIPanel({ summary, goals, prediction }: AIPanelProps) {
   return (
     <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
       {/* 🔮 PRÉDICTION PROCHAIN MATCH */}

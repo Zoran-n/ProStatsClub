@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Shield, BarChart2, Users, Calendar, Clock, Trophy, MapPin, Search, ChevronRight, Zap, Target, TrendingUp, Sparkles, Hash, Settings, Send, Pencil, X, Minimize2, Megaphone, ListChecks, BookOpen, LayoutDashboard } from "lucide-react";
+import { BarChart2, Trophy, MapPin, Search, ChevronRight, Zap, Target, TrendingUp, Sparkles, Hash, Settings, Send, Pencil, X, Minimize2, Megaphone, ListChecks, BookOpen, LayoutDashboard } from "lucide-react";
 import { predictNextMatch, generateSmartGoals } from "../../utils/aiEngine";
 import { AIPanel } from "../AI/AIPanel";
 import { useAppStore } from "../../store/useAppStore";
