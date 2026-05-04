@@ -324,14 +324,7 @@ Application desktop pour suivre les statistiques de votre club EA FC Pro Clubs. 
 - **Mise à jour delta du cache** : ne re-télécharger que les matchs postérieurs au dernier connu — réduire la bande passante à chaque sync
 - **Chiffrement du fichier de settings** : option d'activer le chiffrement AES du `settings.json` pour protéger webhook, gamertag et données personnelles
 
-### 🤖 IA & Prédiction
 
-- **Prédiction résultat** : modèle simple (régression logistique sur SR, forme, domicile/ext.) pour estimer les chances de victoire avant un match
-- **Recommandation de position** : analyser les stats d'un joueur (buts, tacles, passes, note) et suggérer le poste où il performe le mieux
-- **Détection d'anomalie** : alerter quand un joueur sort de sa norme (note ±1.5σ) — badge ⚠️ automatique sur la carte joueur
-- **Composition optimale auto** : suggérer le meilleur XI en 4-3-3 / 4-4-2 / 3-5-2 basé sur les notes moyennes des 10 derniers matchs
-- **Résumé en langage naturel** : générer automatiquement un texte narratif de session ("Super semaine : 5V 1N, meilleur buteur X avec 4 buts…")
-- **Objectifs intelligents** : proposer 3 objectifs réalistes pour la prochaine semaine basés sur les tendances et l'historique des dernières sessions
 
 ---
 

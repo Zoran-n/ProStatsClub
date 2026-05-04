@@ -1,6 +1,13 @@
-**Technique & Système (Nouveautés) :**
-- **System Tray (Icône système)** : L'application dispose désormais d'une icône dans la barre des tâches Windows (à côté de l'horloge).
-- **Mode Arrière-plan** : La fermeture de la fenêtre principale cache désormais l'application au lieu de la quitter (style Discord). Vous pouvez la quitter définitivement via le menu clic-droit sur l'icône tray.
-- **Menu Tray Interactif** : Permet d'afficher l'app, de lancer/stopper une session de jeu ou de quitter rapidement.
-- **Démarrage automatique** : L'application s'enregistre désormais pour démarrer automatiquement avec Windows (en mode réduit dans le tray).
-- **Correctifs techniques** : Mise à jour vers Tauri v2 et optimisation des permissions système.
+## [0.4.50] - 2026-05-04
+### Ajouté
+- **Moteur IA Heuristique** : Un nouveau système d'analyse statistique locale.
+- **Résumés narratifs** : Génération automatique d'un texte debriefing pour chaque session (ex: "Attaque de feu", "Défense de fer").
+- **Objectifs intelligents** : Le dashboard propose désormais 3 défis personnalisés basés sur les performances récentes.
+- **Prédiction de résultat** : Estimation des chances de victoire pour le prochain match basée sur la forme et le Skill Rating.
+- **Détection d'anomalies** : Badge ⚠️ sur les joueurs en méforme ou en sur-performance inhabituelle (calcul d'écart-type).
+- **Recommandation de position** : L'IA suggère le meilleur poste pour chaque joueur selon ses statistiques réelles.
+
+### Corrigé
+- **Crash au démarrage** : Correction d'une erreur de configuration dans le plugin autostart (invalid unit type).
+- **Stabilité** : Sécurisation du chargement de l'icône système pour éviter les panics.
+- **Dépendances** : Correction de l'erreur lightningcss qui bloquait le build sur certaines machines.
