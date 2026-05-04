@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { List, useListRef } from "react-window";
-import { Search, Download, ChevronUp, ChevronDown, Users, Filter, AlertTriangle, LayoutGrid, Trophy, Globe, BrainCircuit } from "lucide-react";
+import { Search, Download, ChevronUp, ChevronDown, Users, Filter, AlertTriangle, LayoutGrid, Trophy, Globe } from "lucide-react";
+import { detectPerformanceAnomaly } from "../../utils/aiEngine";
 import { useAppStore } from "../../store/useAppStore";
 import { ExportModal } from "../Modals/ExportModal";
 import { useT } from "../../i18n";

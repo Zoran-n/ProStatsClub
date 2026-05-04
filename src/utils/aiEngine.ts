@@ -113,12 +113,11 @@ export function generateSmartGoals(recentMatches: Match[], clubId: string): AIGo
   const last10 = recentMatches.slice(-10);
   let totalRating = 0, playerCount = 0;
   let cleanSheets = 0;
-  let totalPasses = 0, successfulPasses = 0;
   
   for (const m of last10) {
-    const players = m.players[clubId] || [];
-    for (const p of players) {
-      totalRating += Number(p.rating);
+    const playersMap = m.players[clubId] || {};
+    for (const p of Object.values(playersMap)) {
+      totalRating += Number(p.rating || p.ratingAve || 0);
       playerCount++;
     }
     const c = m.clubs[clubId];
@@ -175,7 +174,7 @@ export function predictNextMatch(club: Club, matches: Match[]): PredictionResult
   }
   
   const formFactor = pts / 30; // 0 à 1
-  const srFactor = Math.min((club.skillRating || 0) / 2500, 1);
+  const srFactor = Math.min(Number(club.skillRating || 0) / 2500, 1);
   
   // Simulation simplifiée
   const winBase = 0.35 + (formFactor * 0.2) + (srFactor * 0.1);
@@ -234,9 +233,9 @@ export function suggestPosition(p: Player): { pos: string; score: number }[] {
   const scores: { pos: string; score: number }[] = [
     { pos: 'ST',  score: (p.goals * 5 + (p.rating > 7.5 ? 10 : 0)) },
     { pos: 'CAM', score: (p.assists * 4 + p.passesMade * 0.05) },
-    { pos: 'CDM', score: (p.tacklesMade * 3 + p.interceptions * 2) },
-    { pos: 'CB',  score: (p.tacklesMade * 4 + p.interceptions * 3) },
-    { pos: 'GK',  score: (p.saveAttempts * 5 + p.cleanSheets * 10) },
+    { pos: 'CDM', score: (p.tacklesMade * 3 + (p.interceptions || 0) * 2) },
+    { pos: 'CB',  score: (p.tacklesMade * 4 + (p.interceptions || 0) * 3) },
+    { pos: 'GK',  score: ((p.saveAttempts || 0) * 5 + (p.cleanSheets || 0) * 10) },
   ];
 
   return scores.sort((a, b) => b.score - a.score);
