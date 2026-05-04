@@ -26,6 +26,10 @@ pub fn run() {
             app.manage(ea_client::EaClient::new(app.handle().clone(), settings.proxy_url));
             app.manage(storage::StorageManager::new(app_data_dir));
 
+            // Enable autostart with Windows
+            use tauri_plugin_autostart::ManagerExt;
+            let _ = app.autolaunch().enable();
+
             // Prevent window close (hide instead)
             if let Some(window) = app.get_webview_window("main") {
                 let window_clone = window.clone();

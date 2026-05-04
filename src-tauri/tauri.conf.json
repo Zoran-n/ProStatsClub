@@ -33,8 +33,8 @@
       "endpoints": [
         "https://github.com/Zoran-n/proclubs-tauri/releases/latest/download/latest.json"
       ]
-    },
-    "autostart": {}
+    }
+
   },
   "bundle": {
     "active": true,
