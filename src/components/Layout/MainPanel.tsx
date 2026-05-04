@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
-import { BarChart2, Hash, Settings, Send, Pencil, X, Minimize2, Search, Megaphone, ListChecks, Sparkles, BookOpen, LayoutDashboard, Trophy } from "lucide-react";
+import { Shield, BarChart2, Users, Calendar, Clock, Trophy, MapPin, Search, ChevronRight, Zap, Target, TrendingUp, Sparkles, Hash, Settings, Send, Pencil, X, Minimize2, Megaphone, ListChecks, BookOpen, LayoutDashboard } from "lucide-react";
+import { predictNextMatch, generateSmartGoals } from "../../utils/aiEngine";
+import { AIPanel } from "../AI/AIPanel";
 import { useAppStore } from "../../store/useAppStore";
 import { PlayersTab } from "../Tabs/PlayersTab";
 import { MatchesTab } from "../Tabs/MatchesTab";
@@ -168,6 +170,16 @@ function DashboardView({
           </div>
         );
 
+      case "ai_insights":
+        return (
+          <div key={id} className="col-span-full md:col-span-1">
+            <AIPanel 
+              prediction={predictNextMatch(club, matches)}
+              goals={generateSmartGoals(matches, club.id)}
+            />
+          </div>
+        );
+
       default:
         return null;
     }
@@ -233,7 +245,7 @@ export function MainPanel() {
   const [showWeeklyRanking, setShowWeeklyRanking] = useState(false);
   const [showSeasonReport, setShowSeasonReport] = useState(false);
   const [dashboardMode, setDashboardMode] = useState(false);
-  const [dashWidgets, setDashWidgets] = useState<string[]>(["forme", "serie", "derniers_matchs", "top_joueur", "kpis_rapides", "heatmap"]);
+  const [dashWidgets, setDashWidgets] = useState<string[]>(["ai_insights", "forme", "serie", "derniers_matchs", "top_joueur", "kpis_rapides", "heatmap"]);
 
   const shareTab = async () => {
     if (!discordWebhook || !currentClub) return;

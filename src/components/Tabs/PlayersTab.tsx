@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
 import { List, useListRef } from "react-window";
-import { Search, Download, ChevronUp, ChevronDown, Users, Filter, AlertTriangle, LayoutGrid, Trophy, Globe } from "lucide-react";
+import { Search, Download, ChevronUp, ChevronDown, Users, Filter, AlertTriangle, LayoutGrid, Trophy, Globe, BrainCircuit } from "lucide-react";
 import { useAppStore } from "../../store/useAppStore";
 import { ExportModal } from "../Modals/ExportModal";
 import { useT } from "../../i18n";
@@ -125,7 +125,7 @@ function PlayerRow({
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text)",
               overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</div>
-            {alert && <span title="Note moyenne récente < 6.5"><AlertTriangle size={11} style={{ color: "var(--red)", flexShrink: 0 }} /></span>}
+            {alert && <span title="Performance inhabituelle (écart-type élevé)"><AlertTriangle size={11} style={{ color: "var(--red)", flexShrink: 0 }} /></span>}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}>
             <span style={{ padding: "1px 6px", borderRadius: 3, background: "var(--bg)",
@@ -479,9 +479,9 @@ export function PlayersTab() {
 
   const isUnderperforming = useCallback((name: string): boolean => {
     const arr = playerRecentRatings.get(name) ?? [];
-    if (arr.length < 3) return false;
-    const avg = arr.slice(0, 5).reduce((a, b) => a + b, 0) / Math.min(arr.length, 5);
-    return avg < 6.5;
+    if (arr.length < 5) return false;
+    const matches = arr.map(rating => ({ rating }));
+    return detectPerformanceAnomaly(matches) === 'slump';
   }, [playerRecentRatings]);
 
   const presenceFor = useCallback((name: string): number =>

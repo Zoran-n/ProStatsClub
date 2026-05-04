@@ -15,6 +15,8 @@ import { ExportModal } from "../Modals/ExportModal";
 import { PdfSaveModal } from "../Modals/PdfSaveModal";
 import type { Match, Session as SessionType } from "../../types";
 import { generateSessionPdf, getSessionPdfFilename, generateWeeklyReport } from "../../utils/pdfExport";
+import { generateSessionSummary } from "../../utils/aiEngine";
+import { AIPanel } from "../AI/AIPanel";
 import { sendDiscordWebhook } from "../../api/discord";
 import { useT } from "../../i18n";
 
@@ -1486,6 +1488,9 @@ export function SessionTab() {
                     <div style={{ fontSize: 12, color: "var(--text)", whiteSpace: "pre-wrap" }}>{s.notes}</div>
                   </div>
                 )}
+
+                {/* Analyse IA */}
+                <AIPanel summary={generateSessionSummary(s)} />
 
                 {/* Match list */}
                 <div>

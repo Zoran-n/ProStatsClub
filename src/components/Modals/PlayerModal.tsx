@@ -8,6 +8,8 @@ import { useAppStore } from "../../store/useAppStore";
 import { useT } from "../../i18n";
 import { sendDiscordWebhook, sendDiscordFile } from "../../api/discord";
 import { generatePlayerPdf, getPlayerPdfFilename } from "../../utils/pdfExport";
+import { suggestPosition, detectPerformanceAnomaly } from "../../utils/aiEngine";
+import { BrainCircuit, AlertCircle } from "lucide-react";
 import { PdfSaveModal } from "./PdfSaveModal";
 import type { Player, Match } from "../../types";
 
@@ -593,6 +595,37 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
             )}
             <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--muted)",
               cursor: "pointer", fontSize: 18, lineHeight: 1, padding: 4 }}>✕</button>
+          </div>
+        </div>
+
+        </div>
+        
+        {/* IA Insights Section */}
+        <div style={{ marginTop: 16, padding: 12, background: "rgba(var(--accent-rgb,0,212,255),0.05)", 
+          borderRadius: 10, border: "1px solid var(--border)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10, color: "var(--accent)" }}>
+            <BrainCircuit size={14} />
+            <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 13, letterSpacing: "0.1em" }}>CONSEILS IA</span>
+          </div>
+          
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span style={{ fontSize: 11, color: "var(--muted)" }}>Position recommandée :</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: "var(--green)" }}>
+                {suggestPosition(player)[0].pos}
+              </span>
+            </div>
+            {allEvoData.rating.length >= 5 && (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ fontSize: 11, color: "var(--muted)" }}>Analyse de forme :</span>
+                {(() => {
+                  const status = detectPerformanceAnomaly(allEvoData.rating.map(r => ({ rating: r })));
+                  if (status === 'peak') return <span style={{ fontSize: 11, fontWeight: 700, color: "var(--green)" }}>🔥 Exceptionnelle</span>;
+                  if (status === 'slump') return <span style={{ fontSize: 11, fontWeight: 700, color: "var(--red)" }}>⚠️ En baisse</span>;
+                  return <span style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)" }}>Standard</span>;
+                })()}
+              </div>
+            )}
           </div>
         </div>
 
