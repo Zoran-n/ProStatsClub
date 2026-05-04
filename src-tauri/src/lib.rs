@@ -26,61 +26,68 @@ pub fn run() {
             app.manage(ea_client::EaClient::new(app.handle().clone(), settings.proxy_url));
             app.manage(storage::StorageManager::new(app_data_dir));
 
-            // Enable autostart with Windows
-            use tauri_plugin_autostart::ManagerExt;
-            let _ = app.autolaunch().enable();
-
-            // Prevent window close
+            // Prevent window close (hide instead)
             if let Some(window) = app.get_webview_window("main") {
                 let window_clone = window.clone();
                 window.on_window_event(move |event| {
                     if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                        window_clone.hide().unwrap();
+                        let _ = window_clone.hide();
                         api.prevent_close();
                     }
                 });
             }
 
-            // Setup Tray icon
-            let show_i = MenuItem::with_id(app, "show", "Afficher l'application", true, None::<&str>)?;
-            let toggle_i = MenuItem::with_id(app, "toggle_session", "Lancer / Stopper la session", true, None::<&str>)?;
-            let quit_i = MenuItem::with_id(app, "quit", "Quitter", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&show_i, &toggle_i, &quit_i])?;
+            // Setup Tray icon safely
+            let setup_tray = |app: &tauri::App| -> tauri::Result<()> {
+                let show_i = MenuItem::with_id(app, "show", "Afficher l'application", true, None::<&str>)?;
+                let toggle_i = MenuItem::with_id(app, "toggle_session", "Lancer / Stopper la session", true, None::<&str>)?;
+                let quit_i = MenuItem::with_id(app, "quit", "Quitter", true, None::<&str>)?;
+                let menu = Menu::with_items(app, &[&show_i, &toggle_i, &quit_i])?;
 
-            let _tray = TrayIconBuilder::new()
-                .icon(app.default_window_icon().unwrap().clone())
-                .menu(&menu)
-                .show_menu_on_left_click(false)
-                .on_menu_event(|app, event| match event.id.as_ref() {
-                    "quit" => {
-                        app.exit(0);
-                    }
-                    "show" => {
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.show();
-                            let _ = window.set_focus();
+                let tray_builder = TrayIconBuilder::new()
+                    .menu(&menu)
+                    .show_menu_on_left_click(false);
+
+                let tray_builder = if let Some(icon) = app.default_window_icon() {
+                    tray_builder.icon(icon.clone())
+                } else {
+                    tray_builder
+                };
+
+                let _ = tray_builder
+                    .on_menu_event(|app, event| match event.id.as_ref() {
+                        "quit" => { app.exit(0); }
+                        "show" => {
+                            if let Some(window) = app.get_webview_window("main") {
+                                let _ = window.show();
+                                let _ = window.set_focus();
+                            }
                         }
-                    }
-                    "toggle_session" => {
-                        let _ = app.emit("tray-toggle-session", ());
-                    }
-                    _ => {}
-                })
-                .on_tray_icon_event(|tray, event| match event {
-                    TrayIconEvent::Click {
-                        button: MouseButton::Left,
-                        button_state: MouseButtonState::Up,
-                        ..
-                    } => {
-                        let app = tray.app_handle();
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.show();
-                            let _ = window.set_focus();
+                        "toggle_session" => {
+                            let _ = app.emit("tray-toggle-session", ());
                         }
-                    }
-                    _ => {}
-                })
-                .build(app)?;
+                        _ => {}
+                    })
+                    .on_tray_icon_event(|tray, event| match event {
+                        TrayIconEvent::Click {
+                            button: MouseButton::Left,
+                            button_state: MouseButtonState::Up,
+                            ..
+                        } => {
+                            let app = tray.app_handle();
+                            if let Some(window) = app.get_webview_window("main") {
+                                let _ = window.show();
+                                let _ = window.set_focus();
+                            }
+                        }
+                        _ => {}
+                    })
+                    .build(app)?;
+                Ok(())
+            };
+
+            // On lance le tray mais on ignore s'il échoue (pour ne pas bloquer l'app)
+            let _ = setup_tray(app);
 
             Ok(())
         })
