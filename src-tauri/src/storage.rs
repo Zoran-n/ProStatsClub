@@ -1,10 +1,10 @@
-use std::path::PathBuf;
-use std::io::{Read, Write};
-use anyhow::Result;
-use flate2::Compression;
-use flate2::write::GzEncoder;
-use flate2::read::GzDecoder;
 use crate::models::Settings;
+use anyhow::Result;
+use flate2::read::GzDecoder;
+use flate2::write::GzEncoder;
+use flate2::Compression;
+use std::io::{Read, Write};
+use std::path::PathBuf;
 
 // Gzip magic bytes
 const GZIP_MAGIC: [u8; 2] = [0x1f, 0x8b];
