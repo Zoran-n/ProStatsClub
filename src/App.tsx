@@ -56,7 +56,8 @@ function App() {
         store.stopSession();
         store.addToast("Session arrêtée via raccourci", "info");
       } else {
-        store.startSession("Session rapide", []);
+        // store.currentClub est garanti non-nul par le check ligne 51
+        store.startSession(store.currentClub!);
         store.addToast("Session démarrée via raccourci", "success");
       }
     });
