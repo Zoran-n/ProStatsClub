@@ -21,7 +21,7 @@ self.onmessage = (e: MessageEvent) => {
 };
 
 function processMatches(matches: Match[], clubId: string) {
-  let goals = 0, assists = 0, games = 0, wins = 0;
+  let goals = 0, games = 0, wins = 0;
   
   for (const m of matches) {
     const c = m.clubs[clubId];

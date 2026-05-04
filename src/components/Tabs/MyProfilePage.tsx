@@ -1,4 +1,5 @@
-import { Trophy, Target, Star, TrendingUp, Shield, Swords, FileText, Download } from "lucide-react";
+import { useMemo } from "react";
+import { Trophy, Target, Star, TrendingUp, Shield, Swords, FileText } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { useAppStore } from "../../store/useAppStore";
 import { logger } from "../../utils/logger";
@@ -108,9 +109,9 @@ export function MyProfilePage() {
   }, [eaProfile, sessions, matches, matchCache]);
 
   // ── Aggregated stats (season from API when available) ───────────────
-  const matchWins = allPlayerMatches.filter(m => m.result === "W").length;
-  const matchDraws = allPlayerMatches.filter(m => m.result === "D").length;
-  const matchLosses = allPlayerMatches.filter(m => m.result === "L").length;
+  const matchWins = allPlayerMatches.filter((m: PerMatchStat) => m.result === "W").length;
+  const matchDraws = allPlayerMatches.filter((m: PerMatchStat) => m.result === "D").length;
+  const matchLosses = allPlayerMatches.filter((m: PerMatchStat) => m.result === "L").length;
 
   const agg = useMemo(() => {
     // Prefer season stats from the API (real totals)
@@ -132,13 +133,13 @@ export function MyProfilePage() {
     // Fallback to match-by-match analysis
     const ms = allPlayerMatches;
     if (!ms.length) return null;
-    const rated = ms.filter(m => m.rating > 0);
-    const avgRating = rated.length > 0 ? rated.reduce((s, m) => s + m.rating, 0) / rated.length : 0;
+    const rated = ms.filter((m: PerMatchStat) => m.rating > 0);
+    const avgRating = rated.length > 0 ? rated.reduce((s: number, m: PerMatchStat) => s + m.rating, 0) / rated.length : 0;
     return {
       games: ms.length,
-      totalGoals: ms.reduce((s, m) => s + m.goals, 0),
-      totalAssists: ms.reduce((s, m) => s + m.assists, 0),
-      totalMotm: ms.filter(m => m.motm).length,
+      totalGoals: ms.reduce((s: number, m: PerMatchStat) => s + m.goals, 0),
+      totalAssists: ms.reduce((s: number, m: PerMatchStat) => s + m.assists, 0),
+      totalMotm: ms.filter((m: PerMatchStat) => m.motm).length,
       avgRating,
       wins: matchWins, draws: matchDraws, losses: matchLosses,
       winRate: ms.length > 0 ? Math.round((matchWins / ms.length) * 100) : 0,
@@ -152,8 +153,8 @@ export function MyProfilePage() {
     return allPlayerMatches
       .slice(0, 40)
       .reverse()
-      .filter(m => m.rating > 0)
-      .map((m, i) => ({ idx: i + 1, rating: Number(m.rating.toFixed(2)), result: m.result }));
+      .filter((m: PerMatchStat) => m.rating > 0)
+      .map((m: PerMatchStat, i: number) => ({ idx: i + 1, rating: Number(m.rating.toFixed(2)), result: m.result }));
   }, [allPlayerMatches]);
 
   // ── Goals + Assists per batch of 5 matches ─────────────────────────
@@ -350,7 +351,7 @@ export function MyProfilePage() {
               RÉPARTITION PAR POSTE
             </div>
             <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(positionStats.length, 5)}, 1fr)`, gap: 8 }}>
-              {positionStats.slice(0, 5).map(({ pos, count, goals, assists, avgRating }) => (
+              {positionStats.slice(0, 5).map(({ pos, count, goals, assists, avgRating }: { pos: string; count: number; goals: number; assists: number; avgRating: string }) => (
                 <div key={pos} style={{
                   background: "var(--hover)", borderRadius: 6, padding: "10px",
                   border: "1px solid var(--border)", textAlign: "center",
@@ -391,7 +392,7 @@ export function MyProfilePage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {allPlayerMatches.slice(0, 25).map((m) => {
+                  {allPlayerMatches.slice(0, 25).map((m: PerMatchStat) => {
                     const ts = Number(m.date) ? new Date(Number(m.date) * 1000) : new Date(m.date);
                     const dateStr = ts.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" });
                     const resColor = m.result === "W" ? "var(--green)" : m.result === "L" ? "var(--red)" : "var(--gold)";
