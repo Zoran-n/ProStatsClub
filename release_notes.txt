@@ -1,13 +1,11 @@
-## [0.4.50] - 2026-05-04
+## [0.4.60] - 2026-05-04
 ### Ajouté
-- **Moteur IA Heuristique** : Un nouveau système d'analyse statistique locale.
-- **Résumés narratifs** : Génération automatique d'un texte debriefing pour chaque session (ex: "Attaque de feu", "Défense de fer").
-- **Objectifs intelligents** : Le dashboard propose désormais 3 défis personnalisés basés sur les performances récentes.
-- **Prédiction de résultat** : Estimation des chances de victoire pour le prochain match basée sur la forme et le Skill Rating.
-- **Détection d'anomalies** : Badge ⚠️ sur les joueurs en méforme ou en sur-performance inhabituelle (calcul d'écart-type).
-- **Recommandation de position** : L'IA suggère le meilleur poste pour chaque joueur selon ses statistiques réelles.
+- **Web Worker** : Déportation des calculs statistiques lourds (classements, agrégats) dans un thread séparé pour une UI fluide.
+- **Tests Unitaires** : Couverture des heuristiques de l'IA via Vitest (détection d'anomalies, recommandations de poste).
+- **Système de Logs Exportables** : Nouveau moteur de logging avec export JSON depuis l'onglet "Mon Profil".
+- **Chiffrement AES-GCM** : Implémentation du chiffrement pour sécuriser les données sensibles du fichier de paramètres.
+- **Mise à jour Delta** : Synchronisation incrémentale optimisée pour réduire l'usage de la bande passante.
 
 ### Corrigé
-- **Crash au démarrage** : Correction d'une erreur de configuration dans le plugin autostart (invalid unit type).
-- **Stabilité** : Sécurisation du chargement de l'icône système pour éviter les panics.
-- **Dépendances** : Correction de l'erreur lightningcss qui bloquait le build sur certaines machines.
+- **Nettoyage CI** : Suppression de tous les imports et variables inutilisés pour valider le build GitHub Actions.
+- **Stabilité TypeScript** : Correction des erreurs d'itérations sur les données de l'API EA.
