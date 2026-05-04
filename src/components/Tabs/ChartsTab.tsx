@@ -697,6 +697,96 @@ function PlayerCountSection({ matches, clubId }: { matches: Match[]; clubId: str
   );
 }
 
+// ─── Heatmap de forme (GitHub-style calendar) ─────────────────────────────────
+function FormCalendarSection({ matches, clubId }: { matches: Match[]; clubId: string }) {
+  const today = useMemo(() => { const d = new Date(); d.setHours(23, 59, 59, 0); return d; }, []);
+
+  const resultMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const m of matches) {
+      const ts = Number(m.timestamp);
+      const d = new Date(ts > 1e12 ? ts : ts * 1000);
+      const key = d.toISOString().slice(0, 10);
+      const club = m.clubs[clubId] as Record<string, unknown> | undefined;
+      if (!club) continue;
+      const prev = map[key];
+      const res = Number(club.wins) > 0 ? "W" : Number(club.ties) > 0 ? "D" : "L";
+      if (!prev || (prev === "L" && res !== "L") || (prev === "D" && res === "W")) map[key] = res;
+    }
+    return map;
+  }, [matches, clubId]);
+
+  const { weeks, monthLabels } = useMemo(() => {
+    const days = 91;
+    const start = new Date(today);
+    start.setDate(start.getDate() - days + 1);
+    const dow = (start.getDay() + 6) % 7;
+    start.setDate(start.getDate() - dow);
+    const weeksArr: { date: Date; key: string; result: string | null }[][] = [];
+    const cur = new Date(start);
+    while (cur <= today) {
+      const week: typeof weeksArr[number] = [];
+      for (let d = 0; d < 7; d++) {
+        const key = cur.toISOString().slice(0, 10);
+        week.push({ date: new Date(cur), key, result: cur >= start && cur <= today ? (resultMap[key] ?? null) : null });
+        cur.setDate(cur.getDate() + 1);
+      }
+      weeksArr.push(week);
+    }
+    const labels: { label: string; col: number }[] = [];
+    let lastM = -1;
+    weeksArr.forEach((w, ci) => {
+      const mo = w[0].date.getMonth();
+      if (mo !== lastM) { labels.push({ label: w[0].date.toLocaleString("fr", { month: "short" }), col: ci }); lastM = mo; }
+    });
+    return { weeks: weeksArr, monthLabels: labels };
+  }, [today, resultMap]);
+
+  const counts = useMemo(() => {
+    const c = { W: 0, D: 0, L: 0 };
+    Object.values(resultMap).forEach(r => { if (r in c) c[r as keyof typeof c]++; });
+    return c;
+  }, [resultMap]);
+
+  return (
+    <ChartCard title="HEATMAP DE FORME — 3 MOIS">
+      <div style={{ display: "grid", gridTemplateColumns: `20px repeat(${weeks.length}, 1fr)`, gap: 2, marginBottom: 2 }}>
+        <div />
+        {weeks.map((_, ci) => {
+          const ml = monthLabels.find(m => m.col === ci);
+          return <div key={ci} style={{ fontSize: 7, color: "var(--muted)", textAlign: "center", fontFamily: "'Bebas Neue', sans-serif", overflow: "hidden" }}>{ml?.label ?? ""}</div>;
+        })}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: `20px repeat(${weeks.length}, 1fr)`, gap: 2 }}>
+        {(["L","M","M","J","V","S","D"] as const).map((dl, di) => (
+          <Fragment key={di}>
+            <div style={{ fontSize: 7, color: di % 2 === 0 ? "var(--muted)" : "transparent", fontFamily: "'Bebas Neue', sans-serif", alignSelf: "center", textAlign: "right", paddingRight: 2, gridRow: di + 2 }}>{dl}</div>
+            {weeks.map((week, ci) => {
+              const cell = week[di];
+              const isFuture = cell.date > today;
+              const bg = isFuture ? "transparent" : !cell.result ? "var(--bg)" : cell.result === "W" ? "#22c55e" : cell.result === "D" ? "#eab308" : "#ef4444";
+              return (
+                <div key={`${ci}-${di}`}
+                  title={cell.result ? `${cell.key} — ${cell.result === "W" ? "Victoire" : cell.result === "D" ? "Nul" : "Défaite"}` : cell.key}
+                  style={{ height: 11, borderRadius: 2, background: bg, opacity: !cell.result && !isFuture ? 0.3 : 1,
+                    border: "1px solid rgba(255,255,255,0.04)", gridColumn: ci + 2, gridRow: di + 2, transition: "transform 0.1s", cursor: cell.result ? "default" : undefined }}
+                  onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.3)")}
+                  onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")}
+                />
+              );
+            })}
+          </Fragment>
+        ))}
+      </div>
+      <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 8, marginTop: 8 }}>
+        <div style={{ width: 8, height: 8, borderRadius: 2, background: "#22c55e" }} /><span style={{ fontSize: 9, color: "var(--muted)" }}>{counts.W}V</span>
+        <div style={{ width: 8, height: 8, borderRadius: 2, background: "#eab308" }} /><span style={{ fontSize: 9, color: "var(--muted)" }}>{counts.D}N</span>
+        <div style={{ width: 8, height: 8, borderRadius: 2, background: "#ef4444" }} /><span style={{ fontSize: 9, color: "var(--muted)" }}>{counts.L}D</span>
+      </div>
+    </ChartCard>
+  );
+}
+
 // ─── ChartsTab ────────────────────────────────────────────────────────────────
 export function ChartsTab() {
   const t = useT();
@@ -825,10 +915,13 @@ export function ChartsTab() {
         </div>
 
         {/* Row 5: Score Distribution + Day/Hour Heatmap */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
           <ScoreDistSection      matches={matches} clubId={currentClub.id} />
           <DayHourHeatmapSection matches={matches} clubId={currentClub.id} />
         </div>
+
+        {/* Row 6: Form Calendar Heatmap */}
+        <FormCalendarSection matches={matches} clubId={currentClub.id} />
       </div>
 
       {exportModal && (

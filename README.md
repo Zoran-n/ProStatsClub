@@ -118,6 +118,8 @@ Application desktop pour suivre les statistiques de votre club EA FC Pro Clubs. 
 - **Fusion de sessions** : regroupez plusieurs sessions en une session "tournoi" avec bilan global — sélection par checkbox, nom personnalisable
 - **Post-match auto Discord** : toggle ON/OFF dans le header de session active — envoie automatiquement le récap complet (bilan, top buteur, top passeur, MOTM, forme, tags) sur le webhook Discord configuré dès que la session est terminée, sans action manuelle
 - **Classement Discord hebdo** : modal dédié (bouton 🏆 dans la toolbar Discord) — calcule le top 3 buteurs/passeurs/notes sur toutes les sessions de la semaine, navigation ← → entre semaines, prévisualisation avant envoi Discord ou copie texte
+- **Alertes de records personnels** : détection automatique des records individuels (buts, notes, passes décisives, MOTM) lors du rafraîchissement des matchs — toast interactif permettant le partage du record sur Discord via un embed stylisé
+- **Rapport de saison narratif Discord** : modal de fin de saison (bouton 📊) — personnalisation du résultat de la saison (Titre, Montée, Relégation), calcul des agrégats, points et tops sur les N derniers matchs, export direct en embed vers le Discord de l'équipe
 
 ### Comparaison de clubs
 
@@ -297,10 +299,7 @@ Application desktop pour suivre les statistiques de votre club EA FC Pro Clubs. 
 
 ### 🤝 Social & Discord
 
-- **Post-match auto** : envoyer automatiquement un résumé de match en fin de session active — score, buteurs, MOTM, note d'équipe — sans action manuelle
-- **Classement Discord hebdo** : bouton d'envoi automatique du podium buts/PD/note de la semaine en embed formaté (top 3 joueurs + bilan V/N/D)
-- **Rapport de saison Discord** : bouton dédié pour envoyer un embed complet de fin de saison — tous les stats, meilleurs joueurs, records — avec mise en page narrative
-- **Notification Discord de record** : détecter automatiquement un record personnel ou club (meilleure note, plus de buts en un match, série) et proposer de partager
+
 - **Partage de comparaison de clubs** : bouton Discord dans l'onglet Comparaison — embed multi-clubs avec radar, tableau de stats et résultat Battle
 - **Digest hebdomadaire planifié** : configurer un jour/heure pour un envoi automatique chaque semaine du bilan de la semaine sur Discord
 

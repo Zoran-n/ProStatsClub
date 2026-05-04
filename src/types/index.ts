@@ -1,3 +1,13 @@
+export interface RecordEntry {
+  playerId: string;
+  playerName: string;
+  type: "goals" | "assists" | "rating" | "motm";
+  previous: number;
+  new: number;
+  matchId: string;
+  date: string;
+}
+
 export interface Club {
   id: string;
   name: string;

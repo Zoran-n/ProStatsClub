@@ -661,3 +661,186 @@ export function WeeklyRankingModal({ onClose }: { onClose: () => void }) {
     </div>
   );
 }
+
+// ─── Rapport de saison (Fin de saison in-game) ────────────────────────────────
+export function SeasonReportModal({ onClose }: { onClose: () => void }) {
+  const { currentClub, matches, discordWebhook, addToast } = useAppStore();
+  const [matchCount, setMatchCount] = useState(10);
+  const [outcome, setOutcome] = useState<"title"|"promotion"|"stay"|"relegation"|"custom">("stay");
+  const [customOutcome, setCustomOutcome] = useState("");
+  const [sending, setSending] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const stats = useMemo(() => {
+    if (!currentClub) return null;
+    const sorted = [...matches].sort((a, b) => Number(a.timestamp) - Number(b.timestamp));
+    const recent = sorted.slice(-matchCount);
+    let w = 0, l = 0, d = 0, goals = 0, against = 0;
+    const playerAcc: Record<string, { name: string; goals: number; assists: number; ratingSum: number; games: number }> = {};
+
+    for (const m of recent) {
+      const c = m.clubs[currentClub.id] as Record<string, unknown> | undefined;
+      const oppEntry = Object.entries(m.clubs).find(([k]) => k !== currentClub.id);
+      const oppData = oppEntry?.[1] as Record<string, unknown> | undefined;
+      
+      if (c?.["wins"] === "1" || c?.["wins"] === 1) w++;
+      else if (c?.["losses"] === "1" || c?.["losses"] === 1) l++;
+      else d++;
+
+      goals += Number(c?.["goals"] ?? 0);
+      against += Number(oppData?.["goals"] ?? 0);
+
+      const clubPlayers = m.players[currentClub.id] as Record<string, Record<string, unknown>> | undefined;
+      if (!clubPlayers) continue;
+      for (const [pid, p] of Object.entries(clubPlayers)) {
+        const name = String(p["name"] ?? p["playername"] ?? p["playerName"] ?? pid);
+        if (!playerAcc[name]) playerAcc[name] = { name, goals: 0, assists: 0, ratingSum: 0, games: 0 };
+        playerAcc[name].goals   += Number(p["goals"]   ?? 0);
+        playerAcc[name].assists += Number(p["assists"] ?? 0);
+        const r = Number(p["rating"] ?? 0);
+        if (r > 0) { playerAcc[name].ratingSum += r; playerAcc[name].games++; }
+      }
+    }
+
+    const all = Object.values(playerAcc);
+    const topScorer   = all.length > 0 ? all.reduce((a, b) => b.goals > a.goals ? b : a) : null;
+    const topAssister = all.length > 0 ? all.reduce((a, b) => b.assists > a.assists ? b : a) : null;
+    
+    return { w, l, d, goals, against, pts: w * 3 + d, topScorer, topAssister, matches: recent.length };
+  }, [currentClub, matches, matchCount]);
+
+  const OUTCOMES = {
+    title:      { label: "Titre !", color: 0xf59e0b, emoji: "🏆" },
+    promotion:  { label: "Montée", color: 0x22c55e, emoji: "📈" },
+    stay:       { label: "Maintien", color: 0x3b82f6, emoji: "➖" },
+    relegation: { label: "Relégation", color: 0xef4444, emoji: "📉" },
+    custom:     { label: "Personnalisé", color: 0x8b5cf6, emoji: "✨" },
+  };
+
+  const buildEmbed = () => {
+    if (!stats) return {} as any;
+    const out = OUTCOMES[outcome];
+    const finalOutcome = outcome === "custom" ? customOutcome : out.label;
+    
+    return {
+      title: `${out.emoji} FIN DE SAISON — ${currentClub?.name.toUpperCase()}`,
+      color: out.color,
+      description: `**Bilan final : ${finalOutcome}**\nSur les ${stats.matches} derniers matchs.`,
+      fields: [
+        { name: "📊 Résultats", value: `**${stats.pts} points**\n🟢 ${stats.w}V · 🟡 ${stats.d}N · 🔴 ${stats.l}D`, inline: true },
+        { name: "⚽ Buts", value: `Marqués : **${stats.goals}**\nEncaissés : **${stats.against}**\nDiff : **${stats.goals - stats.against > 0 ? "+" : ""}${stats.goals - stats.against}**`, inline: true },
+        { name: "🌟 Tops", value: [
+          stats.topScorer && stats.topScorer.goals > 0 ? `Buteur: **${stats.topScorer.name}** (${stats.topScorer.goals})` : null,
+          stats.topAssister && stats.topAssister.assists > 0 ? `Passeur: **${stats.topAssister.name}** (${stats.topAssister.assists})` : null
+        ].filter(Boolean).join("\n") || "Aucun", inline: false },
+      ],
+      footer: { text: "ProClubs Stats · Rapport de Saison" },
+      timestamp: new Date().toISOString(),
+    };
+  };
+
+  const send = async () => {
+    if (!discordWebhook) { addToast("Aucun webhook", "error"); return; }
+    if (!stats) return;
+    if (outcome === "custom" && !customOutcome.trim()) { addToast("Texte vide", "error"); return; }
+    setSending(true);
+    try {
+      await sendDiscordWebhook(discordWebhook, [buildEmbed()]);
+      addToast("Rapport envoyé !", "success");
+      onClose();
+    } catch (e) { addToast(String(e), "error"); }
+    finally { setSending(false); }
+  };
+
+  const copy = async () => {
+    if (!stats) return;
+    const e = buildEmbed();
+    const lines = [
+      `**${e.title}**`, e.description,
+      ...(e.fields ?? []).map((f: any) => `**${f.name}**\n${f.value}`),
+    ].join("\n\n");
+    await navigator.clipboard.writeText(lines).catch(() => {});
+    setCopied(true);
+    addToast("Copié !", "success");
+    setTimeout(() => setCopied(false), 2500);
+  };
+
+  if (!currentClub) return null;
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 50,
+      display: "flex", alignItems: "center", justifyContent: "center" }} onClick={onClose}>
+      <div style={{ background: "var(--card)", borderRadius: 12, padding: 24, width: 420,
+        border: "1px solid var(--border)", animation: "fadeSlideIn 0.15s ease-out" }}
+        onClick={e => e.stopPropagation()}>
+
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <BookOpen size={18} color="var(--accent)" />
+            <h3 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, color: "var(--text)", letterSpacing: "0.06em" }}>
+              RAPPORT DE SAISON
+            </h3>
+          </div>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: 18 }}>✕</button>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {/* Nombre de matchs */}
+          <div>
+            <label style={{ fontSize: 11, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
+              Matchs de la saison
+            </label>
+            <input type="number" min={1} max={50} value={matchCount} onChange={e => setMatchCount(Number(e.target.value))}
+              style={{ width: "100%", padding: "8px 12px", borderRadius: 6, background: "var(--bg)", border: "1px solid var(--border)", color: "var(--text)" }} />
+          </div>
+
+          {/* Résultat */}
+          <div>
+            <label style={{ fontSize: 11, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
+              Issue de la saison
+            </label>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+              {(Object.entries(OUTCOMES) as [keyof typeof OUTCOMES, typeof OUTCOMES[keyof typeof OUTCOMES]][]).map(([k, v]) => (
+                <button key={k} onClick={() => setOutcome(k)}
+                  style={{ padding: "8px", borderRadius: 6, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                    background: outcome === k ? "var(--hover)" : "var(--bg)", border: `1px solid ${outcome === k ? v.color : "var(--border)"}`,
+                    color: outcome === k ? "var(--text)" : "var(--muted)", cursor: "pointer", transition: "all 0.15s" }}>
+                  {v.emoji} {v.label}
+                </button>
+              ))}
+            </div>
+            {outcome === "custom" && (
+              <input type="text" placeholder="Ex: Vainqueur de la coupe !" value={customOutcome} onChange={e => setCustomOutcome(e.target.value)}
+                style={{ width: "100%", padding: "8px 12px", borderRadius: 6, background: "var(--bg)", border: "1px solid var(--accent)", color: "var(--text)", marginTop: 8 }} />
+            )}
+          </div>
+
+          {/* Preview */}
+          {stats && (
+            <div style={{ padding: 12, background: "var(--bg)", borderRadius: 8, border: "1px solid var(--border)", marginTop: 4 }}>
+              <div style={{ fontSize: 13, color: "var(--text)", marginBottom: 4 }}>
+                <strong>{stats.pts} points</strong> ({stats.w}V - {stats.d}N - {stats.l}D)
+              </div>
+              <div style={{ fontSize: 11, color: "var(--muted)" }}>
+                Buts: {stats.goals} / {stats.against} ({stats.goals - stats.against > 0 ? "+" : ""}{stats.goals - stats.against})
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: "flex", gap: 8, marginTop: 20, justifyContent: "flex-end" }}>
+          <button onClick={onClose} style={{ padding: "8px 16px", borderRadius: 6, background: "var(--bg)", border: "1px solid var(--border)", color: "var(--muted)", cursor: "pointer", fontSize: 12 }}>Annuler</button>
+          <button onClick={copy} style={{ padding: "8px 14px", borderRadius: 6, background: copied ? "rgba(34,197,94,0.15)" : "var(--hover)", border: `1px solid ${copied ? "rgba(34,197,94,0.4)" : "var(--border)"}`, color: copied ? "var(--green)" : "var(--text)", cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
+            {copied ? <Check size={12} /> : <Copy size={12} />} {copied ? "Copié" : "Copier"}
+          </button>
+          {discordWebhook && (
+            <button onClick={send} disabled={sending || !stats || (outcome === "custom" && !customOutcome)}
+              style={{ padding: "8px 16px", borderRadius: 6, background: "rgba(88,101,242,0.15)", border: "1px solid rgba(88,101,242,0.4)", color: "#8b9cf4", cursor: (sending || !stats || (outcome === "custom" && !customOutcome)) ? "default" : "pointer", opacity: (sending || !stats || (outcome === "custom" && !customOutcome)) ? 0.6 : 1, fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
+              <Send size={12} /> {sending ? "Envoi..." : "Envoyer Discord"}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

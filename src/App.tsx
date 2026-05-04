@@ -9,7 +9,7 @@ import { DevPanel } from "./components/DevPanel/DevPanel";
 import { SearchModal } from "./components/Modals/SearchModal";
 import { GlobalSearchModal } from "./components/Modals/GlobalSearchModal";
 import { Onboarding } from "./components/Modals/Onboarding";
-import { ToastContainer } from "./components/UI/Toast";
+import { ToastContainer, RecordAlertContainer } from "./components/UI/Toast";
 import { UpdateModal } from "./components/Modals/UpdateModal";
 import { useAppStore } from "./store/useAppStore";
 import { checkProxy } from "./api/tauri";
@@ -190,6 +190,7 @@ function App() {
       <GlobalSearchModal />
       {settingsLoaded && !onboarded && <Onboarding />}
       <UpdateModal />
+      <RecordAlertContainer />
       <ToastContainer />
     </div>
   );

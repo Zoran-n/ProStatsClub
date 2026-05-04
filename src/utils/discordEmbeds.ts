@@ -212,3 +212,50 @@ export function buildSessionSummaryEmbed(session: Session): DiscordEmbed {
     timestamp: new Date().toISOString(),
   };
 }
+
+// ── Record personnel ────────────────────────────────────────────────────────
+export function buildRecordEmbed(r: import("../types").RecordEntry): DiscordEmbed {
+  let title = "🏆 NOUVEAU RECORD !";
+  let color = 0xf59e0b; // Gold
+  let desc = `**${r.playerName}** vient de battre son record !`;
+  let statLabel = "";
+  let statValue = String(r.new);
+
+  if (r.type === "goals") {
+    title = "⚽ RECORD DE BUTS !";
+    color = 0x22c55e; // Green
+    desc = `**${r.playerName}** a marqué **${r.new} buts** dans un seul match !`;
+    statLabel = "Ancien record";
+    statValue = String(r.previous);
+  } else if (r.type === "assists") {
+    title = "🅰️ RECORD DE PASSES !";
+    color = 0x3b82f6; // Blue
+    desc = `**${r.playerName}** a délivré **${r.new} passes décisives** !`;
+    statLabel = "Ancien record";
+    statValue = String(r.previous);
+  } else if (r.type === "rating") {
+    title = "⭐ MEILLEURE NOTE !";
+    color = 0x8b5cf6; // Purple
+    desc = `**${r.playerName}** a obtenu une note exceptionnelle de **${r.new.toFixed(1)}** !`;
+    statLabel = "Ancienne note max";
+    statValue = r.previous.toFixed(1);
+  } else if (r.type === "motm") {
+    title = "🎖️ HOMME DU MATCH !";
+    color = 0xf59e0b;
+    desc = `**${r.playerName}** a été élu Homme du Match !`;
+    statLabel = "Total MOTM";
+    statValue = String(r.previous + 1); // just a counter roughly
+  }
+
+  return {
+    title,
+    color,
+    description: desc,
+    fields: [
+      { name: "Nouveau Record", value: `**${r.type === "rating" ? r.new.toFixed(1) : r.new}**`, inline: true },
+      { name: statLabel, value: statValue, inline: true }
+    ],
+    footer: { text: "ProClubs Stats · Record Tracker" },
+    timestamp: new Date(r.date).toISOString()
+  };
+}

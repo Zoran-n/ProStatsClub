@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Club, Player, Match, Session, Tactic, EaProfile, SyncEntry, CompareEntry, SessionTemplate, SavedComparison } from "../types";
+import type { Club, Player, Match, Session, Tactic, EaProfile, SyncEntry, CompareEntry, SessionTemplate, SavedComparison, RecordEntry } from "../types";
 import type { ToastMessage } from "../components/UI/Toast";
 import { saveSettings as apiSave, loadSettings as apiLoad, setProxy as apiSetProxy } from "../api/tauri";
 import type { Lang } from "../i18n";
@@ -90,6 +90,8 @@ interface AppState {
   savedComparisons: SavedComparison[];
   palettePreset: string | null;
   autoPostSession: boolean;
+  personalRecords: RecordEntry[];
+  recordAlerts: RecordEntry[];
 
   addCompareEntry: (entry: CompareEntry) => void;
   deleteCompareEntry: (id: string) => void;
@@ -142,6 +144,8 @@ interface AppState {
   closeSearchModal: () => void;
   addToast: (message: string, type?: ToastMessage["type"]) => void;
   removeToast: (id: string) => void;
+  addRecordAlert: (record: RecordEntry) => void;
+  removeRecordAlert: (matchId: string, type: string) => void;
   setMatchCache: (key: string, matches: Match[]) => void;
   clearMatchCacheKey: (key: string) => void;
   clearAllMatchCache: () => void;
@@ -177,6 +181,7 @@ interface AppState {
   renameSavedComparison: (id: string, name: string) => void;
   setPalettePreset: (id: string | null) => void;
   setAutoPostSession: (v: boolean) => void;
+  updateRecords: (records: RecordEntry[]) => void;
   applyProxy: (url: string) => Promise<void>;
   loadSettings: () => Promise<void>;
   persistSettings: () => Promise<void>;
@@ -232,6 +237,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   savedComparisons: [],
   palettePreset: null,
   autoPostSession: false,
+  personalRecords: [],
+  recordAlerts: [],
 
   addCompareEntry: (entry) => set((s) => ({
     compareHistory: [entry, ...s.compareHistory.filter((e) => e.id !== entry.id)].slice(0, 20),
@@ -338,6 +345,18 @@ export const useAppStore = create<AppState>((set, get) => ({
     return { sessions: [merged, ...s.sessions.filter((x) => !ids.includes(x.id))] };
   }),
   setAutoPostSession: (autoPostSession) => set({ autoPostSession }),
+  updateRecords: (records) => set((s) => {
+    // Merge new records with existing ones
+    // Only keep the best record per player per type
+    const map = new Map<string, RecordEntry>();
+    for (const r of [...s.personalRecords, ...records]) {
+      const key = `${r.playerId}-${r.type}`;
+      if (!map.has(key) || r.new > map.get(key)!.new) {
+        map.set(key, r);
+      }
+    }
+    return { personalRecords: Array.from(map.values()) };
+  }),
 
   setPalettePreset: (id) => {
     const root = document.documentElement;
@@ -445,6 +464,12 @@ export const useAppStore = create<AppState>((set, get) => ({
     toasts: [...s.toasts, { id: `${Date.now()}-${Math.random()}`, message, type }],
   })),
   removeToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
+  addRecordAlert: (record) => set((s) => ({
+    recordAlerts: [...s.recordAlerts, record],
+  })),
+  removeRecordAlert: (matchId, type) => set((s) => ({
+    recordAlerts: s.recordAlerts.filter((r) => !(r.matchId === matchId && r.type === type)),
+  })),
   setMatchCache: (key, matches) => set((s) => ({
     matchCache: { ...s.matchCache, [key]: matches },
     cacheTimestamps: { ...s.cacheTimestamps, [key]: Date.now() },
@@ -646,6 +671,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         savedComparisons: ((s as unknown as Record<string, unknown>).savedComparisons as SavedComparison[]) ?? [],
         palettePreset,
         autoPostSession: ((s as unknown as Record<string, unknown>).autoPostSession as boolean) ?? false,
+        personalRecords: ((s as unknown as Record<string, unknown>).personalRecords as RecordEntry[]) ?? [],
         settingsLoaded: true,
       });
     } catch { /* first launch */ } finally {
@@ -658,7 +684,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       theme, darkMode, proxyUrl,
       showGrid, showAnimations, showLogs, showIdSearch, fontSize, fontFamily, customAccent, customBg, customSurface, customCard, language, onboarded, matchCache, cacheTimestamps, cacheOwners, discordWebhook, autoUpdate, matchAnnotations, visibleKpis, navLayout, sessionTemplates,
       streamingMode, customShortcuts, scheduledNotifications, interfaceProfiles,
-      favFolders, srAlerts, savedComparisons, palettePreset, autoPostSession } = get();
+      favFolders, srAlerts, savedComparisons, palettePreset, autoPostSession, personalRecords } = get();
     const payload = {
       history, favs, tactics, sessions, compareHistory,
       eaProfile: eaProfile ?? undefined,
@@ -692,6 +718,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       savedComparisons,
       palettePreset: palettePreset ?? undefined,
       autoPostSession,
+      personalRecords,
     };
     // Skip the I/O write if nothing changed
     const json = JSON.stringify(payload);
