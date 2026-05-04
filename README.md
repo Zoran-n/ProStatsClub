@@ -298,8 +298,6 @@ Application desktop pour suivre les statistiques de votre club EA FC Pro Clubs. 
 - **Export rapport complet club** : PDF multi-sections (stats équipe, top joueurs, forme, historique adversaires, objectifs) en un seul clic depuis l'onglet Graphiques
 
 ### 🤝 Social & Discord
-
-
 - **Partage de comparaison de clubs** : bouton Discord dans l'onglet Comparaison — embed multi-clubs avec radar, tableau de stats et résultat Battle
 - **Digest hebdomadaire planifié** : configurer un jour/heure pour un envoi automatique chaque semaine du bilan de la semaine sur Discord
 
