@@ -1,27 +1,29 @@
 name: Release
-
 on:
   push:
-    tags:
-      - 'v*'
+    tags: ['v*']
 
 jobs:
-  publish:
+  build:
+    runs-on: windows-latest
     permissions:
       contents: write
+<<<<<<< Updated upstream
     strategy:
       fail-fast: false
       matrix:
         platform: [macos-latest, ubuntu-latest, windows-latest]
 
     runs-on: ${{ matrix.platform }}
+=======
+>>>>>>> Stashed changes
     steps:
       - uses: actions/checkout@v4
-      
-      - name: setup node
-        uses: actions/setup-node@v4
+
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
+<<<<<<< Updated upstream
           cache: 'npm'
       
       - name: install dependencies (ubuntu only)
@@ -32,19 +34,23 @@ jobs:
       
       - name: install rust stable
         uses: dtolnay/rust-toolchain@stable
+=======
+          cache: npm
+      - run: npm ci
+>>>>>>> Stashed changes
 
-      - name: install dependencies
-        run: npm ci
-      
-      - name: build app
-        uses: tauri-apps/tauri-action@v0
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PASSWORD: ${{ secrets.TAURI_SIGNING_PASSWORD }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: "ProClubs Stats ${{ github.ref_name }}"
-          releaseBody: "Consultez le CHANGELOG.md pour plus de détails."
+          releaseName: ${{ github.ref_name }}
           releaseDraft: true
           prerelease: false
