@@ -58,6 +58,7 @@ impl StorageManager {
     }
 
     /// Returns the settings file size in bytes (0 if not found).
+    #[allow(dead_code)]
     pub fn settings_file_size(&self) -> u64 {
         self.settings_path.metadata().map(|m| m.len()).unwrap_or(0)
     }
