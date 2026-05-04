@@ -43,10 +43,27 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const unlisten = listen<string>("api_log", (event) => {
+    const unlistenLog = listen<string>("api_log", (event) => {
       addRawLog(event.payload);
     });
-    return () => { unlisten.then((fn) => fn()); };
+    const unlistenTray = listen("tray-toggle-session", () => {
+      const store = useAppStore.getState();
+      if (!store.currentClub) {
+        store.addToast("Sélectionnez un club d'abord", "error");
+        return;
+      }
+      if (store.activeSession) {
+        store.stopSession();
+        store.addToast("Session arrêtée via raccourci", "info");
+      } else {
+        store.startSession("Session rapide", []);
+        store.addToast("Session démarrée via raccourci", "success");
+      }
+    });
+    return () => { 
+      unlistenLog.then(fn => fn());
+      unlistenTray.then(fn => fn());
+    };
   }, [addRawLog]);
 
   // ── Global keyboard shortcuts (with custom remapping) ──────────────

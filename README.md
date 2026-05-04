@@ -160,6 +160,12 @@ Application desktop pour suivre les statistiques de votre club EA FC Pro Clubs. 
 - Embeds colorés dynamiquement : vert (victoire dominante), jaune (équilibré), rouge (défaites dominantes)
 - Section Discord masquée si aucun club sélectionné
 
+### Système
+- **Icône System Tray** : l'application tourne en arrière-plan à côté de l'horloge Windows.
+- **Background Mode** : fermer la fenêtre cache l'application sans l'arrêter (style Discord). Quitter définitivement se fait via le clic-droit sur l'icône tray.
+- **Menu contextuel Tray** : accès rapide pour afficher l'app, lancer/arrêter une session ou quitter.
+- **Démarrage avec Windows** : lancement automatique au boot (en mode réduit) pour un suivi constant sans action manuelle.
+
 ### Paramètres
 
 - **10 thèmes de couleur accent** : Cyan, Violet, Orange, Vert, Rouge, Discord, **Midnight** (fond noir bleuté), **Gold** (ambre), **Matrix** (fond vert terminal), **Rose** — Midnight et Matrix modifient aussi le fond et les surfaces
@@ -313,7 +319,8 @@ Application desktop pour suivre les statistiques de votre club EA FC Pro Clubs. 
 ### ⚙️ Technique
 
 - **Web Worker** : délocaliser les calculs lourds (agrégats recharts, tri de 2000 matchs, CSV export) hors du thread UI pour fluidifier l'interface
-- **Raccourci tray** : icône dans la barre système Windows avec menu rapide — refresh, ouvrir, dernier club, toggle session live
+- **Raccourci tray** : icône dans la barre système Windows avec menu rapide (Afficher, Lancer/Stopper session, Quitter) — l'application reste active en arrière-plan à la fermeture.
+- **Démarrage automatique** : option activée par défaut pour lancer l'application (en mode réduit) dès le démarrage de Windows.
 - **Tests unitaires** : couverture Jest/Vitest des fonctions de calcul de stats (score composite, agrégats, ranking, régression linéaire)
 - **Logs exportables** : système de logs niveaux (debug/info/warn/error) avec filtre par niveau, téléchargeable depuis Mon Profil
 - **Mise à jour delta du cache** : ne re-télécharger que les matchs postérieurs au dernier connu — réduire la bande passante à chaque sync

@@ -33,11 +33,14 @@
       "endpoints": [
         "https://github.com/Zoran-n/proclubs-tauri/releases/latest/download/latest.json"
       ]
-    }
+    },
+    "autostart": {}
   },
   "bundle": {
     "active": true,
     "targets": "all",
+    "publisher": "Zoran",
+    "shortDescription": "Outil de suivi et statistiques pour ProClubs EA FC",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

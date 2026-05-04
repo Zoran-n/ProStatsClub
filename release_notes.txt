@@ -1,0 +1,6 @@
+**Technique & Système (Nouveautés) :**
+- **System Tray (Icône système)** : L'application dispose désormais d'une icône dans la barre des tâches Windows (à côté de l'horloge).
+- **Mode Arrière-plan** : La fermeture de la fenêtre principale cache désormais l'application au lieu de la quitter (style Discord). Vous pouvez la quitter définitivement via le menu clic-droit sur l'icône tray.
+- **Menu Tray Interactif** : Permet d'afficher l'app, de lancer/stopper une session de jeu ou de quitter rapidement.
+- **Démarrage automatique** : L'application s'enregistre désormais pour démarrer automatiquement avec Windows (en mode réduit dans le tray).
+- **Correctifs techniques** : Mise à jour vers Tauri v2 et optimisation des permissions système.
