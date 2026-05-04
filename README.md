@@ -319,8 +319,6 @@ Application desktop pour suivre les statistiques de votre club EA FC Pro Clubs. 
 ### ⚙️ Technique
 
 - **Web Worker** : délocaliser les calculs lourds (agrégats recharts, tri de 2000 matchs, CSV export) hors du thread UI pour fluidifier l'interface
-- **Raccourci tray** : icône dans la barre système Windows avec menu rapide (Afficher, Lancer/Stopper session, Quitter) — l'application reste active en arrière-plan à la fermeture.
-- **Démarrage automatique** : option activée par défaut pour lancer l'application (en mode réduit) dès le démarrage de Windows.
 - **Tests unitaires** : couverture Jest/Vitest des fonctions de calcul de stats (score composite, agrégats, ranking, régression linéaire)
 - **Logs exportables** : système de logs niveaux (debug/info/warn/error) avec filtre par niveau, téléchargeable depuis Mon Profil
 - **Mise à jour delta du cache** : ne re-télécharger que les matchs postérieurs au dernier connu — réduire la bande passante à chaque sync
