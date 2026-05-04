@@ -130,6 +130,7 @@ export function SessionTab() {
     setActiveSessionAdvancedGoals,
     discordWebhook, addToast,
     sessionTemplates, saveSessionTemplate, deleteSessionTemplate, mergeSessions,
+    autoPostSession, setAutoPostSession,
   } = useAppStore();
 
   const [showArchived, setShowArchived] = useState(false);
@@ -479,6 +480,20 @@ export function SessionTab() {
               </div>
             </div>
             <div style={{ display: "flex", gap: 6 }}>
+              {discordWebhook && (
+                <button
+                  onClick={() => { setAutoPostSession(!autoPostSession); persistSettings(); }}
+                  title={autoPostSession ? "Post auto Discord activé — cliquer pour désactiver" : "Activer le post Discord automatique à la fin de session"}
+                  style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 8px",
+                    background: autoPostSession ? "rgba(88,101,242,0.2)" : "var(--card)",
+                    border: `1px solid ${autoPostSession ? "rgba(88,101,242,0.5)" : "var(--border)"}`,
+                    borderRadius: 6, color: autoPostSession ? "#8b9cf4" : "var(--muted)",
+                    fontSize: 10, cursor: "pointer", transition: "all 0.15s" }}
+                >
+                  <Send size={10} />
+                  <span style={{ fontSize: 9, letterSpacing: "0.04em" }}>AUTO</span>
+                </button>
+              )}
               {discordWebhook && activeSession.matches.length > 0 && (
                 <button onClick={shareLiveToDiscord}
                   disabled={sharingId === activeSession.id}

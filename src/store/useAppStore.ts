@@ -3,6 +3,8 @@ import type { Club, Player, Match, Session, Tactic, EaProfile, SyncEntry, Compar
 import type { ToastMessage } from "../components/UI/Toast";
 import { saveSettings as apiSave, loadSettings as apiLoad, setProxy as apiSetProxy } from "../api/tauri";
 import type { Lang } from "../i18n";
+import { sendDiscordWebhook } from "../api/discord";
+import { buildSessionSummaryEmbed } from "../utils/discordEmbeds";
 
 export type ActiveTab = "players" | "matches" | "charts" | "session" | "compare";
 export type SidebarTab = "search" | "favs" | "settings" | "profile" | "myprofile";
@@ -87,6 +89,7 @@ interface AppState {
   srAlerts: string[];  // clubIds with SR monitoring
   savedComparisons: SavedComparison[];
   palettePreset: string | null;
+  autoPostSession: boolean;
 
   addCompareEntry: (entry: CompareEntry) => void;
   deleteCompareEntry: (id: string) => void;
@@ -173,6 +176,7 @@ interface AppState {
   deleteSavedComparison: (id: string) => void;
   renameSavedComparison: (id: string, name: string) => void;
   setPalettePreset: (id: string | null) => void;
+  setAutoPostSession: (v: boolean) => void;
   applyProxy: (url: string) => Promise<void>;
   loadSettings: () => Promise<void>;
   persistSettings: () => Promise<void>;
@@ -227,6 +231,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   srAlerts: [],
   savedComparisons: [],
   palettePreset: null,
+  autoPostSession: false,
 
   addCompareEntry: (entry) => set((s) => ({
     compareHistory: [entry, ...s.compareHistory.filter((e) => e.id !== entry.id)].slice(0, 20),
@@ -276,10 +281,17 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (!s.activeSession) return {};
     return { activeSession: { ...s.activeSession, matches: [...s.activeSession.matches, ...newMatches] } };
   }),
-  stopSession: () => set((s) => {
-    if (!s.activeSession) return {};
-    return { sessions: [s.activeSession, ...s.sessions], activeSession: null };
-  }),
+  stopSession: () => {
+    const s = get();
+    if (!s.activeSession) return;
+    const session = s.activeSession;
+    set({ sessions: [session, ...s.sessions], activeSession: null });
+    // Auto post-match Discord
+    if (s.autoPostSession && s.discordWebhook && session.matches.length > 0) {
+      const embed = buildSessionSummaryEmbed(session);
+      sendDiscordWebhook(s.discordWebhook, [embed]).catch(() => {});
+    }
+  },
 
   setViewingSession: (viewingSession) => set({ viewingSession }),
   deleteSession: (id) => set((s) => ({ sessions: s.sessions.filter((x) => x.id !== id) })),
@@ -325,6 +337,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     };
     return { sessions: [merged, ...s.sessions.filter((x) => !ids.includes(x.id))] };
   }),
+  setAutoPostSession: (autoPostSession) => set({ autoPostSession }),
+
   setPalettePreset: (id) => {
     const root = document.documentElement;
     if (id) {
@@ -631,6 +645,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         srAlerts: ((s as unknown as Record<string, unknown>).srAlerts as string[]) ?? [],
         savedComparisons: ((s as unknown as Record<string, unknown>).savedComparisons as SavedComparison[]) ?? [],
         palettePreset,
+        autoPostSession: ((s as unknown as Record<string, unknown>).autoPostSession as boolean) ?? false,
         settingsLoaded: true,
       });
     } catch { /* first launch */ } finally {
@@ -643,7 +658,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       theme, darkMode, proxyUrl,
       showGrid, showAnimations, showLogs, showIdSearch, fontSize, fontFamily, customAccent, customBg, customSurface, customCard, language, onboarded, matchCache, cacheTimestamps, cacheOwners, discordWebhook, autoUpdate, matchAnnotations, visibleKpis, navLayout, sessionTemplates,
       streamingMode, customShortcuts, scheduledNotifications, interfaceProfiles,
-      favFolders, srAlerts, savedComparisons, palettePreset } = get();
+      favFolders, srAlerts, savedComparisons, palettePreset, autoPostSession } = get();
     const payload = {
       history, favs, tactics, sessions, compareHistory,
       eaProfile: eaProfile ?? undefined,
@@ -676,6 +691,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       srAlerts,
       savedComparisons,
       palettePreset: palettePreset ?? undefined,
+      autoPostSession,
     };
     // Skip the I/O write if nothing changed
     const json = JSON.stringify(payload);

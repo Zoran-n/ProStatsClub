@@ -116,6 +116,8 @@ Application desktop pour suivre les statistiques de votre club EA FC Pro Clubs. 
 - **Radar de session** : graphique radar des stats collectives (buts, PD, passes, tacles, MOTM, % victoires) normalisées — sélecteur de session
 - **Alertes en session** : notifications visuelles quand un objectif avancé est sur le point d'être manqué (défaites proches de la limite, note sous l'objectif)
 - **Fusion de sessions** : regroupez plusieurs sessions en une session "tournoi" avec bilan global — sélection par checkbox, nom personnalisable
+- **Post-match auto Discord** : toggle ON/OFF dans le header de session active — envoie automatiquement le récap complet (bilan, top buteur, top passeur, MOTM, forme, tags) sur le webhook Discord configuré dès que la session est terminée, sans action manuelle
+- **Classement Discord hebdo** : modal dédié (bouton 🏆 dans la toolbar Discord) — calcule le top 3 buteurs/passeurs/notes sur toutes les sessions de la semaine, navigation ← → entre semaines, prévisualisation avant envoi Discord ou copie texte
 
 ### Comparaison de clubs
 

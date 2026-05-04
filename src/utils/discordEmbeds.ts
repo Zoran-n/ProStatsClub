@@ -1,4 +1,4 @@
-import type { Club, Player, Match } from "../types";
+import type { Club, Player, Match, Session } from "../types";
 import type { DiscordEmbed } from "../api/discord";
 
 function oppInfo(match: Match, clubId: string) {
@@ -132,5 +132,83 @@ export function buildChartsEmbed(club: Club): DiscordEmbed {
       ...(club.skillRating ? [{ name: "⭐ Skill Rating", value: club.skillRating, inline: true as const }] : []),
     ],
     footer: { text: "ProClubs Stats" },
+  };
+}
+
+// ── Session summary (used for auto post-match) ──────────────────────────────
+export function buildSessionSummaryEmbed(session: Session): DiscordEmbed {
+  // V/N/D
+  let w = 0, l = 0, d = 0, goals = 0, assists = 0, motm = 0;
+  const playerAcc: Record<string, { name: string; goals: number; assists: number; motm: number }> = {};
+
+  for (const m of session.matches) {
+    const c = m.clubs[session.clubId] as Record<string, unknown> | undefined;
+    if (c?.["wins"] === "1" || c?.["wins"] === 1) w++;
+    else if (c?.["losses"] === "1" || c?.["losses"] === 1) l++;
+    else d++;
+
+    const clubPlayers = m.players[session.clubId] as Record<string, Record<string, unknown>> | undefined;
+    if (clubPlayers) {
+      for (const [pid, p] of Object.entries(clubPlayers)) {
+        const name = String(p["name"] ?? p["playername"] ?? p["playerName"] ?? pid);
+        if (!playerAcc[name]) playerAcc[name] = { name, goals: 0, assists: 0, motm: 0 };
+        playerAcc[name].goals   += Number(p["goals"]   ?? 0);
+        playerAcc[name].assists += Number(p["assists"] ?? 0);
+        goals   += Number(p["goals"]   ?? 0);
+        assists += Number(p["assists"] ?? 0);
+        if (p["mom"] === "1" || p["manofthematch"] === "1") { playerAcc[name].motm++; motm++; }
+      }
+    }
+  }
+
+  const all = Object.values(playerAcc);
+  const topScorer   = all.length > 0 ? all.reduce((a, b) => b.goals   > a.goals   ? b : a) : null;
+  const topAssister = all.length > 0 ? all.reduce((a, b) => b.assists > a.assists ? b : a) : null;
+  const topMotm     = all.length > 0 ? all.reduce((a, b) => b.motm    > a.motm    ? b : a) : null;
+
+  const total   = session.matches.length;
+  const winPct  = total > 0 ? Math.round((w / total) * 100) : 0;
+  const color   = winPct >= 60 ? 0x23a559 : winPct >= 40 ? 0xfaa81a : 0xda373c;
+
+  // Last 8 matches as dots
+  const recentDots = [...session.matches]
+    .sort((a, b) => Number(a.timestamp) - Number(b.timestamp))
+    .slice(-8)
+    .map((m) => {
+      const c = m.clubs[session.clubId] as Record<string, unknown> | undefined;
+      return c?.["wins"] === "1" || c?.["wins"] === 1 ? "🟢" : c?.["losses"] === "1" || c?.["losses"] === 1 ? "🔴" : "🟡";
+    })
+    .join(" ");
+
+  const fields: DiscordEmbed["fields"] = [
+    { name: "📊 Bilan", value: `🟢 **${w}V** · 🟡 **${d}N** · 🔴 **${l}D** · **${winPct}%** victoires`, inline: false },
+    { name: "⚽ Buts", value: String(goals), inline: true },
+    { name: "🅰️ Passes D.", value: String(assists), inline: true },
+    { name: "★ MOTM", value: String(motm), inline: true },
+  ];
+
+  if (recentDots) fields.push({ name: "📈 Forme", value: recentDots, inline: false });
+  if (topScorer && topScorer.goals > 0)
+    fields.push({ name: "🥇 Top buteur", value: `**${topScorer.name}** — ${topScorer.goals} buts`, inline: true });
+  if (topAssister && topAssister.assists > 0)
+    fields.push({ name: "🥇 Top passeur", value: `**${topAssister.name}** — ${topAssister.assists} PD`, inline: true });
+  if (topMotm && topMotm.motm > 0)
+    fields.push({ name: "🏅 MOTM", value: `**${topMotm.name}** — ${topMotm.motm}×`, inline: true });
+  if (session.notes?.trim())
+    fields.push({ name: "📝 Notes", value: session.notes.slice(0, 512), inline: false });
+  if (session.tags && session.tags.length > 0)
+    fields.push({ name: "🏷️ Tags", value: session.tags.join(" · "), inline: false });
+
+  const dateStr = new Date(session.date).toLocaleDateString("fr-FR", {
+    weekday: "long", day: "numeric", month: "long",
+  });
+
+  return {
+    title: `📤 SESSION TERMINÉE — ${session.clubName.toUpperCase()}`,
+    color,
+    description: `📅 ${dateStr} · **${total} match${total !== 1 ? "s" : ""}**`,
+    fields,
+    footer: { text: "ProClubs Stats · Post-match auto" },
+    timestamp: new Date().toISOString(),
   };
 }

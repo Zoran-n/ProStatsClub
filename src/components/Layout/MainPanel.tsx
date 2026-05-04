@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { BarChart2, Hash, Settings, Send, Pencil, X, Minimize2, Search, Megaphone, ListChecks, Sparkles, BookOpen, LayoutDashboard } from "lucide-react";
+import { BarChart2, Hash, Settings, Send, Pencil, X, Minimize2, Search, Megaphone, ListChecks, Sparkles, BookOpen, LayoutDashboard, Trophy } from "lucide-react";
 import { useAppStore } from "../../store/useAppStore";
 import { PlayersTab } from "../Tabs/PlayersTab";
 import { MatchesTab } from "../Tabs/MatchesTab";
@@ -13,7 +13,7 @@ import { Spinner } from "../UI/Spinner";
 import { getLogo } from "../../api/tauri";
 import { sendDiscordWebhook } from "../../api/discord";
 import { buildPlayersEmbed, buildMatchesEmbed, buildChartsEmbed } from "../../utils/discordEmbeds";
-import { MatchAnnounceModal, DiscordPollModal, HighlightModal, SeasonThreadModal } from "../Modals/DiscordActionsModals";
+import { MatchAnnounceModal, DiscordPollModal, HighlightModal, SeasonThreadModal, WeeklyRankingModal } from "../Modals/DiscordActionsModals";
 import { useT } from "../../i18n";
 import type { Club, Match, Player } from "../../types";
 
@@ -230,6 +230,7 @@ export function MainPanel() {
   const [showPoll, setShowPoll] = useState(false);
   const [showHighlight, setShowHighlight] = useState(false);
   const [showSeasonThread, setShowSeasonThread] = useState(false);
+  const [showWeeklyRanking, setShowWeeklyRanking] = useState(false);
   const [dashboardMode, setDashboardMode] = useState(false);
   const [dashWidgets, setDashWidgets] = useState<string[]>(["forme", "serie", "derniers_matchs", "top_joueur", "kpis_rapides", "heatmap"]);
 
@@ -474,6 +475,12 @@ export function MainPanel() {
                     background: "rgba(88,101,242,0.08)", border: "1px solid rgba(88,101,242,0.2)",
                     borderRadius: 5, color: "#8b9cf4", cursor: "pointer", fontSize: 11 }}>
                   <BookOpen size={12} />
+                </button>
+                <button onClick={() => setShowWeeklyRanking(true)} title="Classement de la semaine"
+                  style={{ marginLeft: 4, display: "flex", alignItems: "center", padding: "4px 7px",
+                    background: "rgba(88,101,242,0.08)", border: "1px solid rgba(88,101,242,0.2)",
+                    borderRadius: 5, color: "#8b9cf4", cursor: "pointer", fontSize: 11 }}>
+                  <Trophy size={12} />
                 </button>
               </>
             )}
@@ -762,6 +769,7 @@ export function MainPanel() {
     {showPoll         && <DiscordPollModal    onClose={() => setShowPoll(false)} />}
     {showHighlight    && <HighlightModal      onClose={() => setShowHighlight(false)} />}
     {showSeasonThread && <SeasonThreadModal   onClose={() => setShowSeasonThread(false)} />}
+    {showWeeklyRanking && <WeeklyRankingModal onClose={() => setShowWeeklyRanking(false)} />}
     </>
   );
 }

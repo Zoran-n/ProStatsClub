@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { X, Send, Swords, Calendar, Users, BookOpen, Copy, Check } from "lucide-react";
+import { useState, useMemo } from "react";
+import { X, Send, Swords, Calendar, Users, BookOpen, Copy, Check, Trophy, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAppStore } from "../../store/useAppStore";
 import { sendDiscordWebhook } from "../../api/discord";
+import type { Session } from "../../types";
 
 // ─── Annonce de match ──────────────────────────────────────────────────────────
 export function MatchAnnounceModal({ onClose }: { onClose: () => void }) {
@@ -431,6 +432,228 @@ export function SeasonThreadModal({ onClose }: { onClose: () => void }) {
               opacity: !seasonLabel.trim() || sending ? 0.6 : 1,
               fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
               <Send size={12} /> {sending ? "Envoi..." : "Envoyer sur Discord"}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Classement Discord hebdo ─────────────────────────────────────────────────
+function getWeekBounds(weekOffset: number): { start: Date; end: Date; label: string } {
+  const now = new Date();
+  const day = now.getDay(); // 0=sun
+  const diffToMonday = (day === 0 ? -6 : 1 - day);
+  const monday = new Date(now);
+  monday.setDate(now.getDate() + diffToMonday + weekOffset * 7);
+  monday.setHours(0, 0, 0, 0);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23, 59, 59, 999);
+  const fmt = (d: Date) => d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" });
+  return { start: monday, end: sunday, label: `${fmt(monday)} – ${fmt(sunday)}` };
+}
+
+function calcWeeklyRanking(sessions: Session[], start: Date, end: Date) {
+  const inRange = sessions.filter(s => {
+    const d = new Date(s.date);
+    return d >= start && d <= end;
+  });
+
+  const playerAcc: Record<string, { name: string; goals: number; assists: number; ratingSum: number; games: number }> = {};
+  let w = 0, l = 0, d = 0;
+
+  for (const session of inRange) {
+    for (const m of session.matches) {
+      const c = m.clubs[session.clubId] as Record<string, unknown> | undefined;
+      if (c?.["wins"] === "1" || c?.["wins"] === 1) w++;
+      else if (c?.["losses"] === "1" || c?.["losses"] === 1) l++;
+      else d++;
+
+      const clubPlayers = m.players[session.clubId] as Record<string, Record<string, unknown>> | undefined;
+      if (!clubPlayers) continue;
+      for (const [pid, p] of Object.entries(clubPlayers)) {
+        const name = String(p["name"] ?? p["playername"] ?? p["playerName"] ?? pid);
+        if (!playerAcc[name]) playerAcc[name] = { name, goals: 0, assists: 0, ratingSum: 0, games: 0 };
+        playerAcc[name].goals   += Number(p["goals"]   ?? 0);
+        playerAcc[name].assists += Number(p["assists"] ?? 0);
+        const r = Number(p["rating"] ?? 0);
+        if (r > 0) { playerAcc[name].ratingSum += r; playerAcc[name].games++; }
+      }
+    }
+  }
+
+  const all = Object.values(playerAcc);
+  const topScorers   = [...all].sort((a, b) => b.goals   - a.goals).slice(0, 3).filter(p => p.goals > 0);
+  const topAssisters = [...all].sort((a, b) => b.assists - a.assists).slice(0, 3).filter(p => p.assists > 0);
+  const topRatings   = [...all]
+    .filter(p => p.games > 0)
+    .sort((a, b) => (b.ratingSum / b.games) - (a.ratingSum / a.games))
+    .slice(0, 3);
+
+  return { topScorers, topAssisters, topRatings, w, l, d, sessions: inRange.length, matches: w + l + d };
+}
+
+export function WeeklyRankingModal({ onClose }: { onClose: () => void }) {
+  const { discordWebhook, sessions, addToast } = useAppStore();
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [sending, setSending]   = useState(false);
+  const [copied,  setCopied]    = useState(false);
+
+  const { start, end, label } = useMemo(() => getWeekBounds(weekOffset), [weekOffset]);
+  const stats = useMemo(() => calcWeeklyRanking(sessions, start, end), [sessions, start, end]);
+
+  const MEDAL = ["🥇", "🥈", "🥉"];
+
+  const buildEmbed = () => ({
+    title: `📅 CLASSEMENT SEMAINE — ${label}`,
+    color: 0x5865f2,
+    description: stats.sessions === 0
+      ? "Aucune session cette semaine."
+      : `**${stats.sessions}** session${stats.sessions > 1 ? "s" : ""} · **${stats.matches}** matchs · 🟢 ${stats.w}V · 🟡 ${stats.d}N · 🔴 ${stats.l}D`,
+    fields: [
+      stats.topScorers.length > 0 ? {
+        name: "⚽ Top Buteurs",
+        value: stats.topScorers.map((p, i) => `${MEDAL[i]} **${p.name}** — ${p.goals} but${p.goals > 1 ? "s" : ""}`).join("\n"),
+        inline: false,
+      } : null,
+      stats.topAssisters.length > 0 ? {
+        name: "🅰️ Top Passeurs",
+        value: stats.topAssisters.map((p, i) => `${MEDAL[i]} **${p.name}** — ${p.assists} PD`).join("\n"),
+        inline: false,
+      } : null,
+      stats.topRatings.length > 0 ? {
+        name: "⭐ Meilleures Notes",
+        value: stats.topRatings.map((p, i) => `${MEDAL[i]} **${p.name}** — ${(p.ratingSum / p.games).toFixed(2)} moy.`).join("\n"),
+        inline: false,
+      } : null,
+    ].filter(Boolean) as { name: string; value: string; inline: boolean }[],
+    footer: { text: "ProClubs Stats · Classement hebdo" },
+    timestamp: new Date().toISOString(),
+  });
+
+  const send = async () => {
+    if (!discordWebhook) { addToast("Aucun webhook Discord configuré", "error"); return; }
+    if (stats.sessions === 0) { addToast("Aucune session cette semaine", "error"); return; }
+    setSending(true);
+    try {
+      await sendDiscordWebhook(discordWebhook, [buildEmbed()]);
+      addToast("Classement hebdo envoyé sur Discord !", "success");
+      onClose();
+    } catch (e) { addToast(`Erreur Discord: ${String(e)}`, "error"); }
+    finally { setSending(false); }
+  };
+
+  const copy = async () => {
+    const e = buildEmbed();
+    const lines = [
+      `**${e.title}**`,
+      e.description,
+      ...(e.fields ?? []).map(f => `**${f.name}**\n${f.value}`),
+    ].join("\n\n");
+    await navigator.clipboard.writeText(lines).catch(() => {});
+    setCopied(true);
+    addToast("Copié dans le presse-papier !", "success");
+    setTimeout(() => setCopied(false), 2500);
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 50,
+      display: "flex", alignItems: "center", justifyContent: "center" }} onClick={onClose}>
+      <div style={{ background: "var(--card)", borderRadius: 12, padding: 24, width: 460,
+        border: "1px solid var(--border)", animation: "fadeSlideIn 0.15s ease-out" }}
+        onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <Trophy size={18} color="var(--accent)" />
+            <h3 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, color: "var(--text)", letterSpacing: "0.06em" }}>
+              CLASSEMENT HEBDO
+            </h3>
+          </div>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: 18 }}>✕</button>
+        </div>
+
+        {/* Sélecteur de semaine */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginBottom: 16,
+          padding: "8px 12px", background: "var(--bg)", borderRadius: 8, border: "1px solid var(--border)" }}>
+          <button onClick={() => setWeekOffset(v => v - 1)}
+            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", padding: 4 }}>
+            <ChevronLeft size={16} />
+          </button>
+          <span style={{ fontSize: 13, color: "var(--text)", fontWeight: 600, minWidth: 130, textAlign: "center" }}>
+            {weekOffset === 0 ? "Cette semaine" : weekOffset === -1 ? "Semaine passée" : `Semaine – ${Math.abs(weekOffset)}`}
+            <br />
+            <span style={{ fontSize: 10, color: "var(--muted)", fontWeight: 400 }}>{label}</span>
+          </span>
+          <button onClick={() => setWeekOffset(v => Math.min(0, v + 1))}
+            disabled={weekOffset >= 0}
+            style={{ background: "none", border: "none", cursor: weekOffset >= 0 ? "default" : "pointer",
+              color: weekOffset >= 0 ? "var(--border)" : "var(--muted)", padding: 4 }}>
+            <ChevronRight size={16} />
+          </button>
+        </div>
+
+        {/* Prévisualisation */}
+        {stats.sessions === 0 ? (
+          <div style={{ textAlign: "center", padding: "20px 0", color: "var(--muted)", fontSize: 13 }}>
+            Aucune session sur cette période.
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {/* Bilan */}
+            <div style={{ padding: "8px 12px", background: "var(--bg)", borderRadius: 8, border: "1px solid var(--border)",
+              fontSize: 12, color: "var(--text)" }}>
+              <span style={{ color: "var(--muted)", fontSize: 10, fontFamily: "'Bebas Neue', sans-serif",
+                letterSpacing: "0.08em", display: "block", marginBottom: 4 }}>BILAN ÉQUIPE</span>
+              {stats.sessions} session{stats.sessions > 1 ? "s" : ""} · {stats.matches} matchs ·{" "}
+              <span style={{ color: "var(--green)" }}>🟢 {stats.w}V</span>{" "}
+              <span style={{ color: "#eab308" }}>🟡 {stats.d}N</span>{" "}
+              <span style={{ color: "var(--red)" }}>🔴 {stats.l}D</span>
+            </div>
+
+            {/* Top joueurs */}
+            {[
+              { title: "⚽ Top Buteurs", players: stats.topScorers, stat: (p: typeof stats.topScorers[0]) => `${p.goals} but${p.goals > 1 ? "s" : ""}` },
+              { title: "🅰️ Top Passeurs", players: stats.topAssisters, stat: (p: typeof stats.topAssisters[0]) => `${p.assists} PD` },
+              { title: "⭐ Meilleures Notes", players: stats.topRatings, stat: (p: typeof stats.topRatings[0]) => `${(p.ratingSum / p.games).toFixed(2)} moy.` },
+            ].filter(s => s.players.length > 0).map(({ title, players, stat }) => (
+              <div key={title} style={{ padding: "8px 12px", background: "var(--bg)", borderRadius: 8, border: "1px solid var(--border)" }}>
+                <span style={{ color: "var(--muted)", fontSize: 10, fontFamily: "'Bebas Neue', sans-serif",
+                  letterSpacing: "0.08em", display: "block", marginBottom: 6 }}>{title}</span>
+                {players.map((p, i) => (
+                  <div key={p.name} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+                    <span style={{ fontSize: 14, width: 20 }}>{MEDAL[i]}</span>
+                    <span style={{ flex: 1, fontSize: 12, color: "var(--text)", fontWeight: i === 0 ? 700 : 400 }}>{p.name}</span>
+                    <span style={{ fontSize: 11, color: "var(--accent)" }}>{stat(p as never)}</span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Actions */}
+        <div style={{ display: "flex", gap: 8, marginTop: 16, justifyContent: "flex-end" }}>
+          <button onClick={onClose} style={{ padding: "8px 16px", borderRadius: 6, background: "var(--bg)",
+            border: "1px solid var(--border)", color: "var(--muted)", cursor: "pointer", fontSize: 12 }}>Annuler</button>
+          <button onClick={copy} style={{ padding: "8px 14px", borderRadius: 6,
+            background: copied ? "rgba(34,197,94,0.15)" : "var(--hover)",
+            border: `1px solid ${copied ? "rgba(34,197,94,0.4)" : "var(--border)"}`,
+            color: copied ? "var(--green)" : "var(--text)", cursor: "pointer",
+            fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
+            {copied ? <Check size={12} /> : <Copy size={12} />} {copied ? "Copié !" : "Copier"}
+          </button>
+          {discordWebhook && (
+            <button onClick={send} disabled={sending || stats.sessions === 0}
+              style={{ padding: "8px 16px", borderRadius: 6,
+                background: "rgba(88,101,242,0.15)", border: "1px solid rgba(88,101,242,0.4)",
+                color: "#8b9cf4", cursor: sending || stats.sessions === 0 ? "default" : "pointer",
+                opacity: sending || stats.sessions === 0 ? 0.6 : 1,
+                fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
+              <Send size={12} /> {sending ? "Envoi..." : "Envoyer Discord"}
             </button>
           )}
         </div>
