@@ -1,7 +1,7 @@
-import { useMemo } from "react";
-import { Trophy, Target, Star, TrendingUp, Shield, Swords } from "lucide-react";
+import { Trophy, Target, Star, TrendingUp, Shield, Swords, FileText, Download } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { useAppStore } from "../../store/useAppStore";
+import { logger } from "../../utils/logger";
 import type { Match } from "../../types";
 
 function getDivision(sr: number): { div: string; color: string } {
@@ -438,6 +438,25 @@ export function MyProfilePage() {
             <div style={{ fontSize: 12, marginTop: 6 }}>Charge ton club via le bouton "Charger mon club" dans les paramètres du profil pour remplir le cache de matchs.</div>
           </div>
         )}
+        {/* ── Logging Section ── */}
+        <div style={{ ...sectionStyle, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <div style={{ fontSize: 10, color: "var(--muted)", letterSpacing: "0.1em",
+              fontFamily: "'Bebas Neue', sans-serif", marginBottom: 4 }}>
+              LOGS SYSTÈME
+            </div>
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>
+              Télécharge les logs de diagnostic pour le support technique.
+            </div>
+          </div>
+          <button onClick={() => logger.downloadLogs()}
+            style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px",
+              background: "rgba(0,212,255,0.1)", border: "1px solid var(--accent)",
+              borderRadius: 6, color: "var(--accent)", fontSize: 12, cursor: "pointer",
+              fontFamily: "'Bebas Neue', sans-serif" }}>
+            <FileText size={14} /> EXPORTER LES LOGS
+          </button>
+        </div>
       </div>
     </div>
   );
