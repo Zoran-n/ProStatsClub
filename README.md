@@ -295,12 +295,12 @@ Application desktop pour suivre les statistiques de votre club EA FC Pro Clubs. 
 
 ### 🤝 Social & Discord
 
-- **Post-match auto** : envoyer automatiquement un résumé de match en fin de session active — score, buteurs, MOTM, note d'équipe — sur le webhook configuré
-- **Fil de saison Discord** : créer un thread Discord dédié à la saison en cours avec un post récapitulatif auto toutes les X victoires
-- **Sondage de compo** : envoyer un embed Discord avec 3 formations candidates et récupérer les réactions pour voter (🅰️🅱️🆚)
-- **Annonce de convocation** : poster la liste des 11 joueurs pressentis pour le prochain match avec heure et adversaire
-- **Classement Discord hebdo** : bouton d'envoi automatique du podium buts/PD/note de la semaine en embed formaté
-- **Clip de stat remarquable** : générer une image stylisée (fond dégradé, stat géante) pour une perf exceptionnelle (hat-trick, 10/10, record) à envoyer sur Discord
+- **Post-match auto** : envoyer automatiquement un résumé de match en fin de session active — score, buteurs, MOTM, note d'équipe — sans action manuelle
+- **Classement Discord hebdo** : bouton d'envoi automatique du podium buts/PD/note de la semaine en embed formaté (top 3 joueurs + bilan V/N/D)
+- **Rapport de saison Discord** : bouton dédié pour envoyer un embed complet de fin de saison — tous les stats, meilleurs joueurs, records — avec mise en page narrative
+- **Notification Discord de record** : détecter automatiquement un record personnel ou club (meilleure note, plus de buts en un match, série) et proposer de partager
+- **Partage de comparaison de clubs** : bouton Discord dans l'onglet Comparaison — embed multi-clubs avec radar, tableau de stats et résultat Battle
+- **Digest hebdomadaire planifié** : configurer un jour/heure pour un envoi automatique chaque semaine du bilan de la semaine sur Discord
 
 ### 🎨 UX & Interface
 
