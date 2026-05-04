@@ -9,7 +9,7 @@ import { useT } from "../../i18n";
 import { sendDiscordWebhook, sendDiscordFile } from "../../api/discord";
 import { generatePlayerPdf, getPlayerPdfFilename } from "../../utils/pdfExport";
 import { suggestPosition, detectPerformanceAnomaly } from "../../utils/aiEngine";
-import { BrainCircuit, AlertCircle } from "lucide-react";
+import { BrainCircuit } from "lucide-react";
 import { PdfSaveModal } from "./PdfSaveModal";
 import type { Player, Match } from "../../types";
 
@@ -596,8 +596,6 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
             <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--muted)",
               cursor: "pointer", fontSize: 18, lineHeight: 1, padding: 4 }}>✕</button>
           </div>
-        </div>
-
         </div>
         
         {/* IA Insights Section */}
