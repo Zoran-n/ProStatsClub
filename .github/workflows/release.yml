@@ -31,7 +31,7 @@ jobs:
         working-directory: src-tauri
         continue-on-error: true
 
-  rust:
+  rust-checks:
     name: Qualité Rust
     needs: security-rust
     runs-on: windows-latest
@@ -50,8 +50,8 @@ jobs:
       - run: cargo test
         working-directory: src-tauri
 
-  type-check:
-    name: TypeScript
+  node-checks:
+    name: Qualité Node (TypeScript, Tests, Build)
     needs: security-node
     runs-on: windows-latest
     steps:
@@ -62,60 +62,13 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run type-check
-
-  test:
-    name: Tests
-    needs: security-node
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
       - run: npm run test
+      # On fait un dry-run du build pour s'assurer que React compile bien
+      - run: npm run build 
 
-  build-react:
-    name: Build React
-    needs: security-node
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
-      - run: npm run build
-
-  # Démarre dès que rust + type-check + test sont verts, en parallèle de build-react
-  build:
-    name: Build Windows
-    needs: [rust, type-check, test]
-    if: github.event_name == 'push'
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: swatinem/rust-cache@v2
-        with:
-          workspaces: ./src-tauri -> target
-          cache-all-crates: "true"
-      - run: npm ci
-      - run: npm run tauri -- build --no-bundle
-        env:
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-
-  release:
-    name: Release Windows
-    needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  build-and-release:
+    name: Build & Release Windows
+    needs: [rust-checks, node-checks]
     runs-on: windows-latest
     permissions:
       contents: write
@@ -134,12 +87,23 @@ jobs:
           cache-all-crates: "true"
 
       - run: npm ci
-      - run: npm run tauri -- build
+
+      # SI ON EST SUR UNE PR : Compilation rapide sans installeur (--no-bundle)
+      - name: Build (Pull Request uniquement)
+        if: github.event_name == 'pull_request'
+        run: npm run tauri -- build --no-bundle
+
+      # SI ON EST SUR MAIN : Compilation complète AVEC installeur
+      - name: Build complet (Push sur Main)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: npm run tauri -- build
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
+      # ETAPE DE RELEASE : Ne s'exécute que sur main
       - name: Signer, créer release et générer latest.json
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         shell: pwsh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
