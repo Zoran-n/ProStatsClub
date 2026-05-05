@@ -158,6 +158,17 @@ pub struct EaProfile {
     pub club_name: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct PublicProfileConfig {
+    #[serde(default)]
+    pub selected_stats: Vec<String>,
+    #[serde(default)]
+    pub objective: Option<serde_json::Value>,
+    #[serde(default)]
+    pub theme: Option<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
@@ -225,6 +236,8 @@ pub struct Settings {
     pub cache_timestamps: HashMap<String, u64>,
     #[serde(default)]
     pub cache_owners: HashMap<String, String>,
+    #[serde(default)]
+    pub public_profile_config: Option<PublicProfileConfig>,
 }
 
 fn default_theme() -> String {
@@ -278,6 +291,7 @@ impl Default for Settings {
             nav_layout: None,
             cache_timestamps: HashMap::new(),
             cache_owners: HashMap::new(),
+            public_profile_config: None,
         }
     }
 }

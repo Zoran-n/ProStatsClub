@@ -4,6 +4,7 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContai
 import { useAppStore } from "../../store/useAppStore";
 import { logger } from "../../utils/logger";
 import type { Match } from "../../types";
+import { PublicProfileSection } from "../profile/PublicProfileSection";
 
 function getDivision(sr: number): { div: string; color: string } {
   if (sr >= 3000) return { div: "Elite",  color: "#f59e0b" };
@@ -439,6 +440,22 @@ export function MyProfilePage() {
             <div style={{ fontSize: 12, marginTop: 6 }}>Charge ton club via le bouton "Charger mon club" dans les paramètres du profil pour remplir le cache de matchs.</div>
           </div>
         )}
+
+        {/* ── Public Player Card ── */}
+        <div style={{ ...sectionStyle, padding: 0, overflow: "hidden", marginBottom: 16 }}>
+          <div style={{ padding: 20, borderBottom: "1px solid var(--border)", background: "rgba(0,0,0,0.2)" }}>
+            <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 24, margin: 0, color: "var(--text)" }}>
+              CARTE JOUEUR PUBLIQUE <span style={{ fontSize: 12, verticalAlign: "middle", background: "var(--accent)", color: "#fff", padding: "2px 6px", borderRadius: 4, marginLeft: 8 }}>NOUVEAU</span>
+            </h2>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>
+              Configurez, prévisualisez et exportez votre carte de joueur personnalisée pour Discord.
+            </div>
+          </div>
+          <div style={{ padding: "0 20px 20px 20px" }}>
+            <PublicProfileSection />
+          </div>
+        </div>
+
         {/* ── Logging Section ── */}
         <div style={{ ...sectionStyle, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
