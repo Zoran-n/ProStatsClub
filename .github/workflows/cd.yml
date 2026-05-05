@@ -1,76 +1,12 @@
-name: CI & Release
+name: CD
+
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
 
 jobs:
-  security-node:
-    name: Sécurité Node
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
-      - run: npm audit --audit-level=high
-        continue-on-error: true
-
-  security-rust:
-    name: Sécurité Rust
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: taiki-e/install-action@v2
-        with:
-          tool: cargo-audit
-      - run: cargo audit
-        working-directory: src-tauri
-        continue-on-error: true
-
-  rust-checks:
-    name: Qualité Rust
-    needs: security-rust
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy, rustfmt
-      - uses: swatinem/rust-cache@v2
-        with:
-          workspaces: src-tauri -> target
-          cache-all-crates: "true"
-          shared-key: "rust-checks-windows"
-      - run: cargo fmt --all -- --check
-        working-directory: src-tauri
-      - run: cargo clippy --all-targets -- -D warnings
-        working-directory: src-tauri
-      - run: cargo test
-        working-directory: src-tauri
-
-  node-checks:
-    name: Qualité Node (TypeScript, Tests, Build)
-    needs: security-node
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
-      - run: npm run type-check
-      - run: npm run test
-      # On fait un dry-run du build pour s'assurer que React compile bien
-      - run: npm run build 
-
-  build-and-release:
-    name: Build & Release Windows
-    needs: [rust-checks, node-checks]
+  build-and-deploy-windows:
+    name: Build & Deploy Windows
     runs-on: windows-latest
     permissions:
       contents: write
@@ -83,29 +19,22 @@ jobs:
           cache: npm
 
       - uses: dtolnay/rust-toolchain@stable
+
       - uses: swatinem/rust-cache@v2
         with:
           workspaces: ./src-tauri -> target
           cache-all-crates: "true"
+          shared-key: "build-windows"
 
       - run: npm ci
 
-      # SI ON EST SUR UNE PR : Compilation rapide sans installeur (--no-bundle)
-      - name: Build (Pull Request uniquement)
-        if: github.event_name == 'pull_request'
-        run: npm run tauri -- build --no-bundle
-
-      # SI ON EST SUR MAIN : Compilation complète AVEC installeur
-      - name: Build complet (Push sur Main)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      - name: Build complet avec installeur
         run: npm run tauri -- build
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
-      # ETAPE DE RELEASE : Ne s'exécute que sur main
       - name: Signer, créer release et générer latest.json
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         shell: pwsh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -33,3 +33,6 @@ anyhow = "1"
 base64 = "0.22"
 flate2 = "1"
 
+[dev-dependencies]
+tempfile = "3"
+

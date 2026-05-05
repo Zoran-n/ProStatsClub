@@ -63,3 +63,34 @@ impl StorageManager {
         self.settings_path.metadata().map(|m| m.len()).unwrap_or(0)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::tempdir;
+
+    #[test]
+    fn save_and_reload_settings_roundtrip() {
+        let dir = tempdir().expect("failed to create temp dir");
+        let manager = StorageManager::new(dir.path().to_path_buf());
+
+        let original = Settings {
+            proxy_url: Some("http://localhost:8080".to_string()),
+            ..Default::default()
+        };
+        manager.save_settings(&original).expect("save failed");
+
+        let loaded = manager.load_settings();
+        assert_eq!(loaded.proxy_url, original.proxy_url);
+    }
+
+    #[test]
+    fn load_settings_returns_default_when_file_missing() {
+        let dir = tempdir().expect("failed to create temp dir");
+        let manager = StorageManager::new(dir.path().to_path_buf());
+
+        let settings = manager.load_settings();
+        assert_eq!(settings.proxy_url, None);
+        assert_eq!(settings.theme, "cyan");
+    }
+}
