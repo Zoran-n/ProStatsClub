@@ -2,7 +2,6 @@ name: CI & Release
 on:
   push:
     branches: [main]
-    tags: ['v*']
   pull_request:
     branches: [main]
 
@@ -107,7 +106,6 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
       - uses: actions/upload-artifact@v4
-        if: startsWith(github.ref, 'refs/tags/v')
         with:
           name: windows-bundle
           path: |
@@ -117,7 +115,7 @@ jobs:
   release:
     name: Release Windows
     needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: windows-latest
     permissions:
       contents: write
@@ -143,8 +141,8 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
-          $tag = "${{ github.ref_name }}"
-          $version = $tag -replace '^v', ''
+          $version = (Get-Content "package.json" | ConvertFrom-Json).version
+          $tag = "v$version"
           $repo = "${{ github.repository }}"
 
           $exe = Get-ChildItem "bundle/nsis" | Where-Object { $_.Name -match '-setup\.exe$' } | Select-Object -First 1
@@ -156,6 +154,7 @@ jobs:
           $signature = [IO.File]::ReadAllText($sigPath).Trim()
 
           gh release create $tag --repo $repo --title "ProClubs Stats $tag" --notes "ProClubs Stats $tag"
+          if ($LASTEXITCODE -ne 0) { Write-Host "Release $tag existe deja, mise a jour des assets." }
 
           gh release upload $tag $exe.FullName --repo $repo --clobber
 
