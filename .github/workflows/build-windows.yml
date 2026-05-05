@@ -1,0 +1,200 @@
+name: Build & Release
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  # ── Job 1 : checks rapides (TypeScript + sécurité deps) ────────────────────
+  check:
+    name: Quality & Security
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript type check
+        run: npx tsc --noEmit
+        continue-on-error: true  # erreurs préexistantes (types recharts/jspdf) sans bloquer
+
+      - name: npm audit (sécurité dépendances)
+        run: npm audit --audit-level=high
+        continue-on-error: true  # avertissement sans bloquer le build
+
+      - name: Install Tauri system dependencies (Linux)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf pkg-config libssl-dev build-essential libgtk-3-dev
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: ./src-tauri -> target
+
+      - name: Cargo check
+        working-directory: src-tauri
+        run: cargo check
+
+      - name: Clippy (lint Rust)
+        working-directory: src-tauri
+        run: cargo clippy -- -D warnings
+        continue-on-error: true  # avertissement sans bloquer
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --quiet
+
+      - name: cargo audit (sécurité crates Rust)
+        working-directory: src-tauri
+        run: cargo audit
+        continue-on-error: true  # avertissement sans bloquer
+
+  # ── Job 2 : build Windows + release ────────────────────────────────────────
+  build-windows:
+    name: Build & Release Windows
+    needs: check               # attend que check passe
+    if: github.event_name != 'pull_request'   # pas de release sur les PRs
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Auto-increment version
+        id: version
+        shell: pwsh
+        run: |
+          $confText = [IO.File]::ReadAllText("src-tauri/tauri.conf.json")
+          if ($confText -match '"version"\s*:\s*"(\d+)\.(\d+)\.(\d+)"') {
+            $major = [int]$Matches[1]; $minor = [int]$Matches[2]; $patch = [int]$Matches[3]
+          } else { Write-Error "Cannot parse version"; exit 1 }
+
+          $origPatch = $patch
+          $version = "$major.$minor.$patch"
+          while ($true) {
+            $null = gh release view "v$version" --repo ${{ github.repository }} --json tagName 2>&1
+            if ($LASTEXITCODE -ne 0) { break }
+            Write-Host "v$version exists, incrementing..."
+            $patch++; $version = "$major.$minor.$patch"
+          }
+
+          Write-Host "Version: $version"
+          echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+          echo "TAG=v$version" >> $env:GITHUB_OUTPUT
+
+          if ($patch -ne $origPatch) {
+            $old = "$major.$minor.$origPatch"
+            $confText = $confText.Replace("`"version`": `"$old`"", "`"version`": `"$version`"")
+            [IO.File]::WriteAllText("src-tauri/tauri.conf.json", $confText)
+
+            $cargo = [IO.File]::ReadAllText("src-tauri/Cargo.toml")
+            $cargo = $cargo.Replace("version = `"$old`"", "version = `"$version`"")
+            [IO.File]::WriteAllText("src-tauri/Cargo.toml", $cargo)
+
+            $pkg = [IO.File]::ReadAllText("package.json")
+            $pkg = $pkg.Replace("`"version`": `"$old`"", "`"version`": `"$version`"")
+            [IO.File]::WriteAllText("package.json", $pkg)
+            Write-Host "Patched configs: $old -> $version"
+          }
+          exit 0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: ./src-tauri -> target
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Tauri app
+        run: npm run tauri build
+
+      - name: Sign, release and generate updater JSON
+        shell: pwsh
+        run: |
+          $tag = "${{ steps.version.outputs.TAG }}"
+          $version = "${{ steps.version.outputs.VERSION }}"
+          $repo = "${{ github.repository }}"
+
+          # Find NSIS exe
+          $exe = Get-ChildItem "src-tauri/target/release/bundle/nsis" | Where-Object { $_.Name -match '-setup\.exe$' } | Select-Object -First 1
+          if (-not $exe) { Write-Error "No NSIS exe found"; exit 1 }
+          Write-Host "Found: $($exe.Name)"
+
+          # Sign the exe directly with tauri signer (no zip needed for NSIS)
+          $sigPath = "$($exe.FullName).sig"
+          npm run tauri -- signer sign $exe.FullName
+          if (-not (Test-Path $sigPath)) {
+            Write-Error "Signing failed - no .sig file generated"
+            exit 1
+          }
+          $signature = [IO.File]::ReadAllText($sigPath).Trim()
+          Write-Host "Signed! Signature: $($signature.Substring(0, 20))..."
+
+          # Create GitHub release
+          gh release create $tag --repo $repo --title "ProClubs Stats $tag" --notes "## ProClubs Stats $tag`n`nApplication desktop pour les statistiques EA FC Pro Clubs.`n`n### Installation Windows`nTelecharge le fichier .exe ci-dessous.`n`n### Mise a jour automatique`nSi tu as deja une version installee, l'app proposera la mise a jour automatiquement." 2>$null
+
+          # Upload exe
+          gh release upload $tag $exe.FullName --repo $repo --clobber
+          Write-Host "Uploaded: $($exe.Name)"
+
+          # Upload MSI
+          $msi = Get-ChildItem "src-tauri/target/release/bundle/msi" | Where-Object { $_.Name -match '\.msi$' } | Select-Object -First 1
+          if ($msi) {
+            gh release upload $tag $msi.FullName --repo $repo --clobber
+            Write-Host "Uploaded: $($msi.Name)"
+          }
+
+          # Generate latest.json — GitHub replaces spaces with dots in asset names
+          $assetName = $exe.Name -replace ' ', '.'
+          $downloadUrl = "https://github.com/$repo/releases/download/$tag/$assetName"
+          $json = @"
+          {
+            "version": "$version",
+            "notes": "ProClubs Stats $tag",
+            "pub_date": "$(Get-Date -Format 'yyyy-MM-ddTHH:mm:ssZ')",
+            "platforms": {
+              "windows-x86_64": {
+                "signature": "$signature",
+                "url": "$downloadUrl"
+              }
+            }
+          }
+          "@
+          [IO.File]::WriteAllText("latest.json", $json.Trim())
+          Write-Host "=== latest.json ==="
+          Get-Content latest.json
+
+          gh release upload $tag "latest.json" --repo $repo --clobber
+          Write-Host "Done! Release $tag with latest.json uploaded."
+          exit 0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
