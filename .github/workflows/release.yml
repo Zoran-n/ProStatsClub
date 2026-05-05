@@ -6,7 +6,6 @@ on:
     branches: [main]
 
 jobs:
-  # [1] Audit Node et Rust en parallèle (était séquentiel → +2min économisées)
   security-node:
     name: Sécurité Node
     runs-on: windows-latest
@@ -51,7 +50,6 @@ jobs:
       - run: cargo test
         working-directory: src-tauri
 
-  # [4] Fast-fail : job minimal, aucune étape superflue, bloque build immédiatement
   type-check:
     name: TypeScript
     needs: security-node
@@ -90,17 +88,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      # Partage le dist/ compilé pour éviter que Tauri le recompile
-      - uses: actions/upload-artifact@v4
-        with:
-          name: frontend-dist
-          path: dist/
-          retention-days: 1
 
-  # [2] Cache Rust agressif + réutilise le dist/ de build-react
+  # Démarre dès que rust + type-check + test sont verts, en parallèle de build-react
   build:
     name: Build Windows
-    needs: [rust, type-check, test, build-react]
+    needs: [rust, type-check, test]
     if: github.event_name == 'push'
     runs-on: windows-latest
     steps:
@@ -115,17 +107,7 @@ jobs:
           workspaces: ./src-tauri -> target
           cache-all-crates: "true"
       - run: npm ci
-      # Réutilise le frontend déjà compilé par build-react
-      - uses: actions/download-artifact@v4
-        with:
-          name: frontend-dist
-          path: dist/
-      # Override beforeBuildCommand à vide pour ne pas recompiler Vite
-      - name: Config override (skip frontend build)
-        shell: pwsh
-        run: Set-Content -Path "tauri.override.conf.json" -Value '{"build":{"beforeBuildCommand":""}}' -Encoding UTF8
-      # --no-bundle : compile uniquement le binaire, pas les installeurs
-      - run: npm run tauri -- build --no-bundle --config tauri.override.conf.json
+      - run: npm run tauri -- build --no-bundle
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
@@ -152,20 +134,7 @@ jobs:
           cache-all-crates: "true"
 
       - run: npm ci
-
-      # Réutilise le frontend déjà compilé
-      - uses: actions/download-artifact@v4
-        with:
-          name: frontend-dist
-          path: dist/
-
-      # Override beforeBuildCommand à vide pour ne pas recompiler Vite
-      - name: Config override (skip frontend build)
-        shell: pwsh
-        run: Set-Content -Path "tauri.override.conf.json" -Value '{"build":{"beforeBuildCommand":""}}' -Encoding UTF8
-
-      # Build complet avec bundling (NSIS + MSI) mais sans recompiler le frontend
-      - run: npm run tauri -- build --config tauri.override.conf.json
+      - run: npm run tauri -- build
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
