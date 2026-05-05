@@ -18,11 +18,3 @@ jobs:
     uses: ./.github/workflows/ci-e2e.yml
     secrets: inherit
 
-  cd:
-    name: CD
-    needs: [ci-e2e]
-    if: github.ref == 'refs/heads/main'
-    uses: ./.github/workflows/cd.yml
-    secrets: inherit
-    permissions:
-      contents: write
