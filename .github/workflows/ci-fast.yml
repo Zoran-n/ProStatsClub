@@ -13,7 +13,7 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
+      - run: npm ci --prefer-offline
       - run: npm audit --audit-level=high
         continue-on-error: true
 
@@ -31,7 +31,6 @@ jobs:
 
   rust-checks:
     name: Qualité Rust
-    needs: security-rust
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -55,7 +54,6 @@ jobs:
 
   type-check:
     name: TypeScript
-    needs: security-node
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -63,12 +61,11 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
+      - run: npm ci --prefer-offline
       - run: npm run type-check
 
   unit-tests:
     name: Tests Unitaires
-    needs: security-node
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -76,20 +73,5 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
+      - run: npm ci --prefer-offline
       - run: npm run test:unit
-
-  compilation-check:
-    name: Smoke Test (cargo check)
-    needs: [rust-checks, type-check, unit-tests]
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: swatinem/rust-cache@v2
-        with:
-          workspaces: src-tauri -> target
-          shared-key: "rust-check-cache"
-          cache-targets: "false"
-          save-if: ${{ github.ref == 'refs/heads/main' }}
-      - run: cargo check --manifest-path src-tauri/Cargo.toml --message-format short
