@@ -6,8 +6,9 @@ on:
     branches: [main]
 
 jobs:
-  security:
-    name: Sécurité
+  # [1] Audit Node et Rust en parallèle (était séquentiel → +2min économisées)
+  security-node:
+    name: Sécurité Node
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,6 +19,12 @@ jobs:
       - run: npm ci
       - run: npm audit --audit-level=high
         continue-on-error: true
+
+  security-rust:
+    name: Sécurité Rust
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: swatinem/rust-cache@v2
         with:
@@ -29,7 +36,7 @@ jobs:
 
   rust:
     name: Qualité Rust
-    needs: security
+    needs: security-rust
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -46,9 +53,10 @@ jobs:
       - run: cargo test
         working-directory: src-tauri
 
+  # [4] Fast-fail : job minimal, aucune étape superflue, bloque build immédiatement
   type-check:
     name: TypeScript
-    needs: security
+    needs: security-node
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -61,7 +69,7 @@ jobs:
 
   test:
     name: Tests
-    needs: security
+    needs: security-node
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -74,7 +82,7 @@ jobs:
 
   build-react:
     name: Build React
-    needs: security
+    needs: security-node
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -85,9 +93,10 @@ jobs:
       - run: npm ci
       - run: npm run build
 
+  # [2] Cache Rust agressif + [3] Ne dépend plus de build-react
   build:
     name: Build Windows
-    needs: [rust, type-check, test, build-react]
+    needs: [rust, type-check, test]
     if: github.event_name == 'push'
     runs-on: windows-latest
     steps:
@@ -100,6 +109,7 @@ jobs:
       - uses: swatinem/rust-cache@v2
         with:
           workspaces: ./src-tauri -> target
+          cache-all-crates: "true"
       - run: npm ci
       - run: npm run tauri build
         env:
