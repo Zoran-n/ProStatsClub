@@ -73,10 +73,10 @@ jobs:
       - uses: swatinem/rust-cache@v2
         with:
           workspaces: ./src-tauri -> target
-          cache-all-crates: "true"
           shared-key: "build-windows"
 
       - run: npm ci
+      - run: npm run build
 
       - name: Build complet avec installeur
         run: npm run tauri -- build

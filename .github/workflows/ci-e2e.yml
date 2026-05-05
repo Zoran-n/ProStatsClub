@@ -23,8 +23,8 @@ jobs:
       - uses: swatinem/rust-cache@v2
         with:
           workspaces: ./src-tauri -> target
-          cache-all-crates: "true"
           shared-key: "build-windows"
+          save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - run: npm ci
 

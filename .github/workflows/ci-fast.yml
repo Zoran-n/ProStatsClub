@@ -44,8 +44,8 @@ jobs:
       - uses: swatinem/rust-cache@v2
         with:
           workspaces: src-tauri -> target
-          cache-all-crates: "true"
           shared-key: "rust-checks-windows"
+          save-if: ${{ github.ref == 'refs/heads/main' }}
       - run: cargo fmt --all -- --check
         working-directory: src-tauri
       - run: cargo clippy --all-targets -- -D warnings
@@ -96,7 +96,7 @@ jobs:
       - uses: swatinem/rust-cache@v2
         with:
           workspaces: ./src-tauri -> target
-          cache-all-crates: "true"
           shared-key: "build-windows"
       - run: npm ci
+      - run: npm run build
       - run: npm run tauri -- build --no-bundle
