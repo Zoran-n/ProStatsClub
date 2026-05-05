@@ -65,7 +65,7 @@ jobs:
   build:
     name: Build Windows
     needs: [rust, react-ts]
-    if: github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/')
+    if: github.event_name == 'push'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -73,19 +73,26 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
       - uses: dtolnay/rust-toolchain@stable
       - uses: swatinem/rust-cache@v2
         with:
-          workspaces: src-tauri -> target
+          workspaces: ./src-tauri -> target
+      - run: npm ci
       - run: npm run tauri build
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+      - uses: actions/upload-artifact@v4
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          name: windows-bundle
+          path: |
+            src-tauri/target/release/bundle/nsis/*-setup.exe
+            src-tauri/target/release/bundle/msi/*.msi
 
   release:
     name: Release Windows
-    needs: [rust, react-ts]
+    needs: build
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: windows-latest
     permissions:
@@ -98,13 +105,12 @@ jobs:
           node-version: 20
           cache: npm
 
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: swatinem/rust-cache@v2
-        with:
-          workspaces: ./src-tauri -> target
-
       - run: npm ci
-      - run: npm run tauri build
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-bundle
+          path: bundle
 
       - name: Signer, créer release et générer latest.json
         shell: pwsh
@@ -117,7 +123,7 @@ jobs:
           $version = $tag -replace '^v', ''
           $repo = "${{ github.repository }}"
 
-          $exe = Get-ChildItem "src-tauri/target/release/bundle/nsis" | Where-Object { $_.Name -match '-setup\.exe$' } | Select-Object -First 1
+          $exe = Get-ChildItem "bundle/nsis" | Where-Object { $_.Name -match '-setup\.exe$' } | Select-Object -First 1
           if (-not $exe) { Write-Error "No NSIS exe found"; exit 1 }
 
           npm run tauri -- signer sign $exe.FullName
@@ -129,7 +135,7 @@ jobs:
 
           gh release upload $tag $exe.FullName --repo $repo --clobber
 
-          $msi = Get-ChildItem "src-tauri/target/release/bundle/msi" | Where-Object { $_.Name -match '\.msi$' } | Select-Object -First 1
+          $msi = Get-ChildItem "bundle/msi" | Where-Object { $_.Name -match '\.msi$' } | Select-Object -First 1
           if ($msi) { gh release upload $tag $msi.FullName --repo $repo --clobber }
 
           $assetName = $exe.Name -replace ' ', '.'
