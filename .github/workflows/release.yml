@@ -25,11 +25,9 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@v2
         with:
-          workspaces: src-tauri -> target
-      - run: cargo install cargo-audit --quiet
+          tool: cargo-audit
       - run: cargo audit
         working-directory: src-tauri
         continue-on-error: true
