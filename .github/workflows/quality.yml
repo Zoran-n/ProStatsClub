@@ -6,22 +6,8 @@ on:
     branches: [main]
 
 jobs:
-  quality:
-    name: Qualité Frontend
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
-      - run: npm run type-check
-      - run: npm run test
-
   security:
     name: Sécurité
-    needs: quality
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -60,9 +46,24 @@ jobs:
       - run: cargo test
         working-directory: src-tauri
 
+  react-ts:
+    name: Qualité React / TypeScript / Tauri2
+    needs: security
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run type-check
+      - run: npm run test
+      - run: npm run build
+
   build:
     name: Build Windows
-    needs: rust
+    needs: [rust, react-ts]
     if: github.event_name == 'push'
     runs-on: windows-latest
     steps:
