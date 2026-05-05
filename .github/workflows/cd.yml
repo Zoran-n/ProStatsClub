@@ -1,62 +1,11 @@
 name: CD
 
 on:
-  push:
-    branches: [main]
+  workflow_call:
 
 jobs:
-  check-ci:
-    name: Vérification CI Fast + CI E2E
-    runs-on: ubuntu-latest
-    outputs:
-      all_green: ${{ steps.check.outputs.all_green }}
-    steps:
-      - name: Attendre et vérifier CI Fast et CI E2E
-        id: check
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SHA: ${{ github.sha }}
-          REPO: ${{ github.repository }}
-        shell: bash
-        run: |
-          WORKFLOWS=("CI Fast" "CI E2E")
-          TIMEOUT=1800  # 30 minutes max
-          INTERVAL=30
-          ELAPSED=0
-
-          while [ $ELAPSED -lt $TIMEOUT ]; do
-            ALL_GREEN=true
-            for WF in "${WORKFLOWS[@]}"; do
-              STATUS=$(gh api "repos/$REPO/commits/$SHA/check-runs" \
-                --jq "[.check_runs[] | select(.name == \"$WF\")] | sort_by(.started_at) | last | .conclusion" \
-                2>/dev/null || echo "pending")
-              echo "[$WF] conclusion: $STATUS"
-              if [ "$STATUS" != "success" ]; then
-                ALL_GREEN=false
-                if [ "$STATUS" == "failure" ] || [ "$STATUS" == "cancelled" ] || [ "$STATUS" == "timed_out" ]; then
-                  echo "CI échouée ($WF: $STATUS) — abandon du déploiement."
-                  echo "all_green=false" >> "$GITHUB_OUTPUT"
-                  exit 0
-                fi
-              fi
-            done
-            if [ "$ALL_GREEN" == "true" ]; then
-              echo "Toutes les CIs sont vertes."
-              echo "all_green=true" >> "$GITHUB_OUTPUT"
-              exit 0
-            fi
-            echo "En attente... ($ELAPSED s écoulées)"
-            sleep $INTERVAL
-            ELAPSED=$((ELAPSED + INTERVAL))
-          done
-
-          echo "Timeout atteint — les CIs n'ont pas terminé à temps."
-          echo "all_green=false" >> "$GITHUB_OUTPUT"
-
   build-and-deploy-windows:
     name: Build & Deploy Windows
-    needs: check-ci
-    if: ${{ needs.check-ci.outputs.all_green == 'true' }}
     runs-on: windows-latest
     permissions:
       contents: write

@@ -1,10 +1,7 @@
 name: CI E2E
 
 on:
-  push:
-    branches: ['**']
-  pull_request:
-    branches: ['**']
+  workflow_call:
 
 jobs:
   e2e-tests:
@@ -28,10 +25,16 @@ jobs:
 
       - run: npm ci
 
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~\AppData\Local\ms-playwright
+          key: playwright-chromium-${{ hashFiles('package-lock.json') }}
+
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
         continue-on-error: true
 
       - name: Run E2E tests
-        run: npx playwright test e2e/
+        run: npm run test:e2e
         continue-on-error: true

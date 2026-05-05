@@ -1,0 +1,28 @@
+name: Main Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci-fast:
+    name: CI Fast
+    uses: ./.github/workflows/ci-fast.yml
+    secrets: inherit
+
+  ci-e2e:
+    name: CI E2E
+    needs: [ci-fast]
+    uses: ./.github/workflows/ci-e2e.yml
+    secrets: inherit
+
+  cd:
+    name: CD
+    needs: [ci-e2e]
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/cd.yml
+    secrets: inherit
+    permissions:
+      contents: write
