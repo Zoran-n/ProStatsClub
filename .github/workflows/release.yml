@@ -47,8 +47,8 @@ jobs:
       - run: cargo test
         working-directory: src-tauri
 
-  react-ts:
-    name: Qualité React / TypeScript / Tauri2
+  type-check:
+    name: TypeScript
     needs: security
     runs-on: windows-latest
     steps:
@@ -59,12 +59,36 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run type-check
+
+  test:
+    name: Tests
+    needs: security
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
       - run: npm run test
+
+  build-react:
+    name: Build React
+    needs: security
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
       - run: npm run build
 
   build:
     name: Build Windows
-    needs: [rust, react-ts]
+    needs: [rust, type-check, test, build-react]
     if: github.event_name == 'push'
     runs-on: windows-latest
     steps:
