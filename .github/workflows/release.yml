@@ -32,4 +32,33 @@ jobs:
           releaseName: ${{ github.ref_name }}
           releaseDraft: false
           prerelease: false
-          updaterJsonPreferNsis: true
+
+      - name: Générer latest.json pour l'auto-updater
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $version = $tag -replace '^v', ''
+          $repo = "${{ github.repository }}"
+
+          $exe = Get-ChildItem "src-tauri/target/release/bundle/nsis" |
+            Where-Object { $_.Name -match '\.exe$' } | Select-Object -First 1
+          $signature = [IO.File]::ReadAllText("$($exe.FullName).sig").Trim()
+          $assetName = $exe.Name -replace ' ', '.'
+          $url = "https://github.com/$repo/releases/download/$tag/$assetName"
+
+          $json = "{
+            `"version`": `"$version`",
+            `"notes`": `"`",
+            `"pub_date`": `"$(Get-Date -Format 'yyyy-MM-ddTHH:mm:ssZ')`",
+            `"platforms`": {
+              `"windows-x86_64`": {
+                `"signature`": `"$signature`",
+                `"url`": `"$url`"
+              }
+            }
+          }"
+
+          [IO.File]::WriteAllText("latest.json", $json)
+          gh release upload $tag "latest.json" --repo $repo --clobber
