@@ -134,18 +134,16 @@ jobs:
           PUB_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           REPO="Zoran-n/ProStatsClub"
 
-          NSIS_EXE=$(find src-tauri/target/release/bundle -name "*.exe" | head -1)
+          # Chercher le .sig et déduire l'archive associée
           SIG_FILE=$(find src-tauri/target/release/bundle -name "*.sig" | head -1)
 
           if [ -z "$SIG_FILE" ]; then
             echo "### ❌ ERREUR : Signature non générée. Vérifiez que TAURI_SIGNING_PRIVATE_KEY est bien passé au build Tauri." >> $GITHUB_STEP_SUMMARY
-            echo "ERREUR : Signature non générée. Vérifiez que TAURI_SIGNING_PRIVATE_KEY est bien passé au build Tauri."
             exit 1
           fi
 
-          # L'archive à uploader est le fichier signé sans l'extension .sig
-          UPDATER_ZIP="${SIG_FILE%.sig}"
-          ZIP_NAME=$(basename "$UPDATER_ZIP")
+          UPDATER_ARCHIVE="${SIG_FILE%.sig}"
+          ZIP_NAME=$(basename "$UPDATER_ARCHIVE")
           SIG_CONTENT=$(cat "$SIG_FILE")
 
           cat > latest.json <<EOF
@@ -173,16 +171,23 @@ jobs:
         shell: bash
         run: |
           VERSION="${{ needs.tagging.outputs.new_tag }}"
-          NSIS_EXE=$(find src-tauri/target/release/bundle -name "*.exe" | head -1)
+
+          # Chercher le .sig et déduire l'archive — distinct du .exe installeur
           SIG_FILE=$(find src-tauri/target/release/bundle -name "*.sig" | head -1)
-          UPDATER_ZIP="${SIG_FILE%.sig}"
+          UPDATER_ARCHIVE="${SIG_FILE%.sig}"
+          # Le .exe installeur est distinct de l'archive updater
+          NSIS_EXE=$(find src-tauri/target/release/bundle -name "*.exe" \
+            ! -name "$(basename "$UPDATER_ARCHIVE")" | head -1)
+          # Si UPDATER_ARCHIVE == NSIS_EXE (cas .exe.sig), ne l'ajouter qu'une fois
+          if [ "$NSIS_EXE" = "$UPDATER_ARCHIVE" ] || [ -z "$NSIS_EXE" ]; then
+            NSIS_EXE=""
+          fi
 
           echo "### 📦 Fichiers à uploader" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
-          for f in "$NSIS_EXE" "$UPDATER_ZIP" "$SIG_FILE" latest.json; do
-            if [ -z "$f" ]; then
-              echo "MANQUANT : variable vide" >> $GITHUB_STEP_SUMMARY
-            elif [ ! -f "$f" ]; then
+          for f in "$NSIS_EXE" "$UPDATER_ARCHIVE" "$SIG_FILE" latest.json; do
+            [ -z "$f" ] && continue
+            if [ ! -f "$f" ]; then
               echo "INTROUVABLE : $f" >> $GITHUB_STEP_SUMMARY
             else
               ls -lh "$f" >> $GITHUB_STEP_SUMMARY
@@ -190,27 +195,22 @@ jobs:
           done
           echo '```' >> $GITHUB_STEP_SUMMARY
 
-          # Vérifier que tous les fichiers requis existent
-          MISSING=0
-          for f in "$NSIS_EXE" "$UPDATER_ZIP" "$SIG_FILE"; do
-            if [ -z "$f" ] || [ ! -f "$f" ]; then
-              echo "❌ Fichier manquant ou introuvable : '$f'"
-              MISSING=1
-            fi
-          done
-          if [ "$MISSING" -eq 1 ]; then
-            echo "### ❌ Abandon : fichiers d'upload manquants" >> $GITHUB_STEP_SUMMARY
+          # Guard : archive et sig obligatoires
+          if [ -z "$UPDATER_ARCHIVE" ] || [ ! -f "$UPDATER_ARCHIVE" ] || [ ! -f "$SIG_FILE" ]; then
+            echo "### ❌ Abandon : archive updater ou signature manquante" >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
 
-          # Supprimer la release existante si elle existe déjà (re-run)
+          # Supprimer la release existante (re-run propre)
           gh release delete "${VERSION}" --yes 2>/dev/null || true
 
+          # Construire la liste des assets sans doublon
+          ASSETS=()
+          [ -n "$NSIS_EXE" ] && [ -f "$NSIS_EXE" ] && ASSETS+=("$NSIS_EXE")
+          ASSETS+=("$UPDATER_ARCHIVE" "$SIG_FILE" latest.json)
+
           if ! gh release create "${VERSION}" \
-            "$NSIS_EXE" \
-            "$UPDATER_ZIP" \
-            "$SIG_FILE" \
-            latest.json \
+            "${ASSETS[@]}" \
             --title "ProClubs Stats ${VERSION}" \
             --notes-file RELEASE_NOTES.md > release.log 2>&1; then
             echo "### ❌ Échec : Création de la GitHub Release" >> $GITHUB_STEP_SUMMARY
