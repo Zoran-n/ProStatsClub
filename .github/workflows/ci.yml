@@ -1,8 +1,8 @@
 name: CI (Qualité)
 
 on:
-  pull_request:
-    branches: [ "Dev", "Main" ]
+  push:
+    branches: [ "Dev" ]
 
 jobs:
   lint-ts:
