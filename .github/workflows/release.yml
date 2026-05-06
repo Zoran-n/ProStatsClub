@@ -55,6 +55,14 @@ jobs:
             exit 1
           fi
 
+      - name: 🔍 Lister les artefacts générés
+        shell: bash
+        run: |
+          echo "### 📁 Artefacts dans bundle/" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          find src-tauri/target/release/bundle -type f | sort >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
       - name: 📝 Générer latest.json
         shell: bash
         run: |
@@ -62,10 +70,18 @@ jobs:
           PUB_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           REPO="Zoran-n/ProStatsClub"
 
-          NSIS_EXE=$(find src-tauri/target/release/bundle/nsis -name "*.exe" | head -1)
-          UPDATER_ZIP=$(find src-tauri/target/release/bundle/nsis -name "*.nsis.zip" | head -1)
+          NSIS_EXE=$(find src-tauri/target/release/bundle -name "*.exe" | head -1)
+          UPDATER_ZIP=$(find src-tauri/target/release/bundle -name "*.nsis.zip" | head -1)
+          SIG_FILE=$(find src-tauri/target/release/bundle -name "*.nsis.zip.sig" | head -1)
+
+          if [ -z "$SIG_FILE" ]; then
+            echo "### ❌ ERREUR : Signature non générée. Vérifiez que TAURI_SIGNING_PRIVATE_KEY est bien passé au build Tauri." >> $GITHUB_STEP_SUMMARY
+            echo "ERREUR : Signature non générée. Vérifiez que TAURI_SIGNING_PRIVATE_KEY est bien passé au build Tauri."
+            exit 1
+          fi
+
           ZIP_NAME=$(basename "$UPDATER_ZIP")
-          SIG_CONTENT=$(cat "${UPDATER_ZIP}.sig")
+          SIG_CONTENT=$(cat "$SIG_FILE")
 
           cat > latest.json <<EOF
           {
@@ -84,20 +100,21 @@ jobs:
           echo "### ✅ latest.json généré" >> $GITHUB_STEP_SUMMARY
           echo "- Version : \`${VERSION}\`" >> $GITHUB_STEP_SUMMARY
           echo "- Archive updater : \`${ZIP_NAME}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Signature : \`${SIG_FILE}\`" >> $GITHUB_STEP_SUMMARY
 
       - name: 🚀 Créer la GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
-          NSIS_EXE=$(find src-tauri/target/release/bundle/nsis -name "*.exe" | head -1)
-          UPDATER_ZIP=$(find src-tauri/target/release/bundle/nsis -name "*.nsis.zip" | head -1)
-          UPDATER_SIG="${UPDATER_ZIP}.sig"
+          NSIS_EXE=$(find src-tauri/target/release/bundle -name "*.exe" | head -1)
+          UPDATER_ZIP=$(find src-tauri/target/release/bundle -name "*.nsis.zip" | head -1)
+          SIG_FILE=$(find src-tauri/target/release/bundle -name "*.nsis.zip.sig" | head -1)
 
           if ! gh release create ${{ github.event.inputs.version }} \
             "$NSIS_EXE" \
             "$UPDATER_ZIP" \
-            "$UPDATER_SIG" \
+            "$SIG_FILE" \
             latest.json \
             --title "ProClubs Stats ${{ github.event.inputs.version }}" \
             --notes-file RELEASE_NOTES.md > release.log 2>&1; then
