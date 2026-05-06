@@ -2,20 +2,60 @@ name: CD (Déploiement Production)
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version à releaser (ex: v1.0.0)'
+        required: true
+        type: string
 
 jobs:
   deploy:
     name: 🚀 Déploiement
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     if: github.ref == 'refs/heads/main'
 
     steps:
       - name: 📥 Récupérer le code
         uses: actions/checkout@v4
 
-      - name: ⚙️ Build & Déploiement
+      - name: ⚙️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 🦀 Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: 📦 Cache Rust
+        uses: Swatinem/rust-cache@v2
+
+      - name: 📥 Installer les dépendances
+        run: npm ci
+
+      - name: 🔨 Build Tauri
         env:
           PROD_SECRET: ${{ secrets.PROD_SECRET }}
+        run: npm run tauri build
+
+      - name: 📝 Générer release.json
+        shell: bash
         run: |
-          echo "Lancement du build de production Rust & TS..."
-          echo "Déploiement en cours..."
+          cat > release.json <<EOF
+          {
+            "version": "${{ github.event.inputs.version }}",
+            "pub_date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "notes": "Release ${{ github.event.inputs.version }}"
+          }
+          EOF
+
+      - name: 🚀 Créer la GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          gh release create ${{ github.event.inputs.version }} \
+            src-tauri/target/release/*.exe \
+            release.json \
+            --title "Release ${{ github.event.inputs.version }}" \
+            --notes "Release ${{ github.event.inputs.version }} générée automatiquement."
