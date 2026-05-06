@@ -184,6 +184,8 @@ jobs:
 
           UPDATER_ARCHIVE="${SIG_FILE%.sig}"
           ZIP_NAME=$(basename "$UPDATER_ARCHIVE")
+          # Encode les espaces en %20 pour une URL valide
+          ZIP_NAME_ENCODED="${ZIP_NAME// /%20}"
           SIG_CONTENT=$(cat "$SIG_FILE")
 
           cat > latest.json <<EOF
@@ -193,7 +195,7 @@ jobs:
             "pub_date": "${PUB_DATE}",
             "platforms": {
               "windows-x86_64": {
-                "url": "https://github.com/${REPO}/releases/download/${VERSION}/${ZIP_NAME}",
+                "url": "https://github.com/${REPO}/releases/download/${VERSION}/${ZIP_NAME_ENCODED}",
                 "signature": "${SIG_CONTENT}"
               }
             }
