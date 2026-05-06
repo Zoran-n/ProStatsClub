@@ -255,7 +255,7 @@ function SeasonHistorySection({ clubId, platform }: { clubId: string; platform: 
                   <YAxis tick={{ fill: "var(--muted)", fontSize: 8 }} axisLine={false} tickLine={false} />
                   <Tooltip
                     contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 10 }}
-                    formatter={(v: any, name: any) => [v, name === "wins" ? "V" : name === "ties" ? "N" : "D"]}
+                    formatter={(v: number | string, name: string) => [v, name === "wins" ? "V" : name === "ties" ? "N" : "D"]}
                   />
                   <Bar dataKey="wins" stackId="a" fill="#22c55e" name="V" />
                   <Bar dataKey="ties" stackId="a" fill="#eab308" name="N" />
@@ -360,7 +360,7 @@ function SrEvolutionSection({ clubId, platform }: { clubId: string; platform: st
                 contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 11 }}
                 labelStyle={{ color: "var(--muted)" }}
                 itemStyle={{ color: "var(--accent)" }}
-                formatter={(v: any) => [v, "SR"]}
+                formatter={(v: number | string) => [v, "SR"]}
               />
               <Line type="monotone" dataKey="sr" stroke="var(--accent)" strokeWidth={2}
                 dot={{ fill: "var(--accent)", r: 3 }} activeDot={{ r: 5 }} />
@@ -492,7 +492,7 @@ function TeamRadarSection({ matches, clubId }: { matches: Match[]; clubId: strin
                 fill="var(--accent)" fillOpacity={0.22} strokeWidth={1.5} />
               <Tooltip
                 contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 10 }}
-                formatter={(v: any) => [`${v} / 100`, ""]}
+                formatter={(v: number | string) => [`${v} / 100`, ""]}
               />
             </RadarChart>
           </ResponsiveContainer>
@@ -535,7 +535,7 @@ function PossessionTrendSection({ matches, clubId }: { matches: Match[]; clubId:
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
             <Tooltip
               contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 10 }}
-              formatter={(v: any) => [`${v}%`, "Possession"]}
+              formatter={(v: number | string) => [`${v}%`, "Possession"]}
             />
             <Line type="monotone" dataKey="poss" stroke="var(--accent)" strokeWidth={2}
               dot={{ fill: "var(--accent)", r: 3 }} activeDot={{ r: 5 }} />
@@ -575,7 +575,7 @@ function ScoreDistSection({ matches, clubId }: { matches: Match[]; clubId: strin
             <YAxis tick={{ fontSize: 8, fill: "var(--muted)" }} axisLine={false} tickLine={false} />
             <Tooltip
               contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 10 }}
-              formatter={(v: any, name: any) => [v, name === "win" ? "Victoire" : name === "draw" ? "Nul" : "Défaite"]}
+              formatter={(v: number | string, name: string) => [v, name === "win" ? "Victoire" : name === "draw" ? "Nul" : "Défaite"]}
             />
             <Bar dataKey="win"  stackId="a" fill="#22c55e" name="win" />
             <Bar dataKey="draw" stackId="a" fill="#eab308" name="draw" />
@@ -686,7 +686,7 @@ function PlayerCountSection({ matches, clubId }: { matches: Match[]; clubId: str
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
             <Tooltip
               contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 10 }}
-              formatter={(v: any) => [v, "Joueurs"]}
+              formatter={(v: number | string) => [v, "Joueurs"]}
             />
             <Line type="monotone" dataKey="count" stroke="#a855f7" strokeWidth={2}
               dot={{ fill: "#a855f7", r: 3 }} activeDot={{ r: 5 }} />

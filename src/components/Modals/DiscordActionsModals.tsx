@@ -718,7 +718,7 @@ export function SeasonReportModal({ onClose }: { onClose: () => void }) {
   };
 
   const buildEmbed = () => {
-    if (!stats) return {} as any;
+    if (!stats) return { title: "", color: 0, description: "", fields: [] as { name: string; value: string }[] };
     const out = OUTCOMES[outcome];
     const finalOutcome = outcome === "custom" ? customOutcome : out.label;
     
@@ -757,7 +757,7 @@ export function SeasonReportModal({ onClose }: { onClose: () => void }) {
     const e = buildEmbed();
     const lines = [
       `**${e.title}**`, e.description,
-      ...(e.fields ?? []).map((f: any) => `**${f.name}**\n${f.value}`),
+      ...(e.fields ?? []).map((f: { name: string; value: string }) => `**${f.name}**\n${f.value}`),
     ].join("\n\n");
     await navigator.clipboard.writeText(lines).catch(() => {});
     setCopied(true);

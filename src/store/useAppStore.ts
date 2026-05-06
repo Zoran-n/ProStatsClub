@@ -295,7 +295,12 @@ export const useAppStore = create<AppState>((set, get) => ({
     const s = get();
     if (!s.activeSession) return;
     const session = s.activeSession;
-    set({ sessions: [session, ...s.sessions], activeSession: null });
+    // Auto-archive sessions older than 90 days to protect memory
+    const cutoff = Date.now() - 90 * 24 * 60 * 60 * 1000;
+    const updatedSessions = [session, ...s.sessions].map((x) =>
+      !x.archived && new Date(x.date).getTime() < cutoff ? { ...x, archived: true } : x
+    );
+    set({ sessions: updatedSessions, activeSession: null });
     // Auto post-match Discord
     if (s.autoPostSession && s.discordWebhook && session.matches.length > 0) {
       const embed = buildSessionSummaryEmbed(session);

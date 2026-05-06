@@ -288,38 +288,32 @@ Application desktop pour suivre les statistiques de votre club EA FC Pro Clubs. 
 
 ---
 
-## 💡 Prochaines idées
+## 🗺️ Roadmap (Prochaines étapes)
+
+Les fonctionnalités suivantes sont planifiées pour les prochaines versions :
+
+### 🚧 En cours / Prioritaires
+
+- **Heatmap jour × heure** : grille 7 jours × 6 créneaux horaires affichant le taux de victoire par tranche (onglet Graphiques)
+- **Rapport de saison narratif Discord** : modal de fin de saison — personnalisation du résultat (Titre/Montée/Relégation), calcul des agrégats sur N matchs, export embed Discord
+- **Bannière Mode hors-ligne** : bannière visuelle automatique quand la connexion réseau est absente, avec reprise automatique à la reconnexion
 
 ### 🎮 Compétition
 
-- **Tournois internes** : bracket élimination directe ou poule avec des joueurs du club, résultats saisis manuellement — arbre visuel collapsible, finaliste/vainqueur marqués
-- **Classement de saison** : tableau de bord — points, diff buts, podium joueurs, matchs restants, progression en % vers l'objectif de saison
-- **Défis hebdomadaires** : objectifs auto générés chaque semaine (ex: "5 clean sheets", "gagner 3 en row") avec badge récompense et historique des défis complétés
-- **Historique H2H par club** : suivi du bilan victoires/défaites face à un club adverse précis sur toutes les saisons avec graphique d'évolution
-- **Ligue personnalisée** : créer une mini-ligue entre plusieurs clubs amis avec classement, résultats, différentiel de buts et export PDF de fin de saison
-- **MVP vote après match** : vote de la session (1 voix par joueur depuis l'app) — résultat affiché sur Discord, compteur MVP cumulé en stats joueur
+- **Tournois internes** : bracket élimination directe ou poule avec des joueurs du club, résultats saisis manuellement
+- **Défis hebdomadaires** : objectifs auto générés chaque semaine avec badge récompense et historique
+- **Ligue personnalisée** : mini-ligue entre clubs amis avec classement, résultats et export PDF
 
 ### 📊 Données & Analyse
 
-- **Rapport de progression joueur** : générer un bilan mensuel individuel — buts, PD, note moyenne, tendance, record personnel — exportable en PDF ou image Discord
-- **Analyse des absences** : détecter automatiquement les joueurs inactifs depuis X matchs et générer un rapport d'assiduité par période
-- **Comparaison saison N vs N-1** : panel dédié montrant côte-à-côte toutes les stats de la saison actuelle vs la précédente, avec indicateurs ↑ ↓
-- **Statistiques de possession avancées** : analyser la corrélation entre % de possession et résultats sur l'ensemble des matchs du cache
-- **Carte de chaleur des buteurs** : visualisation de qui marque à quelle minute (tranches 0–30, 30–60, 60–90) sur les matchs du cache
-- **Export rapport complet club** : PDF multi-sections (stats équipe, top joueurs, forme, historique adversaires, objectifs) en un seul clic depuis l'onglet Graphiques
-
-### 🤝 Social & Discord
-- **Partage de comparaison de clubs** : bouton Discord dans l'onglet Comparaison — embed multi-clubs avec radar, tableau de stats et résultat Battle
-- **Digest hebdomadaire planifié** : configurer un jour/heure pour un envoi automatique chaque semaine du bilan de la semaine sur Discord
+- **Rapport de progression joueur** : bilan mensuel individuel exportable en PDF ou Discord
+- **Carte de chaleur des buteurs** : visualisation par tranches de minutes (0–30, 30–60, 60–90)
+- **Export rapport complet club** : PDF multi-sections en un clic
 
 ### 🎨 UX & Interface
 
-- **Animations de performance** : micro-animations plus poussées sur les KPIs (compteur animé, effet confetti sur records personnels, shimmer sur chargement)
-- **Mode présentation** : vue épurée plein écran optimisée pour streamer ou projeter les stats en live (masque les éléments de navigation)
-- **Thème personnalisé avancé** : éditeur de thème complet avec prévisualisation live, import/export de thèmes communautaires en JSON
-- **Notifications sonores** : son court configurable à chaque nouveau match détecté, victoire, ou objectif atteint — désactivable par type
-- **Sidebar redimensionnable** : drag sur le bord pour ajuster la largeur de la sidebar favoris/canaux — dimension persistée
-- **Tour guidé interactif** : bouton "?" dans le header qui lance un overlay de tutoriel étape par étape sur la vue courante (tooltips positionnés sur les éléments)
+- **Mode présentation** : vue plein écran épurée pour streamer ou projeter les stats
+- **Notifications sonores** : son court configurable par événement (nouveau match, victoire, objectif)
 
 ---
 
