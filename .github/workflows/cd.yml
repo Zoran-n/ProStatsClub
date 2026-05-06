@@ -1,0 +1,21 @@
+name: CD (Déploiement Production)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: 🚀 Déploiement
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: 📥 Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Build & Déploiement
+        env:
+          PROD_SECRET: ${{ secrets.PROD_SECRET }}
+        run: |
+          echo "Lancement du build de production Rust & TS..."
+          echo "Déploiement en cours..."

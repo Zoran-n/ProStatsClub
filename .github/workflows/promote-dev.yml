@@ -1,0 +1,23 @@
+name: Créer une PR (Dev ➡️ Main)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  promote:
+    name: 🔀 Créer la Pull Request
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+
+      - name: Créer la Pull Request vers main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --base main \
+            --head dev \
+            --title "🚀 Release: Mise à jour depuis dev" \
+            --body "Cette PR a été générée automatiquement. Merci de vérifier avant le merge."
