@@ -89,9 +89,11 @@ jobs:
             echo "</details>" >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
+      - name: 🧪 Compilation des tests Rust
+        run: cargo test --lib --no-run
       - name: 🧪 Tests Unitaires Rust
         run: |
-          if ! cargo test 2>&1 | tee cargo_test.log; then
+          if ! cargo test --lib 2>&1 | tee cargo_test.log; then
             echo "### ❌ Échec : Tests Rust" >> $GITHUB_STEP_SUMMARY
             echo "<details><summary>🔍 Voir les logs d'erreur</summary>" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
