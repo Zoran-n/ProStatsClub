@@ -1,0 +1,163 @@
+name: CI (Qualité & Tests)
+
+on:
+  push:
+    branches: [ "Dev" ]
+  pull_request:
+    branches: [ "Dev" ]
+
+jobs:
+  lint-ts:
+    name: 🧹 Lint TypeScript
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'npm' }
+      - run: npm ci
+      - name: 🧹 Lint TypeScript
+        run: |
+          if ! npm run lint > lint_ts.log 2>&1; then
+            echo "### ❌ Échec : Lint TypeScript" >> $GITHUB_STEP_SUMMARY
+            echo "<details><summary>🔍 Voir les logs d'erreur</summary>" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo '```text' >> $GITHUB_STEP_SUMMARY
+            tail -n 30 lint_ts.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "</details>" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+  lint-rust:
+    name: 🦀 Lint Rust
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./src-tauri
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: { components: clippy, rustfmt }
+      - name: 🛠️ Installer les dépendances système (Tauri / Linux)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+      - name: 🎨 Vérification format Rust
+        run: |
+          if ! cargo fmt --all -- --check > fmt.log 2>&1; then
+            echo "### ❌ Échec : Format Rust" >> $GITHUB_STEP_SUMMARY
+            echo "<details><summary>🔍 Voir les logs d'erreur</summary>" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo '```text' >> $GITHUB_STEP_SUMMARY
+            tail -n 30 fmt.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "</details>" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+      - name: 📎 Clippy
+        run: |
+          if ! cargo clippy -- -D warnings > clippy.log 2>&1; then
+            echo "### ❌ Échec : Clippy" >> $GITHUB_STEP_SUMMARY
+            echo "<details><summary>🔍 Voir les logs d'erreur</summary>" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo '```text' >> $GITHUB_STEP_SUMMARY
+            tail -n 30 clippy.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "</details>" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+  tests-unit:
+    name: 🧪 Tests Unitaires
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'npm' }
+      - uses: dtolnay/rust-toolchain@stable
+      - name: 🛠️ Installer les dépendances système (Tauri / Linux)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+      - name: 📥 Installer les dépendances
+        run: npm ci
+      - name: 🧪 Tests JS
+        run: |
+          if ! npm run test > test_js.log 2>&1; then
+            echo "### ❌ Échec : Tests JS" >> $GITHUB_STEP_SUMMARY
+            echo "<details><summary>🔍 Voir les logs d'erreur</summary>" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo '```text' >> $GITHUB_STEP_SUMMARY
+            tail -n 30 test_js.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "</details>" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+      - name: 🦀 Tests Rust
+        working-directory: ./src-tauri
+        run: |
+          if ! cargo test > test_rust.log 2>&1; then
+            echo "### ❌ Échec : Tests Rust" >> $GITHUB_STEP_SUMMARY
+            echo "<details><summary>🔍 Voir les logs d'erreur</summary>" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo '```text' >> $GITHUB_STEP_SUMMARY
+            tail -n 30 test_rust.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "</details>" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+  tests-e2e:
+    name: 🌐 Tests E2E
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'npm' }
+      - run: npm ci
+      - name: 🌐 Tests E2E
+        run: |
+          if ! npm run test:e2e --if-present > test_e2e.log 2>&1; then
+            echo "### ❌ Échec : Tests E2E" >> $GITHUB_STEP_SUMMARY
+            echo "<details><summary>🔍 Voir les logs d'erreur</summary>" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo '```text' >> $GITHUB_STEP_SUMMARY
+            tail -n 30 test_e2e.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "</details>" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+  report:
+    name: 📊 Rapport de CI
+    runs-on: ubuntu-latest
+    needs: [lint-ts, lint-rust, tests-unit, tests-e2e]
+    if: always()
+    steps:
+      - name: 📝 Générer le résumé Markdown
+        run: |
+          echo "# 📊 Rapport d'Exécution de la CI" >> $GITHUB_STEP_SUMMARY
+          echo "## 📌 Informations" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branche** : \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Déclencheur** : \`${{ github.event_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit** : \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## ⚙️ Résultats des Jobs" >> $GITHUB_STEP_SUMMARY
+          echo "- 🧹 Lint TS : ${{ needs.lint-ts.result == 'success' && '✅ Succès' || '❌ Échec' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 🦀 Lint Rust : ${{ needs.lint-rust.result == 'success' && '✅ Succès' || '❌ Échec' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 🧪 Tests Unitaires : ${{ needs.tests-unit.result == 'success' && '✅ Succès' || '❌ Échec' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 🌐 Tests E2E : ${{ needs.tests-e2e.result == 'success' && '✅ Succès' || '❌ Échec' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "> 💡 *Ce rapport a été généré automatiquement.*" >> $GITHUB_STEP_SUMMARY

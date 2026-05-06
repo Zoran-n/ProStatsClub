@@ -195,7 +195,7 @@ export function CompareTab() {
     });
     persistSettings();
     setBattleVotes({});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [loadedIds]);
 
   // ── H2H ───────────────────────────────────────────────────────────────────
@@ -208,7 +208,7 @@ export function CompareTab() {
       .then(matches => setH2h(matches.filter(m => dB.club.id in m.clubs)))
       .catch(() => setH2h([]))
       .finally(() => setH2hLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [loadedIds]);
 
   // ── Radar data ────────────────────────────────────────────────────────────
@@ -230,7 +230,7 @@ export function CompareTab() {
       loadedSlots.forEach((_, i) => { row[`c${i}`] = maxVal > 0 ? Math.round((rawVals[i] / maxVal) * 100) : 0; });
       return row;
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [loadedIds, slots.map(s => s.selectedSeasonId).join(",")]);
 
   // ── Best players by position ──────────────────────────────────────────────
@@ -244,7 +244,7 @@ export function CompareTab() {
       });
     }
     return groups;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [loadedIds]);
 
   // ── Stat table rows ────────────────────────────────────────────────────────

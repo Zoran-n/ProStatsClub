@@ -1,0 +1,122 @@
+name: CD (Déploiement Production)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version à releaser (ex: v1.0.0)'
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    name: 🚀 Déploiement
+    runs-on: windows-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: 📥 Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 🦀 Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: 📦 Cache Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - name: 📥 Installer les dépendances
+        shell: bash
+        run: npm ci
+
+      - name: 🔨 Build Tauri
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          if ! npm run tauri build > build.log 2>&1; then
+            echo "### ❌ Échec : Build Tauri" >> $GITHUB_STEP_SUMMARY
+            echo "<details><summary>🔍 Voir les logs d'erreur</summary>" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo '```text' >> $GITHUB_STEP_SUMMARY
+            tail -n 30 build.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "</details>" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+      - name: 📝 Générer latest.json (format Tauri Updater)
+        shell: bash
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          PUB_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          REPO="Zoran-n/ProStatsClub"
+
+          # Cherche le .exe NSIS et sa signature
+          NSIS_EXE=$(find src-tauri/target/release/bundle/nsis -name "*.exe" | head -1)
+          NSIS_SIG=$(find src-tauri/target/release/bundle/nsis -name "*.exe.sig" | head -1)
+          EXE_NAME=$(basename "$NSIS_EXE")
+          SIG_CONTENT=$(cat "$NSIS_SIG")
+
+          cat > latest.json <<EOF
+          {
+            "version": "${VERSION}",
+            "notes": "Release ${VERSION}",
+            "pub_date": "${PUB_DATE}",
+            "platforms": {
+              "windows-x86_64": {
+                "url": "https://github.com/${REPO}/releases/download/${VERSION}/${EXE_NAME}",
+                "signature": "${SIG_CONTENT}"
+              }
+            }
+          }
+          EOF
+
+      - name: 🚀 Créer la GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          NSIS_EXE=$(find src-tauri/target/release/bundle/nsis -name "*.exe" | head -1)
+
+          if ! gh release create ${{ github.event.inputs.version }} \
+            "$NSIS_EXE" \
+            latest.json \
+            --title "Release ${{ github.event.inputs.version }}" \
+            --notes "Release ${{ github.event.inputs.version }} générée automatiquement." > release.log 2>&1; then
+            echo "### ❌ Échec : Création de la GitHub Release" >> $GITHUB_STEP_SUMMARY
+            echo "<details><summary>🔍 Voir les logs d'erreur</summary>" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo '```text' >> $GITHUB_STEP_SUMMARY
+            tail -n 30 release.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "</details>" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+  report:
+    name: 📊 Rapport de CD
+    runs-on: ubuntu-latest
+    needs: [deploy]
+    if: always()
+    steps:
+      - name: 📝 Générer le résumé Markdown
+        run: |
+          echo "# 📊 Rapport de Déploiement" >> $GITHUB_STEP_SUMMARY
+          echo "## 📌 Informations" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branche** : \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Déclencheur** : \`${{ github.event_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag de release** : \`${{ github.event.inputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## ⚙️ Résultat" >> $GITHUB_STEP_SUMMARY
+          echo "- 🚀 Déploiement : ${{ needs.deploy.result == 'success' && '✅ Succès' || '❌ Échec' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "> 💡 *Ce rapport a été généré automatiquement.*" >> $GITHUB_STEP_SUMMARY

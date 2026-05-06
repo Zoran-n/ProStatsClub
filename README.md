@@ -320,3 +320,7 @@ Application desktop pour suivre les statistiques de votre club EA FC Pro Clubs. 
 - **Notifications sonores** : son court configurable à chaque nouveau match détecté, victoire, ou objectif atteint — désactivable par type
 - **Sidebar redimensionnable** : drag sur le bord pour ajuster la largeur de la sidebar favoris/canaux — dimension persistée
 - **Tour guidé interactif** : bouton "?" dans le header qui lance un overlay de tutoriel étape par étape sur la vue courante (tooltips positionnés sur les éléments)
+
+---
+
+Initial dev environment setup

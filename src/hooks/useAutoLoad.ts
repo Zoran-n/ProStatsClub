@@ -32,7 +32,7 @@ export function useAutoLoad() {
     if (didAutoLoad.current) return;
     didAutoLoad.current = true;
     load(eaProfile.clubId, eaProfile.platform);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [settingsLoaded, eaProfile?.clubId]);
 
   // ── 2. Background full-match loader with incremental sync ─────────────────
@@ -109,7 +109,7 @@ export function useAutoLoad() {
 
     run();
     return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [currentClub?.id, eaProfile?.clubId]);
 }
 

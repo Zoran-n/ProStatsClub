@@ -39,7 +39,7 @@ function App() {
     root.toggleAttribute("data-light", !darkMode);
     loadSettings();
     checkProxy().then((p) => setProxyInfo(p)).catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   useEffect(() => {
