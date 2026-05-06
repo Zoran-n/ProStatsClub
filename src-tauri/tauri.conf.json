@@ -24,7 +24,7 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://eafc24.content.easports.com; connect-src 'self' https://proclubs.ea.com ipc: http://ipc.localhost; worker-src blob:;"
     }
   },
   "plugins": {

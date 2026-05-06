@@ -25,7 +25,7 @@ pub fn run() {
             let app_data_dir = app
                 .path()
                 .app_data_dir()
-                .expect("Failed to resolve app data dir");
+                .map_err(|e| format!("Failed to resolve app data dir: {e}"))?;
             let storage = storage::StorageManager::new(app_data_dir.clone());
             let settings = storage.load_settings();
             app.manage(ea_client::EaClient::new(

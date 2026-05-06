@@ -53,7 +53,15 @@ fn build_client(proxy_url: Option<&str>) -> Result<reqwest::Client> {
 
 impl EaClient {
     pub fn new(app_handle: tauri::AppHandle, proxy_url: Option<String>) -> Self {
-        let client = build_client(proxy_url.as_deref()).expect("Failed to build HTTP client");
+        let client = build_client(proxy_url.as_deref())
+            .unwrap_or_else(|_| {
+                // Fallback: build without proxy if the provided proxy URL is invalid
+                reqwest::Client::builder()
+                    .default_headers(build_headers())
+                    .timeout(std::time::Duration::from_secs(15))
+                    .build()
+                    .expect("Failed to build fallback HTTP client")
+            });
         Self {
             client: std::sync::RwLock::new(client),
             app_handle,
@@ -62,12 +70,15 @@ impl EaClient {
 
     pub fn set_proxy(&self, proxy_url: Option<String>) -> Result<()> {
         let new_client = build_client(proxy_url.as_deref())?;
-        *self.client.write().unwrap() = new_client;
+        *self.client.write().map_err(|_| anyhow!("HTTP client lock poisoned"))? = new_client;
         Ok(())
     }
 
     fn http(&self) -> reqwest::Client {
-        self.client.read().unwrap().clone()
+        self.client
+            .read()
+            .map(|g| g.clone())
+            .unwrap_or_else(|poisoned| poisoned.into_inner().clone())
     }
 
     fn emit_log(&self, msg: impl Into<String>) {

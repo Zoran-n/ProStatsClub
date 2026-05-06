@@ -942,7 +942,7 @@ export function SessionTab() {
                       <XAxis dataKey="n" tick={{ fontSize: 9, fill: "var(--muted)" }} label={{ value: "Match", fontSize: 9, fill: "var(--muted)", position: "insideBottomRight", offset: -4 }} />
                       <YAxis tick={{ fontSize: 9, fill: "var(--muted)" }} />
                       <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 11 }}
-                        formatter={(v: any, name: any) => [String(v) + " V", name === "a" ? sesA.clubName : sesB.clubName]} />
+                        formatter={(v: number | string, name: string) => [String(v) + " V", name === "a" ? sesA.clubName : sesB.clubName]} />
                       <Line type="monotone" dataKey="a" stroke="var(--accent)" strokeWidth={2} dot={{ r: 3 }} connectNulls />
                       <Line type="monotone" dataKey="b" stroke="#a855f7" strokeWidth={2} dot={{ r: 3 }} connectNulls />
                     </LineChart>

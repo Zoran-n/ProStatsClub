@@ -402,9 +402,9 @@ export function MatchesTab() {
                 <YAxis domain={[0, 3]} ticks={[0, 1, 3]} tick={{ fontSize: 9, fill: "var(--muted)" }}
                   axisLine={false} tickLine={false} />
                 <ReferenceLine y={1} stroke="var(--border)" strokeDasharray="3 3" />
-                <Tooltip content={({ payload }: { payload?: any[] }) => {
+                <Tooltip content={({ payload }: { payload?: { payload: { r: string; v: number } }[] }) => {
                   if (!payload?.length) return null;
-                  const p = payload[0].payload as { r: string; v: number };
+                  const p = payload[0].payload;
                   const label = p.r === "W" ? t("match.win") : p.r === "D" ? t("match.draw") : t("match.loss");
                   return (
                     <div style={{ background: "var(--card)", border: "1px solid var(--border)",
@@ -412,8 +412,8 @@ export function MatchesTab() {
                   );
                 }} />
                 <Line type="monotone" dataKey="v" stroke="var(--accent)" strokeWidth={2}
-                  dot={(props: any) => {
-                    const { cx, cy, payload } = props as { cx: number; cy: number; payload: { v: number; n: number } };
+                  dot={(props: { cx: number; cy: number; payload: { v: number; n: number } }) => {
+                    const { cx, cy, payload } = props;
                     return <circle key={`dot-${payload.n}`} cx={cx} cy={cy} r={4}
                       fill={dotColor(payload.v)} stroke="var(--bg)" strokeWidth={1} />;
                   }}

@@ -4,14 +4,14 @@ interface LogEntry {
   timestamp: string;
   level: LogLevel;
   message: string;
-  context?: any;
+  context?: unknown;
 }
 
 class Logger {
   private logs: LogEntry[] = [];
   private maxLogs = 1000;
 
-  private log(level: LogLevel, message: string, context?: any) {
+  private log(level: LogLevel, message: string, context?: unknown) {
     const entry: LogEntry = {
       timestamp: new Date().toISOString(),
       level,
@@ -35,10 +35,10 @@ class Logger {
     console.log(`${color}[${level.toUpperCase()}]\x1b[0m ${message}`, context ?? '');
   }
 
-  debug(message: string, context?: any) { this.log('debug', message, context); }
-  info(message: string, context?: any) { this.log('info', message, context); }
-  warn(message: string, context?: any) { this.log('warn', message, context); }
-  error(message: string, context?: any) { this.log('error', message, context); }
+  debug(message: string, context?: unknown) { this.log('debug', message, context); }
+  info(message: string, context?: unknown) { this.log('info', message, context); }
+  warn(message: string, context?: unknown) { this.log('warn', message, context); }
+  error(message: string, context?: unknown) { this.log('error', message, context); }
 
   getLogs() {
     return [...this.logs];
