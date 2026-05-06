@@ -78,7 +78,7 @@ export function PublicPlayerCard({ config, player, division }: Props) {
         try {
           await sendDiscordFile(discordWebhook, blob, "procard.png");
           addToast("Carte partagée sur Discord !", "success");
-        } catch (err) {
+        } catch (_err) {
           addToast("Erreur lors du partage Discord", "error");
         }
       }, "image/png");

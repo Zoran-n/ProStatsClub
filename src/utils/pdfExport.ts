@@ -826,7 +826,7 @@ export async function generateWeeklyReport(
   });
 
   // Aggregate
-  let totalMatches = 0, wins = 0, draws = 0, losses = 0, goals = 0, assists = 0, motmTotal = 0;
+  let totalMatches = 0, wins = 0, draws = 0, losses = 0, goals = 0, assists = 0;
   const playerMap = new Map<string, { goals: number; assists: number; motm: number; games: number }>();
 
   for (const s of weekSessions) {
@@ -846,7 +846,7 @@ export async function generateWeeklyReport(
           const g = Number(p.goals ?? 0); const a = Number(p.assists ?? 0);
           const mm = Number(p.manOfTheMatch ?? 0);
           cur.goals += g; cur.assists += a; cur.motm += mm; cur.games += 1;
-          goals += g; assists += a; motmTotal += mm;
+          goals += g; assists += a;
           playerMap.set(name, cur);
         }
       }

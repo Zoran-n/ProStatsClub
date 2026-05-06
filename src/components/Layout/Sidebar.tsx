@@ -875,7 +875,7 @@ function AutoRefreshButton({ clubId, platform, load }: { clubId: string; platfor
 /** Remplace la taille d'un icon Lucide (JSX Element) — simple helper pour ne pas dupliquer les listes */
 function cloneIconSize(icon: ReactNode, size: number): ReactNode {
   if (!icon || typeof icon !== "object") return icon;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const el = icon as any;
   return { ...el, props: { ...el.props, size } };
 }

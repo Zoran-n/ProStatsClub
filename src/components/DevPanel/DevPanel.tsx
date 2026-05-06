@@ -42,7 +42,11 @@ export function DevPanel() {
   };
 
   const toggleExpand = (key: string) =>
-    setExpanded((s) => { const n = new Set(s); n.has(key) ? n.delete(key) : n.add(key); return n; });
+    setExpanded((s) => {
+      const n = new Set(s);
+      if (n.has(key)) { n.delete(key); } else { n.add(key); }
+      return n;
+    });
 
   // Group cache keys by clubId
   const grouped: Record<string, { key: string; platform: string; type: string; count: number }[]> = {};

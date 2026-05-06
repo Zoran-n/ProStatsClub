@@ -32,14 +32,14 @@ export function useMatchData() {
     if (currentClub && leagueCache.length) {
       setMatchCache(`${currentClub.id}_${currentClub.platform}_leagueMatch`, leagueCache);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [leagueCache]);
 
   // ── Reset when club changes ───────────────────────────────────────────────
   useEffect(() => {
     setPages({ leagueMatch: leagueCache });
     setCursors({});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [currentClub?.id]);
 
   // ── Load type on demand (cache-first) ────────────────────────────────────
@@ -67,7 +67,7 @@ export function useMatchData() {
         persistSettings();
       })
       .finally(() => setLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [type, currentClub?.id]);
 
   // ── Load next page ────────────────────────────────────────────────────────
@@ -101,7 +101,7 @@ export function useMatchData() {
     if (cursor === undefined || cursor === null) return;
     const timer = setTimeout(() => loadMore(), 800);
     return () => clearTimeout(timer);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [cursors[type], type, currentClub?.id, eaProfile?.gamertag, loading]);
 
   const allList = pages[type] ?? [];

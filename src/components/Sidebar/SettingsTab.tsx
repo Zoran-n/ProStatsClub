@@ -51,7 +51,7 @@ export function SettingsTab() {
   // Auto-check on mount if enabled
   useEffect(() => {
     if (autoUpdate) handleCheckUpdate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   const apply = (fn: () => void) => { fn(); persistSettings(); };
