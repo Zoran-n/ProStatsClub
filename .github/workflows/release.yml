@@ -90,26 +90,37 @@ jobs:
 
           echo "✅ Version synchronisée : ${VERSION_BARE}" >> $GITHUB_STEP_SUMMARY
 
+      - name: 🔑 Vérifier la présence des secrets de signature
+        shell: bash
+        run: |
+          if [ -z "$TAURI_SIGNING_PRIVATE_KEY" ]; then
+            echo "### ❌ ERREUR : TAURI_SIGNING_PRIVATE_KEY est vide ou absent" >> $GITHUB_STEP_SUMMARY
+            echo "ERREUR : Secret TAURI_SIGNING_PRIVATE_KEY manquant."
+            exit 1
+          fi
+          echo "✅ TAURI_SIGNING_PRIVATE_KEY présente (longueur: ${#TAURI_SIGNING_PRIVATE_KEY})" >> $GITHUB_STEP_SUMMARY
+
       - name: 🔨 Build Tauri
         shell: bash
         run: |
-          if ! npm run tauri build > build.log 2>&1; then
+          if ! npm run tauri build -- --bundles nsis > build.log 2>&1; then
             echo "### ❌ Échec : Build Tauri" >> $GITHUB_STEP_SUMMARY
             echo "<details><summary>🔍 Voir les logs d'erreur</summary>" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo '```text' >> $GITHUB_STEP_SUMMARY
-            tail -n 30 build.log >> $GITHUB_STEP_SUMMARY
+            tail -n 50 build.log >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
             echo "</details>" >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
 
-      - name: 🔍 Lister les artefacts générés
+      - name: 🔍 Debug — listing complet de target/release
+        if: always()
         shell: bash
         run: |
-          echo "### 📁 Artefacts dans bundle/" >> $GITHUB_STEP_SUMMARY
+          echo "### 📁 Contenu de src-tauri/target/release (récursif)" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
-          find src-tauri/target/release/bundle -type f | sort >> $GITHUB_STEP_SUMMARY
+          find src-tauri/target/release -not -path "*/deps/*" -not -path "*/.fingerprint/*" -not -path "*/incremental/*" -type f | sort >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: 📝 Générer latest.json
