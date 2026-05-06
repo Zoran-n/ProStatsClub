@@ -29,12 +29,11 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDgzOEUyMjY0QkFEODE1NUEKUldSYUZkaTZaQ0tPZzlKYWxzbjZrMHlINFpnUElIL2V1bFpGRC9Ub3h3SGhkQkEyTWEvUXhmQ2wK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDczOUUwRjRCODhBMzE1MzYKUldRMkZhT0lTdytlYy9aS3paR2gzZXlJYTJNQ2FpK0ZhL3ZkalFMMEtjNnh3VTVRZUplbVpkRE4K",
       "endpoints": [
-        "https://github.com/Zoran-n/proclubs-tauri/releases/latest/download/latest.json"
+        "https://github.com/Zoran-n/ProStatsClub/releases/latest/download/latest.json"
       ]
     }
-
   },
   "bundle": {
     "active": true,
