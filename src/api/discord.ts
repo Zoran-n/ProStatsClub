@@ -1,3 +1,5 @@
+import { fetch } from "@tauri-apps/plugin-http";
+
 interface DiscordField { name: string; value: string; inline?: boolean }
 
 export interface DiscordEmbed {

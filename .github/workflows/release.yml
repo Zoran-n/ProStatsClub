@@ -34,6 +34,41 @@ jobs:
           WITH_V: true
           DRY_RUN: false
 
+      - name: 📝 Générer les Release Notes
+        run: |
+          NEW_TAG="${{ steps.tag.outputs.new_tag }}"
+          PREV_TAG=$(git tag --sort=-version:refname | sed -n '2p')
+          if [ -z "$PREV_TAG" ]; then
+            RANGE="HEAD"
+          else
+            RANGE="${PREV_TAG}..HEAD"
+          fi
+
+          COMMITS=$(git log "$RANGE" --pretty=format:"%s" \
+            | grep -E "^(feat|fix)(\(.+\))?:" \
+            | grep -vE "(explicit secrets|dynamic path|duplicate asset|configure tauri|allow discord|tauri signing|updater bundle)" \
+            | sed 's/^feat[^:]*: /- ✨ /; s/^fix[^:]*: /- 🐛 /')
+
+          {
+            echo "## 🚀 Quoi de neuf dans ${NEW_TAG} ?"
+            echo ""
+            if [ -z "$COMMITS" ]; then
+              echo "- Améliorations internes et corrections de stabilité"
+            else
+              echo "$COMMITS"
+            fi
+          } > RELEASE_NOTES.md
+
+          echo "### 📝 Release Notes générées" >> $GITHUB_STEP_SUMMARY
+          cat RELEASE_NOTES.md >> $GITHUB_STEP_SUMMARY
+
+      - name: 📤 Upload Release Notes
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: RELEASE_NOTES.md
+          retention-days: 1
+
   build-and-release:
     name: 🚀 Build & Release Windows
     runs-on: windows-latest
@@ -47,6 +82,11 @@ jobs:
     steps:
       - name: 📥 Récupérer le code
         uses: actions/checkout@v4
+
+      - name: 📥 Télécharger les Release Notes
+        uses: actions/download-artifact@v4
+        with:
+          name: release-notes
 
       - name: ⚙️ Setup Node.js
         uses: actions/setup-node@v4
