@@ -10,6 +10,9 @@ jobs:
   lint-ts:
     name: 🧹 Lint TypeScript
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -17,7 +20,7 @@ jobs:
       - run: npm ci
       - name: 🧹 Lint TypeScript
         run: |
-          if ! npm run lint --if-present > lint_ts.log 2>&1; then
+          if ! npm run lint > lint_ts.log 2>&1; then
             echo "### ❌ Échec : Lint TypeScript" >> $GITHUB_STEP_SUMMARY
             echo "<details><summary>🔍 Voir les logs d'erreur</summary>" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
@@ -31,11 +34,16 @@ jobs:
   lint-rust:
     name: 🦀 Lint Rust
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./src-tauri
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with: { components: clippy, rustfmt }
       - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
       - name: 🎨 Vérification format Rust
         run: |
           if ! cargo fmt --all -- --check > fmt.log 2>&1; then
@@ -70,10 +78,13 @@ jobs:
         with: { node-version: '20', cache: 'npm' }
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - run: npm ci
+        with:
+          workspaces: src-tauri -> target
+      - name: 📥 Installer les dépendances
+        run: npm ci
       - name: 🧪 Tests JS
         run: |
-          if ! npm run test --if-present > test_js.log 2>&1; then
+          if ! npm run test > test_js.log 2>&1; then
             echo "### ❌ Échec : Tests JS" >> $GITHUB_STEP_SUMMARY
             echo "<details><summary>🔍 Voir les logs d'erreur</summary>" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
@@ -84,6 +95,7 @@ jobs:
             exit 1
           fi
       - name: 🦀 Tests Rust
+        working-directory: ./src-tauri
         run: |
           if ! cargo test > test_rust.log 2>&1; then
             echo "### ❌ Échec : Tests Rust" >> $GITHUB_STEP_SUMMARY
@@ -99,6 +111,9 @@ jobs:
   tests-e2e:
     name: 🌐 Tests E2E
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
