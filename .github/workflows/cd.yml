@@ -60,11 +60,14 @@ jobs:
           PUB_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           REPO="Zoran-n/ProStatsClub"
 
-          # Cherche le .exe NSIS et sa signature
+          # Installeur NSIS (.exe) — téléchargé par l'utilisateur
           NSIS_EXE=$(find src-tauri/target/release/bundle/nsis -name "*.exe" | head -1)
-          NSIS_SIG=$(find src-tauri/target/release/bundle/nsis -name "*.exe.sig" | head -1)
           EXE_NAME=$(basename "$NSIS_EXE")
-          SIG_CONTENT=$(cat "$NSIS_SIG")
+
+          # Archive updater (.nsis.zip) — utilisée par le système de MAJ automatique
+          UPDATER_ZIP=$(find src-tauri/target/release/bundle/nsis -name "*.nsis.zip" | head -1)
+          ZIP_NAME=$(basename "$UPDATER_ZIP")
+          SIG_CONTENT=$(cat "${UPDATER_ZIP}.sig")
 
           cat > latest.json <<EOF
           {
@@ -73,7 +76,7 @@ jobs:
             "pub_date": "${PUB_DATE}",
             "platforms": {
               "windows-x86_64": {
-                "url": "https://github.com/${REPO}/releases/download/${VERSION}/${EXE_NAME}",
+                "url": "https://github.com/${REPO}/releases/download/${VERSION}/${ZIP_NAME}",
                 "signature": "${SIG_CONTENT}"
               }
             }
@@ -86,12 +89,16 @@ jobs:
         shell: bash
         run: |
           NSIS_EXE=$(find src-tauri/target/release/bundle/nsis -name "*.exe" | head -1)
+          UPDATER_ZIP=$(find src-tauri/target/release/bundle/nsis -name "*.nsis.zip" | head -1)
+          UPDATER_SIG="${UPDATER_ZIP}.sig"
 
           if ! gh release create ${{ github.event.inputs.version }} \
             "$NSIS_EXE" \
+            "$UPDATER_ZIP" \
+            "$UPDATER_SIG" \
             latest.json \
             --title "Release ${{ github.event.inputs.version }}" \
-            --notes "Release ${{ github.event.inputs.version }} générée automatiquement." > release.log 2>&1; then
+            --notes-file RELEASE_NOTES.md > release.log 2>&1; then
             echo "### ❌ Échec : Création de la GitHub Release" >> $GITHUB_STEP_SUMMARY
             echo "<details><summary>🔍 Voir les logs d'erreur</summary>" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
