@@ -11,11 +11,13 @@ on:
         options: [patch, minor, major]
 
 jobs:
-  build-and-release:
-    name: 🚀 Build & Release Windows
-    runs-on: windows-latest
+  tagging:
+    name: 🏷️ Calcul et création du tag
+    runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      new_tag: ${{ steps.tag.outputs.new_tag }}
 
     steps:
       - name: 📥 Récupérer le code
@@ -31,6 +33,17 @@ jobs:
           DEFAULT_BUMP: ${{ github.event.inputs.bump }}
           WITH_V: true
           DRY_RUN: false
+
+  build-and-release:
+    name: 🚀 Build & Release Windows
+    runs-on: windows-latest
+    needs: tagging
+    permissions:
+      contents: write
+
+    steps:
+      - name: 📥 Récupérer le code
+        uses: actions/checkout@v4
 
       - name: ⚙️ Setup Node.js
         uses: actions/setup-node@v4
@@ -53,11 +66,9 @@ jobs:
       - name: 🔢 Synchroniser la version dans les fichiers
         shell: bash
         run: |
-          VERSION="${{ steps.tag.outputs.new_tag }}"
-          # Supprimer le 'v' pour les fichiers de config
+          VERSION="${{ needs.tagging.outputs.new_tag }}"
           VERSION_BARE="${VERSION#v}"
 
-          # package.json
           node -e "
             const fs = require('fs');
             const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
@@ -65,7 +76,6 @@ jobs:
             fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
           "
 
-          # tauri.conf.json
           node -e "
             const fs = require('fs');
             const conf = JSON.parse(fs.readFileSync('src-tauri/tauri.conf.json', 'utf8'));
@@ -73,7 +83,6 @@ jobs:
             fs.writeFileSync('src-tauri/tauri.conf.json', JSON.stringify(conf, null, 2) + '\n');
           "
 
-          # Cargo.toml (sed sur la ligne version du [package])
           sed -i "0,/^version = /s/^version = \".*\"/version = \"${VERSION_BARE}\"/" src-tauri/Cargo.toml
 
           echo "✅ Version synchronisée : ${VERSION_BARE}" >> $GITHUB_STEP_SUMMARY
@@ -106,7 +115,7 @@ jobs:
       - name: 📝 Générer latest.json
         shell: bash
         run: |
-          VERSION="${{ steps.tag.outputs.new_tag }}"
+          VERSION="${{ needs.tagging.outputs.new_tag }}"
           VERSION_BARE="${VERSION#v}"
           PUB_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           REPO="Zoran-n/ProStatsClub"
@@ -148,7 +157,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
-          VERSION="${{ steps.tag.outputs.new_tag }}"
+          VERSION="${{ needs.tagging.outputs.new_tag }}"
           NSIS_EXE=$(find src-tauri/target/release/bundle -name "*.exe" | head -1)
           UPDATER_ZIP=$(find src-tauri/target/release/bundle -name "*.nsis.zip" | head -1)
           SIG_FILE=$(find src-tauri/target/release/bundle -name "*.nsis.zip.sig" | head -1)
@@ -173,17 +182,18 @@ jobs:
   report:
     name: 📊 Rapport de Release
     runs-on: ubuntu-latest
-    needs: [build-and-release]
+    needs: [tagging, build-and-release]
     if: always()
     steps:
       - name: 📝 Générer le résumé Markdown
         run: |
           echo "# 📊 Rapport de Release" >> $GITHUB_STEP_SUMMARY
           echo "## 📌 Informations" >> $GITHUB_STEP_SUMMARY
-          echo "- **Bump** : \`${{ github.event.inputs.bump }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version** : \`${{ needs.tagging.outputs.new_tag }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Branche** : \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## ⚙️ Résultat" >> $GITHUB_STEP_SUMMARY
-          echo "- 🚀 Release : ${{ needs.build-and-release.result == 'success' && '✅ Succès' || '❌ Échec' }}" >> $GITHUB_STEP_SUMMARY
+          echo "## ⚙️ Résultats" >> $GITHUB_STEP_SUMMARY
+          echo "- 🏷️ Tagging : ${{ needs.tagging.result == 'success' && '✅ Succès' || '❌ Échec' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 🚀 Build & Release : ${{ needs.build-and-release.result == 'success' && '✅ Succès' || '❌ Échec' }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "> 💡 *Ce rapport a été généré automatiquement.*" >> $GITHUB_STEP_SUMMARY
