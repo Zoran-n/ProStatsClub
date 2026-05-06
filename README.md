@@ -210,6 +210,11 @@ Application desktop pour suivre les statistiques de votre club EA FC Pro Clubs. 
   - Répartition par poste (matchs, buts, PD, note moy)
   - Tableau des 25 dernières performances individuelles
   - Indicateur "X matchs (Y analysés)" distinguant totaux saison et matchs en cache
+- **Carte Joueur Publique** : section dédiée dans *Mon Profil* permettant de personnaliser et d'exporter une "Carte Pro"
+  - Choix de 6 statistiques clés à afficher
+  - Paramétrage d'un objectif de saison (barre de progression intégrée)
+  - Sélection parmi plusieurs thèmes visuels (Gold, Neon, Dark, Minimaliste)
+  - Export direct en PNG ou partage instantané sur le Discord de l'équipe
 
 ### Interface
 
@@ -315,20 +320,3 @@ Application desktop pour suivre les statistiques de votre club EA FC Pro Clubs. 
 - **Notifications sonores** : son court configurable à chaque nouveau match détecté, victoire, ou objectif atteint — désactivable par type
 - **Sidebar redimensionnable** : drag sur le bord pour ajuster la largeur de la sidebar favoris/canaux — dimension persistée
 - **Tour guidé interactif** : bouton "?" dans le header qui lance un overlay de tutoriel étape par étape sur la vue courante (tooltips positionnés sur les éléments)
-
-
-
-
-
----
-
-## ⭐ Fonctionnalité phare proposée — Profil Joueur Public
-
-Page `Mon Profil > Carte Publique` exportable et partageable :
-
-- **Carte identité joueur** : canvas style carte Pro Player — avatar initiales XL, gamertag, club, badge de division, saison en cours
-- **Statistiques signature** : 6 stats clés choisies par le joueur (buts, note moy., MOTM, présence, PD, tacles) affichées en grands chiffres colorés
-- **QR code intégré** (optionnel) : lien vers un export JSON des stats publiques du joueur — scannable par d'autres utilisateurs de l'app
-- **Barre de progression vers un objectif** : "X buts pour atteindre mon record de saison" ou "X MOTM pour le podium" — configurable
-- **Partage en un clic** : bouton Discord envoie l'image PNG directement sur le webhook, bouton Copier pour les réseaux sociaux
-- **Comparaison rapide** : tout utilisateur de l'app qui charge la carte peut la comparer à son propre profil en superposition
