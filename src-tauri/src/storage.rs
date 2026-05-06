@@ -1,10 +1,10 @@
-use std::path::PathBuf;
-use std::io::{Read, Write};
-use anyhow::Result;
-use flate2::Compression;
-use flate2::write::GzEncoder;
-use flate2::read::GzDecoder;
 use crate::models::Settings;
+use anyhow::Result;
+use flate2::read::GzDecoder;
+use flate2::write::GzEncoder;
+use flate2::Compression;
+use std::io::{Read, Write};
+use std::path::PathBuf;
 
 // Gzip magic bytes
 const GZIP_MAGIC: [u8; 2] = [0x1f, 0x8b];
@@ -61,5 +61,36 @@ impl StorageManager {
     #[allow(dead_code)]
     pub fn settings_file_size(&self) -> u64 {
         self.settings_path.metadata().map(|m| m.len()).unwrap_or(0)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::tempdir;
+
+    #[test]
+    fn save_and_reload_settings_roundtrip() {
+        let dir = tempdir().expect("failed to create temp dir");
+        let manager = StorageManager::new(dir.path().to_path_buf());
+
+        let original = Settings {
+            proxy_url: Some("http://localhost:8080".to_string()),
+            ..Default::default()
+        };
+        manager.save_settings(&original).expect("save failed");
+
+        let loaded = manager.load_settings();
+        assert_eq!(loaded.proxy_url, original.proxy_url);
+    }
+
+    #[test]
+    fn load_settings_returns_default_when_file_missing() {
+        let dir = tempdir().expect("failed to create temp dir");
+        let manager = StorageManager::new(dir.path().to_path_buf());
+
+        let settings = manager.load_settings();
+        assert_eq!(settings.proxy_url, None);
+        assert_eq!(settings.theme, "cyan");
     }
 }

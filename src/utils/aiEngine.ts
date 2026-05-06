@@ -231,10 +231,10 @@ export function detectPerformanceAnomaly(playerMatches: { rating: number }[]): '
  */
 export function suggestPosition(p: Player): { pos: string; score: number }[] {
   const scores: { pos: string; score: number }[] = [
-    { pos: 'ST',  score: (p.goals * 5 + (p.rating > 7.5 ? 10 : 0)) },
-    { pos: 'CAM', score: (p.assists * 4 + p.passesMade * 0.05) },
-    { pos: 'CDM', score: (p.tacklesMade * 3 + (p.interceptions || 0) * 2) },
-    { pos: 'CB',  score: (p.tacklesMade * 4 + (p.interceptions || 0) * 3) },
+    { pos: 'ST',  score: ((p.goals || 0) * 5 + (p.rating > 7.5 ? 10 : 0)) },
+    { pos: 'CAM', score: ((p.assists || 0) * 4 + (p.passesMade || 0) * 0.05) },
+    { pos: 'CDM', score: ((p.tacklesMade || 0) * 3 + (p.interceptions || 0) * 2) },
+    { pos: 'CB',  score: ((p.tacklesMade || 0) * 4 + (p.interceptions || 0) * 3) },
     { pos: 'GK',  score: ((p.saveAttempts || 0) * 5 + (p.cleanSheets || 0) * 10) },
   ];
 

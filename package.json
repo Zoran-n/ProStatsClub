@@ -1,7 +1,7 @@
 {
   "name": "proclubs-tauri",
   "private": true,
-  "version": "0.4.1",
+  "version": "0.5.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,13 +9,14 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "test": "vitest run",
+    "test:unit": "vitest run",
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@fontsource/barlow": "^5.2.8",
     "@tailwindcss/vite": "^4.2.1",
-    "@tauri-apps/api": "^2",
+    "@tauri-apps/api": "^2.11.0",
     "@tauri-apps/plugin-autostart": "^2.5.1",
     "@tauri-apps/plugin-notification": "^2.3.3",
     "@tauri-apps/plugin-opener": "^2",
@@ -34,11 +35,14 @@
     "zustand": "^5.0.11"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2",
+    "@tauri-apps/cli": "^2.11.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.6.0",
     "@vitest/ui": "^3.0.0",
+    "jsdom": "^29.1.1",
     "typescript": "~5.8.3",
     "vite": "^7.0.4",
     "vitest": "^3.0.0"

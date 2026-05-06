@@ -179,6 +179,16 @@ export interface SyncEntry {
   note?: string;
 }
 
+export interface PublicProfileConfig {
+  selectedStats: string[];
+  objective?: {
+    targetStat: string;
+    targetValue: number;
+    title: string;
+  };
+  theme?: string;
+}
+
 export interface Settings {
   history: Club[];
   favs: Club[];
@@ -215,6 +225,7 @@ export interface Settings {
   favFolders?: { id: string; name: string; clubIds: string[] }[];
   srAlerts?: string[];
   savedComparisons?: SavedComparison[];
+  publicProfileConfig?: PublicProfileConfig;
 }
 
 export interface ClubData {

@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Club, Player, Match, Session, Tactic, EaProfile, SyncEntry, CompareEntry, SessionTemplate, SavedComparison, RecordEntry } from "../types";
+import type { Club, Player, Match, Session, Tactic, EaProfile, SyncEntry, CompareEntry, SessionTemplate, SavedComparison, RecordEntry, PublicProfileConfig } from "../types";
 import type { ToastMessage } from "../components/UI/Toast";
 import { saveSettings as apiSave, loadSettings as apiLoad, setProxy as apiSetProxy } from "../api/tauri";
 import type { Lang } from "../i18n";
@@ -7,7 +7,7 @@ import { sendDiscordWebhook } from "../api/discord";
 import { buildSessionSummaryEmbed } from "../utils/discordEmbeds";
 
 export type ActiveTab = "players" | "matches" | "charts" | "session" | "compare";
-export type SidebarTab = "search" | "favs" | "settings" | "profile" | "myprofile";
+export type SidebarTab = "search" | "favs" | "settings" | "profile" | "myprofile" | "analyse";
 
 // Injects a <style> tag that proportionally overrides hard-coded inline font-size px values.
 // This scales only text, without affecting layout dimensions or icons.
@@ -92,6 +92,7 @@ interface AppState {
   autoPostSession: boolean;
   personalRecords: RecordEntry[];
   recordAlerts: RecordEntry[];
+  publicProfileConfig: PublicProfileConfig | null;
 
   addCompareEntry: (entry: CompareEntry) => void;
   deleteCompareEntry: (id: string) => void;
@@ -185,6 +186,7 @@ interface AppState {
   applyProxy: (url: string) => Promise<void>;
   loadSettings: () => Promise<void>;
   persistSettings: () => Promise<void>;
+  setPublicProfileConfig: (config: PublicProfileConfig) => void;
 }
 
 // ── Selective persistence: skip apiSave if nothing changed ───────────────────
@@ -239,6 +241,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   autoPostSession: false,
   personalRecords: [],
   recordAlerts: [],
+  publicProfileConfig: null,
 
   addCompareEntry: (entry) => set((s) => ({
     compareHistory: [entry, ...s.compareHistory.filter((e) => e.id !== entry.id)].slice(0, 20),
@@ -597,6 +600,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     get().setNavLayout(profile.navLayout as "horizontal" | "vertical" | "right" | "bottom");
     get().persistSettings();
   },
+  setPublicProfileConfig: (config) => set({ publicProfileConfig: config }),
 
   applyProxy: async (url: string) => {
     await apiSetProxy(url.trim() || null);
@@ -672,6 +676,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         palettePreset,
         autoPostSession: ((s as unknown as Record<string, unknown>).autoPostSession as boolean) ?? false,
         personalRecords: ((s as unknown as Record<string, unknown>).personalRecords as RecordEntry[]) ?? [],
+        publicProfileConfig: (s.publicProfileConfig as PublicProfileConfig) ?? null,
         settingsLoaded: true,
       });
     } catch { /* first launch */ } finally {
@@ -684,7 +689,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       theme, darkMode, proxyUrl,
       showGrid, showAnimations, showLogs, showIdSearch, fontSize, fontFamily, customAccent, customBg, customSurface, customCard, language, onboarded, matchCache, cacheTimestamps, cacheOwners, discordWebhook, autoUpdate, matchAnnotations, visibleKpis, navLayout, sessionTemplates,
       streamingMode, customShortcuts, scheduledNotifications, interfaceProfiles,
-      favFolders, srAlerts, savedComparisons, palettePreset, autoPostSession, personalRecords } = get();
+      favFolders, srAlerts, savedComparisons, palettePreset, autoPostSession, personalRecords, publicProfileConfig } = get();
     const payload = {
       history, favs, tactics, sessions, compareHistory,
       eaProfile: eaProfile ?? undefined,
@@ -719,6 +724,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       palettePreset: palettePreset ?? undefined,
       autoPostSession,
       personalRecords,
+      publicProfileConfig: publicProfileConfig ?? undefined,
     };
     // Skip the I/O write if nothing changed
     const json = JSON.stringify(payload);

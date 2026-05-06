@@ -11,6 +11,7 @@ import { CompareTab } from "../Sidebar/CompareTab";
 import { SettingsTab } from "../Sidebar/SettingsTab";
 import { ProfilePanel } from "../Modals/ProfilePanel";
 import { MyProfilePage } from "../Tabs/MyProfilePage";
+import { AnalysePage } from "../Tabs/AnalysePage";
 import { Spinner } from "../UI/Spinner";
 import { getLogo } from "../../api/tauri";
 import { sendDiscordWebhook } from "../../api/discord";
@@ -324,6 +325,23 @@ export function MainPanel() {
   ] : [];
 
   const KPIS = ALL_KPIS_CATALOG.filter(k => visibleKpis.includes(k.key));
+
+  // ── Analyse IA page ────────────────────────────────────────────────
+  if (sidebarTab === "analyse") {
+    return (
+      <main id="main-content" style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "var(--main-bg)" }}
+        role="main" aria-label="Analyse IA">
+        <div style={{
+          height: 48, display: "flex", alignItems: "center", gap: 8,
+          padding: "0 16px", borderBottom: "1px solid rgba(0,0,0,0.24)",
+          flexShrink: 0, background: "var(--main-bg)",
+        }}>
+          <span style={{ fontSize: 15, fontWeight: 600, color: "var(--text)" }}>Analyse</span>
+        </div>
+        <AnalysePage />
+      </main>
+    );
+  }
 
   // ── My Profile stats page ───────────────────────────────────────────
   if (sidebarTab === "myprofile") {
