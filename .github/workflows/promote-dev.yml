@@ -20,7 +20,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if ! gh pr create \
-            --base main \
+            --base Main \
             --head Dev \
             --title "🚀 Release: Mise à jour depuis Dev" \
             --body "Cette PR a été générée automatiquement. Merci de vérifier avant le merge." > pr.log 2>&1; then
@@ -45,7 +45,7 @@ jobs:
           echo "# 📊 Rapport de Création de Pull Request" >> $GITHUB_STEP_SUMMARY
           echo "## 📌 Informations" >> $GITHUB_STEP_SUMMARY
           echo "- **Branche source** : \`Dev\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Branche cible** : \`main\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branche cible** : \`Main\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Déclencheur** : \`${{ github.event_name }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit** : \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
