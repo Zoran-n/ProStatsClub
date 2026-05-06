@@ -38,6 +38,7 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "createUpdaterArtifacts": true,
     "publisher": "Zoran",
     "shortDescription": "Outil de suivi et statistiques pour ProClubs EA FC",
     "icon": [

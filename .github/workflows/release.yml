@@ -95,15 +95,18 @@ jobs:
         run: |
           if [ -z "$TAURI_SIGNING_PRIVATE_KEY" ]; then
             echo "### ❌ ERREUR : TAURI_SIGNING_PRIVATE_KEY est vide ou absent" >> $GITHUB_STEP_SUMMARY
-            echo "ERREUR : Secret TAURI_SIGNING_PRIVATE_KEY manquant."
             exit 1
           fi
-          echo "✅ TAURI_SIGNING_PRIVATE_KEY présente (longueur: ${#TAURI_SIGNING_PRIVATE_KEY})" >> $GITHUB_STEP_SUMMARY
+          KEY_LEN=${#TAURI_SIGNING_PRIVATE_KEY}
+          KEY_PREFIX="${TAURI_SIGNING_PRIVATE_KEY:0:20}"
+          echo "### 🔑 Secret de signature" >> $GITHUB_STEP_SUMMARY
+          echo "- Longueur : \`${KEY_LEN}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Préfixe (20 premiers chars) : \`${KEY_PREFIX}\`" >> $GITHUB_STEP_SUMMARY
 
       - name: 🔨 Build Tauri
         shell: bash
         run: |
-          if ! npm run tauri build -- --bundles nsis > build.log 2>&1; then
+          if ! npm run tauri build -- --bundles nsis,updater > build.log 2>&1; then
             echo "### ❌ Échec : Build Tauri" >> $GITHUB_STEP_SUMMARY
             echo "<details><summary>🔍 Voir les logs d'erreur</summary>" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
