@@ -15,7 +15,18 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: '20', cache: 'npm' }
       - run: npm ci
-      - run: npm run lint --if-present
+      - name: 🧹 Lint TypeScript
+        run: |
+          if ! npm run lint --if-present > lint_ts.log 2>&1; then
+            echo "### ❌ Échec : Lint TypeScript" >> $GITHUB_STEP_SUMMARY
+            echo "<details><summary>🔍 Voir les logs d'erreur</summary>" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo '```text' >> $GITHUB_STEP_SUMMARY
+            tail -n 30 lint_ts.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "</details>" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
 
   lint-rust:
     name: 🦀 Lint Rust
@@ -25,8 +36,30 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with: { components: clippy, rustfmt }
       - uses: Swatinem/rust-cache@v2
-      - run: cargo fmt --all -- --check
-      - run: cargo clippy -- -D warnings
+      - name: 🎨 Vérification format Rust
+        run: |
+          if ! cargo fmt --all -- --check > fmt.log 2>&1; then
+            echo "### ❌ Échec : Format Rust" >> $GITHUB_STEP_SUMMARY
+            echo "<details><summary>🔍 Voir les logs d'erreur</summary>" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo '```text' >> $GITHUB_STEP_SUMMARY
+            tail -n 30 fmt.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "</details>" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+      - name: 📎 Clippy
+        run: |
+          if ! cargo clippy -- -D warnings > clippy.log 2>&1; then
+            echo "### ❌ Échec : Clippy" >> $GITHUB_STEP_SUMMARY
+            echo "<details><summary>🔍 Voir les logs d'erreur</summary>" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo '```text' >> $GITHUB_STEP_SUMMARY
+            tail -n 30 clippy.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "</details>" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
 
   tests-unit:
     name: 🧪 Tests Unitaires
@@ -38,8 +71,30 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: npm ci
-      - run: npm run test --if-present
-      - run: cargo test
+      - name: 🧪 Tests JS
+        run: |
+          if ! npm run test --if-present > test_js.log 2>&1; then
+            echo "### ❌ Échec : Tests JS" >> $GITHUB_STEP_SUMMARY
+            echo "<details><summary>🔍 Voir les logs d'erreur</summary>" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo '```text' >> $GITHUB_STEP_SUMMARY
+            tail -n 30 test_js.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "</details>" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+      - name: 🦀 Tests Rust
+        run: |
+          if ! cargo test > test_rust.log 2>&1; then
+            echo "### ❌ Échec : Tests Rust" >> $GITHUB_STEP_SUMMARY
+            echo "<details><summary>🔍 Voir les logs d'erreur</summary>" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo '```text' >> $GITHUB_STEP_SUMMARY
+            tail -n 30 test_rust.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "</details>" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
 
   tests-e2e:
     name: 🌐 Tests E2E
@@ -49,7 +104,18 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: '20', cache: 'npm' }
       - run: npm ci
-      - run: npm run test:e2e --if-present
+      - name: 🌐 Tests E2E
+        run: |
+          if ! npm run test:e2e --if-present > test_e2e.log 2>&1; then
+            echo "### ❌ Échec : Tests E2E" >> $GITHUB_STEP_SUMMARY
+            echo "<details><summary>🔍 Voir les logs d'erreur</summary>" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo '```text' >> $GITHUB_STEP_SUMMARY
+            tail -n 30 test_e2e.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "</details>" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
 
   report:
     name: 📊 Rapport de CI
