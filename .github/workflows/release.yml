@@ -177,6 +177,35 @@ jobs:
           SIG_FILE=$(find src-tauri/target/release/bundle -name "*.sig" | head -1)
           UPDATER_ZIP="${SIG_FILE%.sig}"
 
+          echo "### 📦 Fichiers à uploader" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          for f in "$NSIS_EXE" "$UPDATER_ZIP" "$SIG_FILE" latest.json; do
+            if [ -z "$f" ]; then
+              echo "MANQUANT : variable vide" >> $GITHUB_STEP_SUMMARY
+            elif [ ! -f "$f" ]; then
+              echo "INTROUVABLE : $f" >> $GITHUB_STEP_SUMMARY
+            else
+              ls -lh "$f" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+          # Vérifier que tous les fichiers requis existent
+          MISSING=0
+          for f in "$NSIS_EXE" "$UPDATER_ZIP" "$SIG_FILE"; do
+            if [ -z "$f" ] || [ ! -f "$f" ]; then
+              echo "❌ Fichier manquant ou introuvable : '$f'"
+              MISSING=1
+            fi
+          done
+          if [ "$MISSING" -eq 1 ]; then
+            echo "### ❌ Abandon : fichiers d'upload manquants" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+          # Supprimer la release existante si elle existe déjà (re-run)
+          gh release delete "${VERSION}" --yes 2>/dev/null || true
+
           if ! gh release create "${VERSION}" \
             "$NSIS_EXE" \
             "$UPDATER_ZIP" \
@@ -191,6 +220,7 @@ jobs:
             tail -n 30 release.log >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
             echo "</details>" >> $GITHUB_STEP_SUMMARY
+            cat release.log
             exit 1
           fi
 
