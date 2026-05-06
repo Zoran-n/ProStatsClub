@@ -288,32 +288,126 @@ Application desktop pour suivre les statistiques de votre club EA FC Pro Clubs. 
 
 ---
 
-## 🗺️ Roadmap (Prochaines étapes)
+## 🗺️ Roadmap
 
-Les fonctionnalités suivantes sont planifiées pour les prochaines versions :
+### 🤖 IA & Coach virtuel
 
-### 🚧 En cours / Prioritaires
+- **Analyse tactique post-match automatique** : résumé narratif généré depuis `aiEngine.ts` avec recommandations de formation selon les stats du match
+- **Score de chemistry d'équipe** : indice calculé sur les associations de joueurs récurrentes (qui joue avec qui, impact sur le résultat)
+- **Détection de patterns adverses** : identifier le style de jeu d'un club depuis son historique H2H (possession haute, pressing, contre-attaque)
+- **Suggestions de titulaires** : composition optimale proposée selon la forme des 5 derniers matchs de chaque joueur
+- **Coach alert** : notification automatique si un joueur montre des signes de baisse (anomaly detection déjà câblée dans `detectPerformanceAnomaly`)
+- **Prédiction avant match enrichie** : facteurs d'influence détaillés (forme, adversaire, heure, fatigue estimée) depuis `predictNextMatch`
 
-- **Heatmap jour × heure** : grille 7 jours × 6 créneaux horaires affichant le taux de victoire par tranche (onglet Graphiques)
-- **Rapport de saison narratif Discord** : modal de fin de saison — personnalisation du résultat (Titre/Montée/Relégation), calcul des agrégats sur N matchs, export embed Discord
-- **Bannière Mode hors-ligne** : bannière visuelle automatique quand la connexion réseau est absente, avec reprise automatique à la reconnexion
+---
 
-### 🎮 Compétition
+### ⚽ Tactiques & Formations
 
-- **Tournois internes** : bracket élimination directe ou poule avec des joueurs du club, résultats saisis manuellement
-- **Défis hebdomadaires** : objectifs auto générés chaque semaine avec badge récompense et historique
-- **Ligue personnalisée** : mini-ligue entre clubs amis avec classement, résultats et export PDF
+- **Tag formation par match** : associer la formation jouée à chaque match pour tracer l'évolution tactique
+- **Stats par formation** : V/N/D, buts pour/contre, note moyenne selon le schéma utilisé (4-3-3 vs 4-2-3-1 etc.)
+- **Comparaison matchup** : forces/faiblesses de ta formation face à la formation adverse détectée
+- **Instructions par poste** : role cards éditables dans `TacticsTab` (consignes défensives, pressing, position)
+- **Bibliothèque de plans de jeu** : sauvegarder des tactiques nommées avec notes (ex: "Plan B contre possession")
+- **Export PDF fiche tactique** : terrain + positionnement + stats par formation en un clic
 
-### 📊 Données & Analyse
+---
 
-- **Rapport de progression joueur** : bilan mensuel individuel exportable en PDF ou Discord
-- **Carte de chaleur des buteurs** : visualisation par tranches de minutes (0–30, 30–60, 60–90)
-- **Export rapport complet club** : PDF multi-sections en un clic
+### 🏆 Compétition & Tournois
 
-### 🎨 UX & Interface
+- **Bracket interne** : tournoi élimination directe ou poules entre joueurs du club, résultats saisis manuellement
+- **Mini-ligue inter-clubs** : calendrier, classement et résultats entre clubs favoris avec export PDF
+- **Défis hebdomadaires auto-générés** : objectifs calculés depuis la moyenne récente (ex: "5 victoires cette semaine") avec badge récompense
+- **Système de paris amicaux** : prédictions V/N/D avant match entre membres, classement des pronostics
+- **Challenge run** : série de N matchs sans défaite avec compteur live et notification de record battu
+- **Hall of Fame toutes saisons** : classement cumulé depuis l'installation, médailles or/argent/bronze par catégorie
 
-- **Mode présentation** : vue plein écran épurée pour streamer ou projeter les stats
-- **Notifications sonores** : son court configurable par événement (nouveau match, victoire, objectif)
+---
+
+### 📊 Analytics avancés
+
+- **Corrélation présence ↔ résultat** : impact statistique de chaque joueur sur les victoires (scatter plot présence vs % V)
+- **Analyse momentum** : détecter les séquences gagnantes/perdantes et leurs catalyseurs (changement de formation, retour joueur)
+- **Heat zones offensives** : efficacité par contexte de score (à 0-0, à 1-0, à 0-1) sur les matchs en cache
+- **Radar évolutif collectif** : superposition N-1 vs N sur le radar d'équipe pour visualiser la progression saison
+- **Analyse "Big matches"** : filtrer et analyser séparément les matchs contre le top 10 du classement
+- **Formation adverse automatique** : déduire la tactique habituelle de chaque adversaire depuis l'historique H2H
+
+---
+
+### 🔔 Notifications & Alertes intelligentes
+
+- **Résumé push hebdomadaire** : notification automatique chaque dimanche soir avec le bilan de la semaine
+- **Alerte record personnel** : push immédiat quand un joueur bat son record de buts, notes ou MOTM en une session
+- **Alerte SR critique** : notification si le Skill Rating chute de plus de X points entre deux chargements
+- **Joueur fantôme** : alerte si un membre habituel est absent depuis N matchs consécutifs
+- **Adversaire redoutable** : prévenir avant un match si le H2H est inférieur à 30% de victoires
+- **Rappels planifiés avancés** : récurrence hebdomadaire configurable par jour (ex: "Rappel entraînement tous les mardis 20h")
+
+---
+
+### 📤 Export & Communication
+
+- **Rapport PDF mensuel automatique** : généré le 1er de chaque mois, envoyable sur Discord en un clic
+- **Templates Discord personnalisables** : couleurs, structure et contenu des embeds configurables par type de partage
+- **QR code fiche club** : générer un QR pointant vers une capture PNG de la fiche club partageable hors app
+- **Galerie de captures** : historique des PNG générés dans l'app, renommables et ré-exportables
+- **Export Excel enrichi** : statistiques joueurs multi-saisons dans un classeur `.xlsx` avec onglets séparés
+- **Partage presse-papiers universel** : copier n'importe quel embed Discord formaté sans envoyer (pour coller manuellement)
+
+---
+
+### 🎮 Matchs & Gameplay
+
+- **Timeline de match** : reconstituer les événements chronologiques (but min X, carton min Y) depuis les stats disponibles
+- **Éditeur de substitutions** : noter les entrées/sorties et leur impact estimé sur le score
+- **Débriefing post-match guidé** : questionnaire rapide après chaque match (moral, tactique, joueur du match perso)
+- **Analyse mi-temps** : comparer les stats 1ère vs 2ème mi-temps sur l'historique des matchs avec score mi-temps
+- **Filtre "matchs serrés"** : isoler les matchs décidés à ±1 but pour analyser les performances dans les moments clés
+- **Évolution du score simulée** : reconstitution graphique de la progression du score depuis les événements disponibles
+
+---
+
+### 🧑‍💼 Profil & Identité joueur
+
+- **Achievements automatiques** : trophées débloqués en temps réel (100 victoires, série de 10, 50 MOTM…) avec notification et badge profil
+- **Niveau d'expérience (XP)** : points gagnés par match joué, but, MOTM — barre de progression et rang (Rookie → Legend)
+- **Comparaison toutes saisons** : évolution des stats personnelles saison par saison depuis le cache historique
+- **Mode Capitaine** : désigner le capitaine du club avec indicateur visuel et stats de leadership (V% quand il joue)
+- **Carte de visite digitale** : fiche joueur partageable avec QR code généré depuis la carte FIFA-style
+- **Historique de progressions** : courbe d'évolution du rang estimé (division) mois par mois depuis les données SR
+
+---
+
+### 🔧 Performance & Technique
+
+- **Web Worker étendu** : déléguer les calculs lourds (régression, corrélation, radar normalisé) au `statsWorker.ts` existant
+- **Cache TTL configurable** : paramètre par type de données (matchs, joueurs, SR) — invalider selon l'ancienneté
+- **Synchronisation différée** : mise en file des requêtes EA quand hors-ligne, exécution automatique à la reconnexion
+- **Mode économie de données** : désactiver le chargement automatique en arrière-plan sur réseau limité
+- **Profiling intégré** : timer d'exécution par onglet dans le DevPanel pour identifier les ralentissements
+- **Import/export cloud via GitHub Gist** : backup optionnel sur Gist privé (token GitHub configuré dans Paramètres)
+
+---
+
+### 🎨 Interface & Accessibilité
+
+- **Mode présentation** : vue plein écran épurée sans sidebar ni chrome, optimisée pour stream/projection
+- **Notifications sonores** : son court configurable par événement (nouveau match, objectif atteint, record)
+- **Thème daltonien** : palette adaptée deutéranopie/protanopie, activable dans Paramètres → Thème
+- **Zoom par section** : contrôle de zoom indépendant pour les graphiques et les tableaux joueurs
+- **Overlay raccourcis** : affichage de tous les shortcuts actifs via la touche `?` (liste dynamique selon config)
+- **Layout responsive compact** : vue colonne unique pour les petits écrans ou fenêtres réduites (< 900px)
+
+---
+
+### 🤝 Collaboration & Multi-utilisateurs
+
+- **Notes d'équipe partagées** : bloc-notes synchronisé entre membres via webhook Discord (lecture/écriture)
+- **Vue spectateur** : affichage en lecture seule des stats pour les membres sans accès complet
+- **Historique d'audit** : log des modifications importantes (chargement, suppression cache, changement config) avec horodatage
+- **Répartition des rôles** : admin, analyste, joueur — droits différenciés sur les actions sensibles
+- **Rapport collaboratif** : plusieurs membres peuvent annoter un match ou une session avant export PDF
+- **Sync de favoris** : partager sa liste de clubs favoris avec un autre membre via export/import JSON ciblé
 
 ---
 
