@@ -199,8 +199,8 @@ function PlayerCardModal({ player, posLabel, clubName, onClose }: {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/85 z-60 flex items-center justify-center" onClick={onClose}>
-      <div className="bg-[var(--card)] rounded-2xl p-6 border border-[var(--border)]" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-60 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.85)" }} onClick={onClose}>
+      <div className="rounded-lg p-6" style={{ background: "var(--card)", border: "1px solid var(--border)" }} onClick={(e) => e.stopPropagation()}>
         <p className="font-['Bebas_Neue'] text-sm text-[var(--muted)] tracking-widest mb-4 text-center">CARTE JOUEUR</p>
         <canvas ref={canvasRef} width={300} height={420} className="block rounded-xl shadow-2xl" />
         <div className="flex gap-2 mt-4 justify-center">
@@ -433,7 +433,7 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
 
   const anomalyLabel = aiAnomaly === "peak"  ? { text: "🔥 Exceptionnelle", cls: "text-green-400" }
     : aiAnomaly === "slump" ? { text: "⚠️ En baisse",      cls: "text-red-400"   }
-    : { text: "Standard", cls: "text-zinc-400" };
+    : { text: "Standard", cls: "" };
 
   const advStats: { label: string; value: number; color: string; icon: React.ReactNode }[] = [
     ...(player.shotsOnTarget  ? [{ label: t("players.shotsOnTarget"), value: player.shotsOnTarget, color: "var(--accent)", icon: <Target size={12} /> }] : []),
@@ -474,27 +474,30 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
     <>
       {/* ── Backdrop ── */}
       <div
-        className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4"
+        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        style={{ background: "rgba(0,0,0,0.8)" }}
         onClick={onClose}
       >
         <div
-          className="relative bg-zinc-900 rounded-2xl border border-zinc-700/60 w-full max-w-[540px] max-h-[92vh] overflow-y-auto shadow-2xl"
-          style={{ animation: "fadeSlideIn 0.15s ease-out" }}
+          className="relative w-full max-w-[540px] max-h-[92vh] overflow-y-auto rounded-lg shadow-2xl"
+          style={{ background: "var(--main-bg)", border: "1px solid var(--border)", animation: "fadeSlideIn 0.15s ease-out" }}
           onClick={(e) => e.stopPropagation()}
         >
 
           {/* ══ HEADER ══════════════════════════════════════════════════════ */}
-          <div className="sticky top-0 z-10 bg-zinc-900/95 backdrop-blur-sm border-b border-zinc-700/60 px-5 py-4 rounded-t-2xl">
+          <div className="sticky top-0 z-10 px-5 py-4 rounded-t-lg"
+            style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
             <div className="flex items-start justify-between gap-3">
               {/* Avatar + name + badges */}
               <div className="flex items-center gap-3">
                 <PlayerAvatar name={player.name} size={48} />
                 <div>
-                  <h3 className="font-['Bebas_Neue'] text-2xl text-white tracking-wide leading-tight">
+                  <h3 className="font-['Bebas_Neue'] text-2xl tracking-wide leading-tight" style={{ color: "var(--text)" }}>
                     {player.name.toUpperCase()}
                   </h3>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="px-2 py-0.5 rounded-md bg-zinc-800 border border-zinc-600 text-[10px] font-['Bebas_Neue'] text-zinc-300 tracking-widest">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-['Bebas_Neue'] tracking-widest"
+                      style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--muted)" }}>
                       {posLabel}
                     </span>
                     {trendSummary && (
@@ -509,23 +512,23 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
               {/* Action buttons */}
               <div className="flex items-center gap-1.5 flex-shrink-0">
                 <button onClick={() => setShowCardModal(true)}
-                  className="flex items-center gap-1 px-2.5 py-1.5 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-yellow-400 text-[11px] font-semibold hover:bg-yellow-500/20 transition-colors cursor-pointer">
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded text-[11px] font-semibold transition-colors cursor-pointer"
+                  style={{ background: "#f59e0b18", border: "1px solid #f59e0b44", color: "#fcd34d" }}>
                   <CreditCard size={11} /> Carte
                 </button>
                 <button onClick={() => setShowPdfModal(true)} disabled={exporting}
-                  className="flex items-center gap-1 px-2.5 py-1.5 bg-orange-500/10 border border-orange-500/30 rounded-lg text-orange-400 text-[11px] font-semibold hover:bg-orange-500/20 transition-colors cursor-pointer disabled:opacity-50">
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded text-[11px] font-semibold transition-colors cursor-pointer disabled:opacity-50"
+                  style={{ background: "#fb923c18", border: "1px solid #fb923c44", color: "#fb923c" }}>
                   <FileText size={11} /> PDF
                 </button>
                 {discordWebhook && (
                   <button onClick={handleShareDiscord} disabled={sharing}
-                    className="flex items-center gap-1 px-2.5 py-1.5 bg-indigo-500/15 border border-indigo-500/35 rounded-lg text-indigo-400 text-[11px] font-semibold hover:bg-indigo-500/25 transition-colors cursor-pointer disabled:opacity-50">
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded text-[11px] font-semibold transition-colors cursor-pointer disabled:opacity-50"
+                    style={{ background: "var(--active)", border: "1px solid var(--accent)", color: "var(--accent)" }}>
                     <Send size={11} /> {sharing ? "…" : "Discord"}
                   </button>
                 )}
-                <button onClick={onClose}
-                  className="w-7 h-7 flex items-center justify-center rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-700 transition-colors cursor-pointer text-base">
-                  ✕
-                </button>
+                <button onClick={onClose} className="win-btn">✕</button>
               </div>
             </div>
           </div>
@@ -533,21 +536,19 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
           <div className="px-5 py-4 space-y-4">
 
             {/* ══ IA INSIGHT ══════════════════════════════════════════════ */}
-            <div className="relative rounded-xl border border-cyan-500/25 bg-cyan-500/5 p-3.5 overflow-hidden">
-              {/* glow accent */}
-              <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-cyan-400/10 blur-2xl pointer-events-none" />
+            <div className="rounded-lg p-3.5" style={{ border: "1px solid var(--accent)33", background: "var(--active)" }}>
               <div className="flex items-center gap-2 mb-3">
-                <BrainCircuit size={14} className="text-cyan-400" />
-                <span className="font-['Bebas_Neue'] text-[11px] tracking-widest text-cyan-400">CONSEILS IA</span>
-                <span className="ml-auto text-[9px] text-zinc-500 italic">analyse heuristique</span>
+                <BrainCircuit size={14} style={{ color: "var(--accent)" }} />
+                <span className="font-['Bebas_Neue'] text-[11px] tracking-widest" style={{ color: "var(--accent)" }}>CONSEILS IA</span>
+                <span className="ml-auto text-[9px] italic" style={{ color: "var(--muted)" }}>analyse heuristique</span>
               </div>
               <div className="flex items-center justify-between text-xs">
-                <span className="text-zinc-400">Position recommandée</span>
-                <span className="font-bold text-green-400 bg-green-400/10 px-2 py-0.5 rounded-md">{aiPosition}</span>
+                <span style={{ color: "var(--muted)" }}>Position recommandée</span>
+                <span className="font-bold px-2 py-0.5 rounded" style={{ color: "var(--green)", background: "var(--green)18" }}>{aiPosition}</span>
               </div>
               {aiAnomaly && (
                 <div className="flex items-center justify-between text-xs mt-2">
-                  <span className="text-zinc-400">Analyse de forme</span>
+                  <span style={{ color: "var(--muted)" }}>Analyse de forme</span>
                   <span className={`font-bold ${anomalyLabel.cls}`}>{anomalyLabel.text}</span>
                 </div>
               )}
@@ -555,13 +556,14 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
 
             {/* ══ NOTE DOMINANTE + STATS CLÉS ══════════════════════════════ */}
             <div>
-              <p className="font-['Bebas_Neue'] text-[10px] tracking-widest text-zinc-500 mb-2">STATISTIQUES CLÉS</p>
+              <p className="category-header mb-2">STATISTIQUES CLÉS</p>
               {/* Note en vedette */}
               {player.rating > 0 && (
-                <div className="flex items-center justify-between mb-3 px-4 py-3 rounded-xl bg-zinc-800/60 border border-zinc-700/50">
+                <div className="flex items-center justify-between mb-3 px-4 py-3 rounded-lg"
+                  style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
                   <div className="flex items-center gap-2">
                     <Star size={16} className="text-yellow-400" />
-                    <span className="text-sm text-zinc-400 font-medium">{t("players.rating")}</span>
+                    <span className="text-sm font-medium" style={{ color: "var(--muted)" }}>{t("players.rating")}</span>
                   </div>
                   <span
                     className="font-['Bebas_Neue'] text-5xl leading-none"
@@ -585,7 +587,7 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
             {/* ══ STATS AVANCÉES ═══════════════════════════════════════════ */}
             {advStats.length > 0 && (
               <div>
-                <p className="font-['Bebas_Neue'] text-[10px] tracking-widest text-zinc-500 mb-2">{t("players.advancedStats")}</p>
+                <p className="category-header mb-2">{t("players.advancedStats")}</p>
                 <div className="grid grid-cols-4 gap-2">
                   {advStats.map(({ label, value, color, icon }) => (
                     <StatCard key={label} label={label} value={value} color={color} icon={icon} />
@@ -596,61 +598,55 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
 
             {/* ══ GRAPHIQUE D'ÉVOLUTION ════════════════════════════════════ */}
             {(evoData.length > 1 || monthlyData.length > 1) && (
-              <div className="rounded-xl border border-zinc-700/60 bg-zinc-800/30 p-4">
+              <div className="rounded-lg p-4" style={{ border: "1px solid var(--border)", background: "var(--surface)" }}>
                 <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-                  <p className="font-['Bebas_Neue'] text-[10px] tracking-widest text-zinc-500">{t("players.evolution")}</p>
-                  {/* Chart view toggle */}
-                  <div className="flex gap-1 bg-zinc-900 rounded-lg p-0.5">
+                  <p className="category-header">{t("players.evolution")}</p>
+                  <div className="flex gap-1 rounded p-0.5" style={{ background: "var(--bg)" }}>
                     {(["match", "monthly"] as const).map((v) => (
                       <button key={v} onClick={() => setChartView(v)}
-                        className={`px-2.5 py-1 rounded-md text-[10px] font-semibold transition-all cursor-pointer ${
-                          chartView === v
-                            ? "bg-[var(--accent)] text-black"
-                            : "text-zinc-500 hover:text-zinc-300"
-                        }`}>
+                        className="px-2.5 py-1 rounded text-[10px] font-semibold transition-all cursor-pointer"
+                        style={chartView === v
+                          ? { background: "var(--accent)", color: "#fff" }
+                          : { color: "var(--muted)", background: "transparent" }}>
                         {v === "match" ? "Par match" : "Par mois"}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                {/* Stat + trend toggles */}
                 {chartView === "match" && (
                   <div className="flex items-center gap-1.5 mb-3 flex-wrap">
                     {(["rating", "goals", "assists"] as const).map((s) => (
                       <button key={s} onClick={() => setEvoStat(s)}
-                        className={`px-2.5 py-1 rounded-md text-[10px] font-semibold border transition-all cursor-pointer ${
-                          evoStat === s
-                            ? "bg-[var(--accent)] border-[var(--accent)] text-black"
-                            : "bg-zinc-900 border-zinc-700 text-zinc-400 hover:border-zinc-500"
-                        }`}>
+                        className="px-2.5 py-1 rounded text-[10px] font-semibold transition-all cursor-pointer"
+                        style={evoStat === s
+                          ? { background: "var(--accent)", border: "1px solid var(--accent)", color: "#fff" }
+                          : { background: "var(--bg)", border: "1px solid var(--border)", color: "var(--muted)" }}>
                         {s === "rating" ? t("players.rating") : s === "goals" ? t("players.goals") : t("players.assistsShort")}
                       </button>
                     ))}
                     {evoStat === "rating" && evoData.length >= 3 && (
                       <button onClick={() => setShowTrend(v => !v)}
-                        className={`px-2.5 py-1 rounded-md text-[10px] font-semibold border transition-all cursor-pointer ${
-                          showTrend
-                            ? "bg-violet-500/15 border-violet-500/60 text-violet-400"
-                            : "bg-zinc-900 border-zinc-700 text-zinc-400 hover:border-zinc-500"
-                        }`}>
+                        className="px-2.5 py-1 rounded text-[10px] font-semibold transition-all cursor-pointer"
+                        style={showTrend
+                          ? { background: "#8b5cf618", border: "1px solid #8b5cf655", color: "#c4b5fd" }
+                          : { background: "var(--bg)", border: "1px solid var(--border)", color: "var(--muted)" }}>
                         📈 Tendance
                       </button>
                     )}
                   </div>
                 )}
 
-                {/* Chart par match */}
                 {chartView === "match" && evoData.length > 1 && (
                   <>
                     <ResponsiveContainer width="100%" height={150}>
                       <LineChart data={trendChartData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" />
-                        <XAxis dataKey="match" tick={{ fill: "#71717a", fontSize: 9 }} />
-                        <YAxis tick={{ fill: "#71717a", fontSize: 9 }} domain={evoStat === "rating" ? [0, 10] : [0, "auto"]} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                        <XAxis dataKey="match" tick={{ fill: "var(--muted)", fontSize: 9 }} />
+                        <YAxis tick={{ fill: "var(--muted)", fontSize: 9 }} domain={evoStat === "rating" ? [0, 10] : [0, "auto"]} />
                         <Tooltip
-                          contentStyle={{ background: "#27272a", border: "1px solid #3f3f46", borderRadius: 8, fontSize: 11 }}
-                          labelStyle={{ color: "#71717a" }}
+                          contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 4, fontSize: 11 }}
+                          labelStyle={{ color: "var(--muted)" }}
                           formatter={(v: unknown, name: unknown) => {
                             const n = Number(v); if (isNaN(n)) return [null, String(name)];
                             const nameStr = String(name ?? "");
@@ -671,36 +667,34 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
                           <Line type="monotone" dataKey="projected" stroke="#8b5cf6" strokeWidth={1.5} strokeDasharray="2 2" dot={{ r: 2, fill: "#8b5cf6" }} connectNulls={false} />
                         )}
                         {showTrend && evoData.length > 0 && (
-                          <ReferenceLine x={`M${evoData.length}`} stroke="#3f3f46" strokeDasharray="3 3" />
+                          <ReferenceLine x={`M${evoData.length}`} stroke="var(--border)" strokeDasharray="3 3" />
                         )}
                       </LineChart>
                     </ResponsiveContainer>
 
-                    {/* Trend summary */}
                     {showTrend && trendSummary && (
-                      <div className="mt-3 pt-3 border-t border-zinc-700/60">
+                      <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--border)" }}>
                         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
                           <span className="font-bold" style={{ color: trendSummary.dirColor }}>{trendSummary.direction}</span>
-                          <span className="text-zinc-400">Moy. 5 derniers : <strong className="text-white">{trendSummary.avg5}</strong></span>
-                          <span className="text-zinc-400">Projection : <strong className="text-violet-400">{trendSummary.projectedAvg}</strong></span>
-                          <span className="text-zinc-400">Pente : <strong className="text-white">{trendSummary.slope > 0 ? "+" : ""}{trendSummary.slope}</strong> / match</span>
+                          <span style={{ color: "var(--muted)" }}>Moy. 5 derniers : <strong style={{ color: "var(--text)" }}>{trendSummary.avg5}</strong></span>
+                          <span style={{ color: "var(--muted)" }}>Projection : <strong style={{ color: "#c4b5fd" }}>{trendSummary.projectedAvg}</strong></span>
+                          <span style={{ color: "var(--muted)" }}>Pente : <strong style={{ color: "var(--text)" }}>{trendSummary.slope > 0 ? "+" : ""}{trendSummary.slope}</strong> / match</span>
                         </div>
                       </div>
                     )}
                   </>
                 )}
 
-                {/* Chart par mois */}
                 {chartView === "monthly" && monthlyData.length > 0 && (
                   <>
                     <ResponsiveContainer width="100%" height={190}>
                       <BarChart data={monthlyData} margin={{ top: 4, right: 4, bottom: 4, left: -10 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" />
-                        <XAxis dataKey="month" tick={{ fill: "#71717a", fontSize: 8 }} />
-                        <YAxis yAxisId="left" tick={{ fill: "#71717a", fontSize: 8 }} />
-                        <YAxis yAxisId="right" orientation="right" domain={[0, 10]} tick={{ fill: "#71717a", fontSize: 8 }} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                        <XAxis dataKey="month" tick={{ fill: "var(--muted)", fontSize: 8 }} />
+                        <YAxis yAxisId="left" tick={{ fill: "var(--muted)", fontSize: 8 }} />
+                        <YAxis yAxisId="right" orientation="right" domain={[0, 10]} tick={{ fill: "var(--muted)", fontSize: 8 }} />
                         <Tooltip
-                          contentStyle={{ background: "#27272a", border: "1px solid #3f3f46", borderRadius: 8, fontSize: 11 }}
+                          contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 4, fontSize: 11 }}
                           formatter={(v: unknown, name: unknown) => {
                             const labels: Record<string, string> = { goals: "Buts", assists: "PD", rating: "Note moy", games: "MJ" };
                             return [Number(v), labels[String(name ?? "")] ?? String(name)];
@@ -708,11 +702,11 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
                         />
                         <Bar yAxisId="left" dataKey="goals"   fill="var(--accent)" opacity={0.9} radius={[2,2,0,0]} />
                         <Bar yAxisId="left" dataKey="assists" fill="#8b5cf6"        opacity={0.8} radius={[2,2,0,0]} />
-                        <Bar yAxisId="left" dataKey="games"   fill="#52525b"        opacity={0.4} radius={[2,2,0,0]} />
-                        <Line yAxisId="right" type="monotone" dataKey="rating" stroke="#ffd700" strokeWidth={2} dot={{ r: 3, fill: "#ffd700" }} />
+                        <Bar yAxisId="left" dataKey="games"   fill="var(--border)"  opacity={0.6} radius={[2,2,0,0]} />
+                        <Line yAxisId="right" type="monotone" dataKey="rating" stroke="var(--gold)" strokeWidth={2} dot={{ r: 3, fill: "var(--gold)" }} />
                       </BarChart>
                     </ResponsiveContainer>
-                    <p className="text-[9px] text-zinc-500 text-center mt-1">{monthlyData.length} mois · tous types de matchs</p>
+                    <p className="text-[9px] text-center mt-1" style={{ color: "var(--muted)" }}>{monthlyData.length} mois · tous types de matchs</p>
                   </>
                 )}
               </div>
@@ -722,11 +716,10 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
             <div>
               <button
                 onClick={() => setShowPeriods(v => !v)}
-                className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl border text-[11px] font-['Bebas_Neue'] tracking-widest transition-all cursor-pointer ${
-                  showPeriods
-                    ? "bg-cyan-500/8 border-cyan-500/40 text-cyan-400"
-                    : "bg-zinc-800/50 border-zinc-700/60 text-zinc-400 hover:border-zinc-600"
-                }`}>
+                className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-[11px] font-['Bebas_Neue'] tracking-widest transition-all cursor-pointer"
+                style={showPeriods
+                  ? { background: "var(--active)", border: "1px solid var(--accent)", color: "var(--accent)" }
+                  : { background: "var(--surface)", border: "1px solid var(--border)", color: "var(--muted)" }}>
                 <span>COMPARER 2 PÉRIODES</span>
                 <span className="text-xs">{showPeriods ? "▲" : "▼"}</span>
               </button>
@@ -735,7 +728,7 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
                 const statsA = computePeriodStats(periodA.start, periodA.end);
                 const statsB = computePeriodStats(periodB.start, periodB.end);
                 const arrow = (a: number, b: number) =>
-                  a === 0 && b === 0 ? { icon: "→", cls: "text-zinc-500" }
+                  a === 0 && b === 0 ? { icon: "→", cls: "" }
                   : a > b            ? { icon: "↑", cls: "text-green-400" }
                   : a < b            ? { icon: "↓", cls: "text-red-400" }
                   :                    { icon: "=", cls: "text-yellow-400" };
@@ -753,25 +746,28 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
                   period: typeof periodA; setter: typeof setPeriodA;
                 }) => (
                   <div className="flex-1">
-                    <p className="text-[9px] text-zinc-500 mb-1">{label}</p>
+                    <p className="text-[9px] mb-1" style={{ color: "var(--muted)" }}>{label}</p>
                     <input type="date" value={period[field]}
                       onChange={e => setter(p => ({ ...p, [field]: e.target.value }))}
-                      className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-[11px] text-zinc-200 outline-none focus:border-[var(--accent)]" />
+                      className="w-full rounded px-2 py-1.5 text-[11px] outline-none"
+                      style={{ background: "var(--bg)", border: "1px solid var(--border)", color: "var(--text)", colorScheme: "dark" }}
+                      onFocus={e => { e.target.style.borderColor = "var(--accent)"; }}
+                      onBlur={e => { e.target.style.borderColor = "var(--border)"; }} />
                   </div>
                 );
 
                 return (
                   <div className="mt-2 space-y-3">
                     <div className="grid grid-cols-2 gap-2">
-                      <div className="bg-zinc-800/60 rounded-xl p-3 border border-cyan-500/20">
-                        <p className="font-['Bebas_Neue'] text-[10px] tracking-widest text-cyan-400 mb-2">PÉRIODE A</p>
+                      <div className="rounded-lg p-3" style={{ background: "var(--surface)", border: "1px solid var(--accent)33" }}>
+                        <p className="font-['Bebas_Neue'] text-[10px] tracking-widest mb-2" style={{ color: "var(--accent)" }}>PÉRIODE A</p>
                         <div className="flex gap-2">
                           <DateInput label="Début" field="start" period={periodA} setter={setPeriodA} />
                           <DateInput label="Fin"   field="end"   period={periodA} setter={setPeriodA} />
                         </div>
                       </div>
-                      <div className="bg-zinc-800/60 rounded-xl p-3 border border-violet-500/20">
-                        <p className="font-['Bebas_Neue'] text-[10px] tracking-widest text-violet-400 mb-2">PÉRIODE B</p>
+                      <div className="rounded-lg p-3" style={{ background: "var(--surface)", border: "1px solid #8b5cf633" }}>
+                        <p className="font-['Bebas_Neue'] text-[10px] tracking-widest mb-2" style={{ color: "#c4b5fd" }}>PÉRIODE B</p>
                         <div className="flex gap-2">
                           <DateInput label="Début" field="start" period={periodB} setter={setPeriodB} />
                           <DateInput label="Fin"   field="end"   period={periodB} setter={setPeriodB} />
@@ -780,19 +776,21 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
                     </div>
 
                     {(statsA || statsB) && (
-                      <div className="rounded-xl border border-zinc-700/60 overflow-hidden">
-                        <div className="grid grid-cols-[1fr_auto_auto_auto] bg-zinc-800/80 text-[9px] font-['Bebas_Neue'] tracking-widest">
-                          <div className="px-3 py-2 text-zinc-500">STAT</div>
-                          <div className="px-4 py-2 text-center text-cyan-400">A</div>
-                          <div className="px-3 py-2 text-center text-zinc-500"></div>
-                          <div className="px-4 py-2 text-center text-violet-400">B</div>
+                      <div className="rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+                        <div className="grid grid-cols-[1fr_auto_auto_auto] text-[9px] font-['Bebas_Neue'] tracking-widest"
+                          style={{ background: "var(--card)" }}>
+                          <div className="px-3 py-2" style={{ color: "var(--muted)" }}>STAT</div>
+                          <div className="px-4 py-2 text-center" style={{ color: "var(--accent)" }}>A</div>
+                          <div className="px-3 py-2 text-center" style={{ color: "var(--muted)" }}></div>
+                          <div className="px-4 py-2 text-center" style={{ color: "#c4b5fd" }}>B</div>
                         </div>
                         {ROWS.map(({ label, key }) => {
                           const a = statsA?.[key] ?? 0, b = statsB?.[key] ?? 0;
                           const { icon, cls } = arrow(Number(a), Number(b));
                           return (
-                            <div key={key} className="grid grid-cols-[1fr_auto_auto_auto] border-t border-zinc-700/60 items-center">
-                              <div className="px-3 py-2 text-xs text-zinc-300">{label}</div>
+                            <div key={key} className="grid grid-cols-[1fr_auto_auto_auto] items-center"
+                              style={{ borderTop: "1px solid var(--border)" }}>
+                              <div className="px-3 py-2 text-xs" style={{ color: "var(--text)" }}>{label}</div>
                               <div className="px-4 py-2 font-['Bebas_Neue'] text-sm text-cyan-400 text-center min-w-[48px]">
                                 {statsA ? String(key === "avgRating" ? Number(a).toFixed(1) : a) : "—"}
                               </div>
@@ -806,7 +804,7 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
                       </div>
                     )}
                     {!statsA && !statsB && (periodA.start || periodB.start) && (
-                      <p className="text-xs text-zinc-500 text-center py-2">
+                      <p className="text-xs text-center py-2" style={{ color: "var(--muted)" }}>
                         Aucune donnée trouvée pour {player.name} dans ces plages.
                       </p>
                     )}

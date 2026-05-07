@@ -12,6 +12,7 @@
     "test:unit": "vitest run",
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "type-check": "tsc --noEmit",
+    "bump": "node scripts/bump-version.js",
     "release": "node scripts/release.js",
     "release:minor": "node scripts/release.js minor",
     "release:major": "node scripts/release.js major"
