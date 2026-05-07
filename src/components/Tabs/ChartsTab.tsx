@@ -42,31 +42,29 @@ interface LeaderRow { rank: number; name: string; wins: number; losses: number; 
 
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`rounded-2xl border border-slate-800/60 bg-slate-900/50 backdrop-blur-sm p-4 ${className}`}>
+    <div className={`rounded-lg p-4 ${className}`} style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
       {children}
     </div>
   );
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="font-['Bebas_Neue'] text-[10px] tracking-widest text-slate-500 uppercase mb-3">{children}</p>
-  );
+  return <p className="category-header">{children}</p>;
 }
 
 function NoData({ text = "Aucune donnée", icon: Icon = BarChart2 }: { text?: string; icon?: React.ElementType }) {
   return (
     <div className="flex flex-col items-center justify-center py-8 gap-2">
-      <Icon size={28} className="text-slate-700" />
-      <p className="text-xs text-slate-600 text-center">{text}</p>
+      <Icon size={26} style={{ color: "var(--border)" }} />
+      <p style={{ fontSize: 11, color: "var(--muted)", textAlign: "center" }}>{text}</p>
     </div>
   );
 }
 
 const TOOLTIP_STYLE = {
-  background: "#0f172a", border: "1px solid #1e293b", borderRadius: 8, fontSize: 11,
+  background: "var(--card)", border: "1px solid var(--border)", borderRadius: 4, fontSize: 11,
 };
-const TOOLTIP_LABEL = { color: "#64748b" };
+const TOOLTIP_LABEL = { color: "var(--muted)" };
 
 /* ─── Donut ───────────────────────────────────────────────────────────────── */
 
@@ -75,7 +73,7 @@ function DonutCenter({ viewBox, value, sub }: { viewBox?: { cx: number; cy: numb
   return (
     <g>
       <text x={cx} y={cy - 4} textAnchor="middle" fill="#f1f5f9" fontFamily="'Bebas Neue', sans-serif" fontSize={28} dominantBaseline="auto">{value}</text>
-      <text x={cx} y={cy + 14} textAnchor="middle" fill="#475569" fontSize={9} dominantBaseline="auto">{sub}</text>
+      <text x={cx} y={cy + 14} textAnchor="middle" fill="#949ba4" fontSize={9} dominantBaseline="auto">{sub}</text>
     </g>
   );
 }
@@ -89,7 +87,7 @@ function DonutChart({ data, centerValue, centerSub }: {
     <ResponsiveContainer width="100%" height={160}>
       <PieChart>
         <Pie data={safe} cx="50%" cy="50%" innerRadius={48} outerRadius={70}
-          dataKey="value" startAngle={90} endAngle={-270} strokeWidth={2} stroke="#0f172a">
+          dataKey="value" startAngle={90} endAngle={-270} strokeWidth={2} stroke="#2b2d31">
           {safe.map((d, i) => <Cell key={i} fill={d.color} />)}
           <Label content={(props: unknown) => {
             const p = props as { viewBox?: { cx: number; cy: number } };
@@ -114,7 +112,7 @@ function DonutLegend({ data, total }: { data: { name: string; value: number; col
               <span className="w-2 h-2 rounded-full inline-block" style={{ background: d.color }} />
               <span className="font-['Bebas_Neue'] text-base text-white leading-none">{d.value}</span>
             </div>
-            <span className="text-[9px] text-slate-500 tracking-wider">{d.name}</span>
+            <span style={{ fontSize: 9, color: "var(--muted)" }}>{d.name}</span>
             <span className="text-[9px]" style={{ color: d.color }}>{pct}%</span>
           </div>
         );
@@ -155,8 +153,8 @@ function HBarChart({ players, valueKey, color }: {
             </div>
             {/* Name + bar */}
             <div className="flex-1 min-w-0">
-              <div className="text-[10px] text-slate-400 truncate mb-1 font-medium">{p.name}</div>
-              <div className="relative h-5 bg-slate-800/60 rounded-full overflow-hidden">
+              <div className="text-[10px] truncate mb-1 font-medium" style={{ color: "var(--muted)" }}>{p.name}</div>
+              <div className="relative h-5 rounded overflow-hidden" style={{ background: "var(--surface)" }}>
                 <div
                   className={`absolute inset-y-0 left-0 bg-gradient-to-r ${ac.bar} rounded-full transition-all duration-500`}
                   style={{ width: `${pct}%`, minWidth: val > 0 ? "1.5rem" : 0 }}
@@ -215,15 +213,15 @@ function TeamRadarSection({ matches, clubId }: { matches: Match[]; clubId: strin
                   <stop offset="100%" stopColor="#22d3ee" stopOpacity={0.05} />
                 </linearGradient>
               </defs>
-              <PolarGrid stroke="#1e293b" />
-              <PolarAngleAxis dataKey="label" tick={{ fill: "#475569", fontSize: 9, fontFamily: "'Bebas Neue', sans-serif" }} />
+              <PolarGrid stroke="#3f4147" />
+              <PolarAngleAxis dataKey="label" tick={{ fill: "#949ba4", fontSize: 9, fontFamily: "'Bebas Neue', sans-serif" }} />
               <Radar name="Équipe" dataKey="value" stroke="#22d3ee" strokeWidth={2}
                 fill="url(#radarFill)" fillOpacity={1} />
               <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={TOOLTIP_LABEL}
                 formatter={(v: unknown) => [`${v} / 100`, "Score"]} />
             </RadarChart>
           </ResponsiveContainer>
-          <p className="text-[9px] text-slate-600 text-center mt-1">Normalisé · {matches.length} match{matches.length > 1 ? "s" : ""}</p>
+          <p style={{ fontSize: 9, color: "var(--muted)", textAlign: "center", marginTop: 4 }}>Normalisé · {matches.length} match{matches.length > 1 ? "s" : ""}</p>
         </>
       )}
     </Card>
@@ -263,9 +261,9 @@ function PossessionTrendSection({ matches, clubId }: { matches: Match[]; clubId:
                   <stop offset="100%" stopColor="#22d3ee" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <XAxis dataKey="n" tick={{ fontSize: 8, fill: "#475569" }} axisLine={false} tickLine={false} />
-              <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tick={{ fontSize: 8, fill: "#475569" }} axisLine={false} tickLine={false} />
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+              <XAxis dataKey="n" tick={{ fontSize: 8, fill: "#949ba4" }} axisLine={false} tickLine={false} />
+              <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tick={{ fontSize: 8, fill: "#949ba4" }} axisLine={false} tickLine={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#3f4147" />
               <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={TOOLTIP_LABEL}
                 formatter={(v: unknown) => [`${v}%`, "Possession"]} />
               <Line type="monotone" dataKey="poss" stroke="#22d3ee" strokeWidth={2}
@@ -304,8 +302,8 @@ function ScoreDistSection({ matches, clubId }: { matches: Match[]; clubId: strin
       {data.length === 0 ? <NoData text="Aucun match chargé" icon={BarChart2} /> : (
         <ResponsiveContainer width="100%" height={155}>
           <BarChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }} barSize={16}>
-            <XAxis dataKey="score" tick={{ fontSize: 9, fill: "#475569", fontFamily: "'Bebas Neue', sans-serif" }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 8, fill: "#475569" }} axisLine={false} tickLine={false} />
+            <XAxis dataKey="score" tick={{ fontSize: 9, fill: "#949ba4", fontFamily: "'Bebas Neue', sans-serif" }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 8, fill: "#949ba4" }} axisLine={false} tickLine={false} />
             <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={TOOLTIP_LABEL}
               formatter={(v: unknown, name: unknown) => [v, name === "win" ? "Victoires" : name === "draw" ? "Nuls" : "Défaites"]} />
             <Bar dataKey="win"  stackId="a" fill="#22c55e" radius={[0, 0, 0, 0]} name="win" />
@@ -351,12 +349,12 @@ function DayHourHeatmapSection({ matches, clubId }: { matches: Match[]; clubId: 
               {/* Day headers */}
               <div />
               {days.map(d => (
-                <div key={d} className="text-center text-[8px] font-['Bebas_Neue'] tracking-wider text-slate-500 pb-1">{d}</div>
+                <div key={d} className="text-center font-['Bebas_Neue'] tracking-wider pb-1" style={{ fontSize: 8, color: "var(--muted)" }}>{d}</div>
               ))}
               {/* Rows */}
               {hours.map((h, hi) => (
                 <Fragment key={h}>
-                  <div className="text-[8px] font-['Bebas_Neue'] text-slate-600 self-center pr-1 text-right">{h}</div>
+                  <div className="font-['Bebas_Neue'] self-center pr-1 text-right" style={{ fontSize: 8, color: "var(--muted)" }}>{h}</div>
                   {days.map((_, di) => {
                     const cell = grid[`${di}-${hi}`];
                     const wr = cell && cell.total > 0 ? cell.wins / cell.total : -1;
@@ -365,10 +363,11 @@ function DayHourHeatmapSection({ matches, clubId }: { matches: Match[]; clubId: 
                       <div
                         key={di}
                         title={cell ? `${cell.wins}V / ${cell.total}M · ${Math.round(wr * 100)}%` : "Aucun match"}
-                        className="rounded-sm h-6 flex items-center justify-center transition-transform hover:scale-110 cursor-default border border-slate-800/40"
+                        className="rounded-sm h-6 flex items-center justify-center transition-transform hover:scale-110 cursor-default"
                         style={{
+                          border: "1px solid var(--border)",
                           background: wr < 0
-                            ? "#1e293b"
+                            ? "#2b2d31"
                             : `rgba(34,211,238,${0.08 + intensity * 0.82})`,
                         }}
                       >
@@ -386,15 +385,15 @@ function DayHourHeatmapSection({ matches, clubId }: { matches: Match[]; clubId: 
             </div>
           </div>
           <div className="flex items-center justify-end gap-2 mt-3">
-            <span className="text-[9px] text-slate-600">Faible</span>
+            <span style={{ fontSize: 9, color: "var(--muted)" }}>Faible</span>
             <div className="flex gap-0.5">
               {[0.08, 0.27, 0.46, 0.65, 0.9].map((op, i) => (
                 <div key={i} className="w-3 h-3 rounded-sm" style={{ background: `rgba(34,211,238,${op})` }} />
               ))}
             </div>
-            <span className="text-[9px] text-slate-600">Élevé</span>
+            <span style={{ fontSize: 9, color: "var(--muted)" }}>Élevé</span>
           </div>
-          <p className="text-[9px] text-slate-600 text-center mt-1">{matches.length} match{matches.length > 1 ? "s" : ""} analysés</p>
+          <p style={{ fontSize: 9, color: "var(--muted)", textAlign: "center", marginTop: 4 }}>{matches.length} match{matches.length > 1 ? "s" : ""} analysés</p>
         </>
       )}
     </Card>
@@ -462,7 +461,7 @@ function FormCalendarSection({ matches, clubId }: { matches: Match[]; clubId: st
         {weeks.map((_, ci) => {
           const ml = monthLabels.find(m => m.col === ci);
           return (
-            <div key={ci} className="text-[7px] font-['Bebas_Neue'] text-slate-500 text-center overflow-hidden">
+            <div key={ci} className="font-['Bebas_Neue'] text-center overflow-hidden" style={{ fontSize: 7, color: "var(--muted)" }}>
               {ml?.label ?? ""}
             </div>
           );
@@ -473,7 +472,7 @@ function FormCalendarSection({ matches, clubId }: { matches: Match[]; clubId: st
         {(["L", "M", "M", "J", "V", "S", "D"] as const).map((dl, di) => (
           <Fragment key={di}>
             <div className="text-[7px] font-['Bebas_Neue'] text-right pr-0.5 self-center"
-              style={{ color: di % 2 === 0 ? "#475569" : "transparent", gridRow: di + 2 }}>
+              style={{ color: di % 2 === 0 ? "#949ba4" : "transparent", gridRow: di + 2 }}>
               {dl}
             </div>
             {weeks.map((week, ci) => {
@@ -492,7 +491,7 @@ function FormCalendarSection({ matches, clubId }: { matches: Match[]; clubId: st
                   className={`rounded-sm transition-transform hover:scale-125 cursor-default border border-white/[0.03] ${resCls}`}
                   style={{
                     height: 11,
-                    background: !cell.result && !isFuture ? "#1e293b" : isFuture ? "transparent" : undefined,
+                    background: !cell.result && !isFuture ? "#2b2d31" : isFuture ? "transparent" : undefined,
                     opacity: !cell.result && !isFuture ? 0.35 : 1,
                     gridColumn: ci + 2, gridRow: di + 2,
                   }}
@@ -559,7 +558,7 @@ function SeasonHistorySection({ clubId, platform }: { clubId: string; platform: 
       <div className="flex items-center justify-between mb-3">
         <SectionLabel>{t("charts.seasonHistory")}</SectionLabel>
         {!tried && (
-          <button onClick={load} className="text-[10px] px-3 py-1 rounded-lg border border-cyan-500/40 text-cyan-400 hover:bg-cyan-500/10 transition-colors font-['Bebas_Neue'] tracking-wider cursor-pointer">
+          <button onClick={load} className="font-['Bebas_Neue'] tracking-wider cursor-pointer rounded transition-colors" style={{ fontSize: 10, padding: "3px 10px", border: "1px solid var(--border)", color: "var(--accent)", background: "transparent" }}>
             {t("charts.load")}
           </button>
         )}
@@ -573,8 +572,8 @@ function SeasonHistorySection({ clubId, platform }: { clubId: string; platform: 
             const pct = total > 0 ? Math.round((s.wins / total) * 100) : 0;
             return (
               <div key={s.label} className="flex items-center gap-2">
-                <span className="w-7 text-[9px] text-slate-500 font-['Bebas_Neue'] flex-shrink-0">{s.label}</span>
-                <div className="flex-1 h-5 bg-slate-800/60 rounded-full overflow-hidden">
+                <span className="w-7 font-['Bebas_Neue'] flex-shrink-0" style={{ fontSize: 9, color: "var(--muted)" }}>{s.label}</span>
+                <div className="flex-1 h-5 rounded overflow-hidden" style={{ background: "var(--surface)" }}>
                   <div className="h-full bg-gradient-to-r from-emerald-800 to-emerald-500 rounded-full transition-all"
                     style={{ width: `${pct}%`, minWidth: s.wins > 0 ? "4px" : 0 }} />
                 </div>
@@ -582,7 +581,7 @@ function SeasonHistorySection({ clubId, platform }: { clubId: string; platform: 
                   <span className="text-emerald-400">{s.wins}V</span>
                   <span className="text-yellow-400">{s.ties}N</span>
                   <span className="text-red-400">{s.losses}D</span>
-                  <span className="text-slate-500">{pct}%</span>
+                  <span style={{ color: "var(--muted)" }}>{pct}%</span>
                 </div>
               </div>
             );
@@ -590,12 +589,12 @@ function SeasonHistorySection({ clubId, platform }: { clubId: string; platform: 
 
           {/* SR line chart */}
           {srData.length > 1 && (
-            <div className="mt-3 pt-3 border-t border-slate-800/60">
-              <p className="text-[9px] text-slate-500 font-['Bebas_Neue'] tracking-wider mb-2">SKILL RATING</p>
+            <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--border)" }}>
+              <p className="category-header">SKILL RATING</p>
               <ResponsiveContainer width="100%" height={80}>
                 <LineChart data={srData} margin={{ top: 4, right: 8, left: -28, bottom: 0 }}>
-                  <XAxis dataKey="label" tick={{ fill: "#475569", fontSize: 8 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: "#475569", fontSize: 8 }} domain={["auto", "auto"]} axisLine={false} tickLine={false} />
+                  <XAxis dataKey="label" tick={{ fill: "#949ba4", fontSize: 8 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: "#949ba4", fontSize: 8 }} domain={["auto", "auto"]} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v: unknown) => [v, "SR"]} />
                   <Line type="monotone" dataKey="sr" stroke="#22d3ee" strokeWidth={2}
                     dot={{ fill: "#22d3ee", r: 3 }} activeDot={{ r: 5 }} />
@@ -609,7 +608,7 @@ function SeasonHistorySection({ clubId, platform }: { clubId: string; platform: 
                 ].map(({ label, value, color }) => (
                   <div key={label} className="text-center">
                     <div className="font-['Bebas_Neue'] text-xl leading-none" style={{ color }}>{value}</div>
-                    <div className="text-[8px] text-slate-500 tracking-wider mt-0.5">{label}</div>
+                    <div style={{ fontSize: 8, color: "var(--muted)", marginTop: 2 }}>{label}</div>
                   </div>
                 ))}
               </div>
@@ -661,7 +660,7 @@ function LeaderboardSection({ clubId, platform }: { clubId: string; platform: st
       <div className="flex items-center justify-between mb-3">
         <SectionLabel>{t("charts.leaderboardTitle")} — {platform.toUpperCase()}</SectionLabel>
         {!tried && (
-          <button onClick={load} className="text-[10px] px-3 py-1 rounded-lg border border-cyan-500/40 text-cyan-400 hover:bg-cyan-500/10 transition-colors font-['Bebas_Neue'] tracking-wider cursor-pointer">
+          <button onClick={load} className="font-['Bebas_Neue'] tracking-wider cursor-pointer rounded transition-colors" style={{ fontSize: 10, padding: "3px 10px", border: "1px solid var(--border)", color: "var(--accent)", background: "transparent" }}>
             {t("charts.load")}
           </button>
         )}
@@ -674,13 +673,13 @@ function LeaderboardSection({ clubId, platform }: { clubId: string; platform: st
             const total = r.wins + r.ties + r.losses;
             const wr = total > 0 ? Math.round((r.wins / total) * 100) : 0;
             return (
-              <div key={r.rank} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-800/40 transition-colors">
-                <span className={`w-5 text-center font-['Bebas_Neue'] text-sm flex-shrink-0 ${r.rank <= 3 ? "text-yellow-400" : "text-slate-500"}`}>{r.rank}</span>
-                <span className="flex-1 text-xs text-slate-300 font-medium truncate">{r.name}</span>
+              <div key={r.rank} className="channel-item flex items-center gap-2 px-2 py-1.5">
+                <span className="w-5 text-center font-['Bebas_Neue'] text-sm flex-shrink-0" style={{ color: r.rank <= 3 ? "var(--gold)" : "var(--muted)" }}>{r.rank}</span>
+                <span className="flex-1 text-xs font-medium truncate" style={{ color: "var(--text)" }}>{r.name}</span>
                 <div className="flex gap-2 text-[10px] flex-shrink-0">
                   <span className="text-emerald-400">{r.wins}V</span>
-                  <span className="text-slate-500">{wr}%</span>
-                  <span className="text-slate-500">{r.sr}</span>
+                  <span style={{ color: "var(--muted)" }}>{wr}%</span>
+                  <span style={{ color: "var(--muted)" }}>{r.sr}</span>
                 </div>
               </div>
             );
@@ -715,9 +714,9 @@ function PlayerCountSection({ matches, clubId }: { matches: Match[]; clubId: str
       {data.length < 2 ? <NoData text="Aucun match chargé" icon={Users} /> : (
         <ResponsiveContainer width="100%" height={130}>
           <LineChart data={data} margin={{ top: 4, right: 8, left: -28, bottom: 0 }}>
-            <XAxis dataKey="n" tick={{ fontSize: 8, fill: "#475569" }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 8, fill: "#475569" }} axisLine={false} tickLine={false} allowDecimals={false} />
-            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+            <XAxis dataKey="n" tick={{ fontSize: 8, fill: "#949ba4" }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 8, fill: "#949ba4" }} axisLine={false} tickLine={false} allowDecimals={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#3f4147" />
             <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v: unknown) => [v, "Joueurs"]} />
             <Line type="monotone" dataKey="count" stroke="#a78bfa" strokeWidth={2}
               dot={{ fill: "#a78bfa", r: 3 }} activeDot={{ r: 5 }} />
@@ -797,24 +796,27 @@ export function ChartsTab() {
   if (!currentClub) return null;
 
   return (
-    <div className="h-full overflow-y-auto bg-slate-950 px-5 py-4">
+    <div className="h-full overflow-y-auto px-5 py-4" style={{ background: "var(--main-bg)" }}>
 
       {/* ── Header: mode switch + export ──────────────────────────── */}
       <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center bg-slate-900 rounded-xl p-1 gap-1 border border-slate-800/60">
+        <div className="flex items-center p-1 gap-1 rounded" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
           {(["last10", "alltime"] as Mode[]).map((m) => (
             <button key={m} onClick={() => setMode(m)}
-              className={`px-4 py-1.5 rounded-lg text-[11px] font-['Bebas_Neue'] tracking-wider transition-all cursor-pointer ${
-                mode === m
-                  ? "bg-cyan-500/15 text-cyan-400 border border-cyan-500/30"
-                  : "text-slate-500 hover:text-slate-300 border border-transparent"
-              }`}>
+              className="px-4 py-1.5 rounded font-['Bebas_Neue'] tracking-wider transition-all cursor-pointer"
+              style={{
+                fontSize: 11,
+                background: mode === m ? "var(--active)" : "transparent",
+                color: mode === m ? "var(--accent)" : "var(--muted)",
+                border: mode === m ? "1px solid var(--border)" : "1px solid transparent",
+              }}>
               {m === "last10" ? t("charts.last10") : t("charts.allTime")}
             </button>
           ))}
         </div>
         <button onClick={() => setExportModal(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700 text-slate-400 text-xs hover:text-slate-200 hover:border-slate-500 transition-colors cursor-pointer">
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded cursor-pointer"
+          style={{ border: "1px solid var(--border)", color: "var(--muted)", fontSize: 11, background: "transparent" }}>
           <Download size={11} /> PNG
         </button>
       </div>
@@ -823,7 +825,7 @@ export function ChartsTab() {
 
         {/* ── Section 1 : Core — Donuts + KPI ──────────────────────── */}
         <section>
-          <h2 className="font-['Bebas_Neue'] text-sm tracking-widest text-slate-600 mb-3 flex items-center gap-2">
+          <h2 className="font-['Bebas_Neue'] text-sm tracking-widest mb-3 flex items-center gap-2" style={{ color: "var(--muted)" }}>
             <Target size={13} className="text-cyan-500" /> Core Performance
           </h2>
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -853,9 +855,9 @@ export function ChartsTab() {
                   { label: "Passes D.",    value: butsData.data[1]?.value ?? 0, color: "#22c55e" },
                   { label: "% Victoires",  value: `${winRate}%`,               color: winRate >= 50 ? "#22c55e" : "#ef4444" },
                 ].map(({ label, value, color }) => (
-                  <div key={label} className="flex flex-col items-center justify-center rounded-xl bg-slate-800/40 border border-slate-700/40 py-3">
+                  <div key={label} className="flex flex-col items-center justify-center rounded py-3" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
                     <span className="font-['Bebas_Neue'] text-2xl leading-none" style={{ color }}>{value}</span>
-                    <span className="text-[9px] text-slate-500 tracking-wider mt-1 font-['Bebas_Neue'] uppercase">{label}</span>
+                    <span className="category-header" style={{ marginBottom: 0, marginTop: 3 }}>{label}</span>
                   </div>
                 ))}
               </div>
@@ -865,7 +867,7 @@ export function ChartsTab() {
 
         {/* ── Section 2 : Scoring — Top Buteurs / Passeurs / Passes ─── */}
         <section>
-          <h2 className="font-['Bebas_Neue'] text-sm tracking-widest text-slate-600 mb-3 flex items-center gap-2">
+          <h2 className="font-['Bebas_Neue'] text-sm tracking-widest mb-3 flex items-center gap-2" style={{ color: "var(--muted)" }}>
             <TrendingUp size={13} className="text-orange-400" /> Scoring & Création
           </h2>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -886,7 +888,7 @@ export function ChartsTab() {
 
         {/* ── Section 3 : Club data ─────────────────────────────────── */}
         <section>
-          <h2 className="font-['Bebas_Neue'] text-sm tracking-widest text-slate-600 mb-3 flex items-center gap-2">
+          <h2 className="font-['Bebas_Neue'] text-sm tracking-widest mb-3 flex items-center gap-2" style={{ color: "var(--muted)" }}>
             <BarChart2 size={13} className="text-violet-400" /> Historique & Classement
           </h2>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -898,7 +900,7 @@ export function ChartsTab() {
 
         {/* ── Section 4 : Analyse de forme ─────────────────────────── */}
         <section>
-          <h2 className="font-['Bebas_Neue'] text-sm tracking-widest text-slate-600 mb-3 flex items-center gap-2">
+          <h2 className="font-['Bebas_Neue'] text-sm tracking-widest mb-3 flex items-center gap-2" style={{ color: "var(--muted)" }}>
             <Activity size={13} className="text-emerald-400" /> Analyse de Forme
           </h2>
           {/* Form calendar full-width */}
