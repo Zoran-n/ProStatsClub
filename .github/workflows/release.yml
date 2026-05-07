@@ -24,10 +24,10 @@ jobs:
       new_version: ${{ steps.bump.outputs.new_version }}
 
     steps:
-      - name: 📥 Checkout main
+      - name: 📥 Checkout Main
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: Main
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -60,7 +60,7 @@ jobs:
             exit 1
           fi
           git tag "${NEW_TAG}"
-          git push origin main --follow-tags
+          git push origin Main --follow-tags
 
           echo "### 🔢 Version bump" >> "$GITHUB_STEP_SUMMARY"
           echo "- Nouvelle version : \`${NEW_VERSION}\`" >> "$GITHUB_STEP_SUMMARY"
@@ -112,10 +112,10 @@ jobs:
       TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
     steps:
-      - name: 📥 Checkout main (avec version bumpée)
+      - name: 📥 Checkout Main (avec version bumpée)
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: Main
           fetch-depth: 0
 
       - name: 📥 Télécharger les Release Notes
