@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { Download, ChevronDown, Search, Calendar, List, ChevronLeft, ChevronRight, PenLine, Table2 } from "lucide-react";
+import { Download, ChevronDown, Search, Calendar, List, ChevronLeft, ChevronRight, PenLine, Table2, Upload, FileDown } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 import { useAppStore } from "../../store/useAppStore";
 import { ExportModal } from "../Modals/ExportModal";
@@ -25,7 +25,7 @@ const BTN: React.CSSProperties = {
 };
 
 export function MatchesTab() {
-  const { currentClub, matchAnnotations, setMatchAnnotation, persistSettings } = useAppStore();
+  const { currentClub, matchAnnotations, setMatchAnnotation, persistSettings, exportMatchCacheJson, importMatchCacheJson, addToast } = useAppStore();
   const lang = useAppStore((s) => s.language);
   const t    = useT();
   const locale = lang === "fr" ? "fr-FR" : lang === "es" ? "es-ES" : lang === "de" ? "de-DE" : lang === "pt" ? "pt-BR" : "en-US";
@@ -43,7 +43,9 @@ export function MatchesTab() {
 
   const { type, setType, allList, loading, loadMore, hasMore, eaProfile } = useMatchData();
 
-  const [selected,        setSelected]        = useState<Match | null>(null);
+  const [selected,          setSelected]          = useState<Match | null>(null);
+  const [selectedDayMatches, setSelectedDayMatches] = useState<Match[] | null>(null);
+  const importRef = useRef<HTMLInputElement>(null);
   const [exportModal,     setExportModal]      = useState<"png" | "csv" | null>(null);
   const [calExportModal,  setCalExportModal]   = useState(false);
   const [oppFilter,       setOppFilter]        = useState("");
@@ -248,6 +250,32 @@ export function MatchesTab() {
     URL.revokeObjectURL(url);
   }, [list, getResult, getScore, getOppName, getHalfTimeScore, locale, type, dateStr, RESULT_LABEL]);
 
+  const handleExportCache = useCallback(() => {
+    const json = exportMatchCacheJson();
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `proclubs-cache-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    addToast("Cache exporté ✓", "success");
+  }, [exportMatchCacheJson, addToast]);
+
+  const handleImportCache = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const { added, errors } = importMatchCacheJson(reader.result as string);
+      persistSettings();
+      if (errors.length) addToast(`Import: ${errors[0]}`, "error");
+      else addToast(`${added} nouveaux matchs importés ✓`, "success");
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  }, [importMatchCacheJson, persistSettings, addToast]);
+
   const dotColor = (v: number) => v === 3 ? "var(--green)" : v === 1 ? "#eab308" : "var(--red)";
 
   // auto-scroll reset when tab/filter changes
@@ -346,6 +374,15 @@ export function MatchesTab() {
         <button onClick={() => setExportModal("png")} style={BTN}><Download size={11} /> PNG</button>
         <button onClick={() => setExportModal("csv")} style={BTN}><Download size={11} /> CSV</button>
         <button onClick={exportExcel} style={BTN} title="Export Excel"><Table2 size={11} /> XLS</button>
+
+        {/* Cache JSON export/import */}
+        <button onClick={handleExportCache} style={BTN} title="Exporter le cache de matchs en JSON">
+          <FileDown size={11} /> Cache
+        </button>
+        <button onClick={() => importRef.current?.click()} style={BTN} title="Importer un cache JSON">
+          <Upload size={11} /> Import
+        </button>
+        <input ref={importRef} type="file" accept=".json" className="hidden" onChange={handleImportCache} />
       </div>
 
       {/* Content */}
@@ -594,68 +631,165 @@ export function MatchesTab() {
             )}
           </>
         ) : (
-          /* Calendar view */
+          /* ── Calendar view ─────────────────────────────────────────────── */
           <div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <button onClick={() => setCalMonth((c) => {
-                  const d = new Date(c.year, c.month - 1, 1);
-                  return { year: d.getFullYear(), month: d.getMonth() };
-                })} style={BTN}><ChevronLeft size={13} /></button>
-                <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, color: "var(--text)",
-                  letterSpacing: "0.06em", minWidth: 160, textAlign: "center" }}>
+            {/* Header navigation */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setCalMonth((c) => { const d = new Date(c.year, c.month - 1, 1); return { year: d.getFullYear(), month: d.getMonth() }; })}
+                  className="p-1.5 rounded-lg border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-colors"
+                ><ChevronLeft size={14} /></button>
+                <span className="font-['Bebas_Neue'] text-lg tracking-widest text-white min-w-[160px] text-center">
                   {t(`months.${calMonth.month}`)} {calMonth.year}
                 </span>
-                <button onClick={() => setCalMonth((c) => {
-                  const d = new Date(c.year, c.month + 1, 1);
-                  return { year: d.getFullYear(), month: d.getMonth() };
-                })} style={BTN}><ChevronRight size={13} /></button>
+                <button
+                  onClick={() => setCalMonth((c) => { const d = new Date(c.year, c.month + 1, 1); return { year: d.getFullYear(), month: d.getMonth() }; })}
+                  className="p-1.5 rounded-lg border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-colors"
+                ><ChevronRight size={14} /></button>
+                <button
+                  onClick={() => setCalMonth(() => { const d = new Date(); return { year: d.getFullYear(), month: d.getMonth() }; })}
+                  className="text-[10px] px-2 py-1 rounded-md border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-colors font-['Bebas_Neue'] tracking-wider"
+                >Aujourd'hui</button>
               </div>
-              <button onClick={() => setCalExportModal(true)} style={BTN}>
-                <Download size={11} /> PNG Calendrier
-              </button>
+              <div className="flex items-center gap-3">
+                {/* Legend */}
+                <div className="hidden sm:flex items-center gap-3 text-[9px] text-slate-500">
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> Victoire</span>
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-slate-400 inline-block" /> Nul</span>
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500 inline-block" /> Défaite</span>
+                </div>
+                <button onClick={() => setCalExportModal(true)} style={BTN}>
+                  <Download size={11} /> PNG
+                </button>
+              </div>
             </div>
 
-            <div ref={calendarRef}>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2, marginBottom: 4 }}>
+            <div ref={calendarRef} className="rounded-xl border border-slate-800/60 overflow-hidden bg-slate-900/50">
+              {/* Day headers */}
+              <div className="grid grid-cols-7 border-b border-slate-800/60">
                 {[t("days.mon"), t("days.tue"), t("days.wed"), t("days.thu"), t("days.fri"), t("days.sat"), t("days.sun")].map((d) => (
-                  <div key={d} style={{ textAlign: "center", fontSize: 9, color: "var(--muted)",
-                    fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.06em", padding: 4 }}>{d}</div>
+                  <div key={d} className="text-center py-2 text-[9px] font-['Bebas_Neue'] tracking-widest text-slate-500 uppercase">
+                    {d}
+                  </div>
                 ))}
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2 }}>
-                {calendarDays.map((cell, i) => (
-                  <div key={i} style={{
-                    minHeight: 64, padding: 4, borderRadius: 4,
-                    background: cell.day === 0 ? "transparent" : "var(--card)",
-                    border: cell.day === 0 ? "none" : "1px solid var(--border)",
-                  }}>
-                    {cell.day > 0 && (
-                      <>
-                        <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 2 }}>{cell.day}</div>
-                        {cell.matches.map((m) => {
-                          const res   = getResult(m);
-                          const color = RESULT_LABEL[res].color;
-                          return (
-                            <div key={m.matchId} onClick={() => setSelected(m)}
-                              style={{ fontSize: 9, padding: "1px 3px", borderRadius: 3, marginBottom: 1,
-                                background: `${color}22`, color, cursor: "pointer", fontWeight: 600,
-                                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                              {getScore(m)}
-                            </div>
-                          );
-                        })}
-                      </>
-                    )}
-                  </div>
-                ))}
+              {/* Day cells */}
+              <div className="grid grid-cols-7">
+                {calendarDays.map((cell, i) => {
+                  const isToday = cell.day > 0 && (() => {
+                    const now = new Date();
+                    return now.getFullYear() === calMonth.year && now.getMonth() === calMonth.month && now.getDate() === cell.day;
+                  })();
+                  const hasMatches = cell.matches.length > 0;
+                  const isLastRow = i >= calendarDays.length - 7;
+
+                  return (
+                    <div
+                      key={i}
+                      onClick={() => {
+                        if (!hasMatches) return;
+                        if (cell.matches.length === 1) setSelected(cell.matches[0]);
+                        else setSelectedDayMatches(cell.matches);
+                      }}
+                      className={[
+                        "relative min-h-[72px] p-2 border-b border-r border-slate-800/40 transition-colors",
+                        isLastRow ? "border-b-0" : "",
+                        cell.day === 0 ? "bg-transparent opacity-0 pointer-events-none" : "",
+                        hasMatches ? "cursor-pointer hover:bg-slate-800/50" : "",
+                      ].join(" ")}
+                    >
+                      {cell.day > 0 && (
+                        <>
+                          {/* Day number */}
+                          <div className={`text-[11px] font-semibold mb-1.5 w-6 h-6 flex items-center justify-center rounded-full ${
+                            isToday
+                              ? "bg-cyan-500 text-white"
+                              : "text-slate-500"
+                          }`}>
+                            {cell.day}
+                          </div>
+
+                          {/* Match indicators */}
+                          {cell.matches.length === 1 && (() => {
+                            const m = cell.matches[0];
+                            const res = getResult(m);
+                            const dotCls = res === "W" ? "bg-emerald-500" : res === "L" ? "bg-red-500" : "bg-slate-400";
+                            const bgCls  = res === "W" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : res === "L" ? "bg-red-500/10 border-red-500/20 text-red-400" : "bg-slate-700/30 border-slate-600/20 text-slate-400";
+                            return (
+                              <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[9px] font-bold ${bgCls}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dotCls}`} />
+                                <span className="truncate">{getScore(m)}</span>
+                              </div>
+                            );
+                          })()}
+
+                          {cell.matches.length > 1 && (() => {
+                            const wins   = cell.matches.filter((m) => getResult(m) === "W").length;
+                            const losses = cell.matches.filter((m) => getResult(m) === "L").length;
+                            return (
+                              <div className="space-y-0.5">
+                                <div className="flex gap-0.5 flex-wrap">
+                                  {cell.matches.slice(0, 4).map((m) => {
+                                    const res = getResult(m);
+                                    return (
+                                      <span key={m.matchId} className={`w-2 h-2 rounded-full ${res === "W" ? "bg-emerald-500" : res === "L" ? "bg-red-500" : "bg-slate-400"}`} />
+                                    );
+                                  })}
+                                </div>
+                                <div className="text-[8px] text-slate-500">
+                                  {cell.matches.length} matchs
+                                  {wins > 0 && <span className="text-emerald-400 ml-1">{wins}V</span>}
+                                  {losses > 0 && <span className="text-red-400 ml-1">{losses}D</span>}
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
         )}
       </div>
 
+      {/* Multi-match day picker */}
+      {selectedDayMatches && !selected && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+          onClick={() => setSelectedDayMatches(null)}>
+          <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 w-72 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <span className="font-['Bebas_Neue'] text-sm tracking-widest text-slate-400">
+                {selectedDayMatches.length} MATCHS CE JOUR
+              </span>
+              <button onClick={() => setSelectedDayMatches(null)} className="text-slate-500 hover:text-slate-200 text-sm">✕</button>
+            </div>
+            <div className="space-y-2">
+              {selectedDayMatches.map((m) => {
+                const res = getResult(m);
+                const dotCls = res === "W" ? "bg-emerald-500" : res === "L" ? "bg-red-500" : "bg-slate-400";
+                const textCls = res === "W" ? "text-emerald-400" : res === "L" ? "text-red-400" : "text-slate-400";
+                return (
+                  <button key={m.matchId} onClick={() => { setSelected(m); setSelectedDayMatches(null); }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/[0.03] border border-slate-800/60 hover:bg-white/[0.07] transition-colors text-left">
+                    <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${dotCls}`} />
+                    <span className="font-['Bebas_Neue'] text-lg text-white">{getScore(m)}</span>
+                    <span className="text-xs text-slate-400 truncate flex-1">vs {getOppName(m)}</span>
+                    <span className={`text-[10px] font-bold font-['Bebas_Neue'] tracking-wide ${textCls}`}>
+                      {RESULT_LABEL[res].text}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
       {selected && <MatchModal match={selected} clubId={currentClub?.id ?? ""} onClose={() => setSelected(null)} />}
       {exportModal === "png" && (
         <ExportModal type="png" pngSourceEl={contentRef.current}

@@ -153,6 +153,9 @@ interface AppState {
   clearMatchCacheStaleFor: (clubId: string, platform: string) => void;
   clearMatchCacheForPeriod: (key: string, fromMs: number, toMs: number) => void;
   clearMatchCacheForProfile: (gamertag: string) => void;
+  syncMatchCache: (key: string, incoming: Match[]) => number;
+  exportMatchCacheJson: () => string;
+  importMatchCacheJson: (json: string) => { added: number; errors: string[] };
   setDiscordWebhook: (v: string) => void;
   setAutoUpdate: (v: boolean) => void;
   setUpdateAvailable: (v: boolean) => void;
@@ -526,6 +529,54 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
     return { matchCache: next, cacheTimestamps: nextTs, cacheOwners: nextOwners };
   }),
+  syncMatchCache: (key, incoming) => {
+    let added = 0;
+    set((s) => {
+      const existing = s.matchCache[key] ?? [];
+      const seen = new Set(existing.map((m) => m.matchId));
+      const fresh = incoming.filter((m) => m.matchId && !seen.has(m.matchId));
+      added = fresh.length;
+      if (fresh.length === 0) return s;
+      const merged = [...existing, ...fresh].sort((a, b) => Number(b.timestamp) - Number(a.timestamp));
+      return {
+        matchCache: { ...s.matchCache, [key]: merged },
+        cacheTimestamps: { ...s.cacheTimestamps, [key]: Date.now() },
+        cacheOwners: { ...s.cacheOwners, [key]: s.eaProfile?.gamertag ?? "" },
+      };
+    });
+    return added;
+  },
+  exportMatchCacheJson: () => {
+    const s = useAppStore.getState();
+    return JSON.stringify({ matchCache: s.matchCache, exportedAt: new Date().toISOString() }, null, 2);
+  },
+  importMatchCacheJson: (json) => {
+    const errors: string[] = [];
+    let added = 0;
+    try {
+      const parsed = JSON.parse(json) as { matchCache?: Record<string, unknown> };
+      if (!parsed.matchCache || typeof parsed.matchCache !== "object") {
+        return { added: 0, errors: ["Format invalide : clé matchCache manquante"] };
+      }
+      set((s) => {
+        const next = { ...s.matchCache };
+        const nextTs = { ...s.cacheTimestamps };
+        for (const [key, val] of Object.entries(parsed.matchCache!)) {
+          if (!Array.isArray(val)) { errors.push(`Clé "${key}" ignorée (pas un tableau)`); continue; }
+          const existing = next[key] ?? [];
+          const seen = new Set(existing.map((m: Match) => m.matchId));
+          const fresh = (val as Match[]).filter((m) => m?.matchId && !seen.has(m.matchId));
+          added += fresh.length;
+          next[key] = [...existing, ...fresh].sort((a, b) => Number(b.timestamp) - Number(a.timestamp));
+          nextTs[key] = Date.now();
+        }
+        return { matchCache: next, cacheTimestamps: nextTs };
+      });
+    } catch (e) {
+      return { added: 0, errors: [`JSON invalide : ${String(e)}`] };
+    }
+    return { added, errors };
+  },
   setDiscordWebhook: (discordWebhook) => set({ discordWebhook }),
   setAutoUpdate: (autoUpdate) => set({ autoUpdate }),
   setUpdateAvailable: (updateAvailable) => set({ updateAvailable }),

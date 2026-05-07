@@ -1,11 +1,50 @@
-import { useMemo } from "react";
-import { Trophy, Target, Star, TrendingUp, Shield, Swords, FileText } from "lucide-react";
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { useMemo, useRef, useEffect, useState, useCallback } from "react";
+import {
+  Trophy, Target, Star, TrendingUp, Shield, Swords, FileText,
+  Zap, Activity, Terminal, Trash2, ChevronDown, ChevronUp,
+  AlertCircle, CheckCircle2, Clock,
+} from "lucide-react";
+import {
+  LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip,
+  ResponsiveContainer, CartesianGrid, RadarChart, Radar,
+  PolarGrid, PolarAngleAxis,
+} from "recharts";
 import { useAppStore } from "../../store/useAppStore";
 import { logger } from "../../utils/logger";
-import type { Match } from "../../types";
+import type { Match, Session } from "../../types";
 import { PublicProfileSection } from "../profile/PublicProfileSection";
 
+// ── Discord log interceptor ────────────────────────────────────────────────────
+export interface DiscordLog {
+  id: number;
+  ts: string;
+  url: string;
+  payload: string;
+  status: number | null;
+  error: string | null;
+}
+
+let _logId = 0;
+const _discordLogs: DiscordLog[] = [];
+const _listeners = new Set<() => void>();
+
+export function addDiscordLog(entry: Omit<DiscordLog, "id" | "ts">) {
+  _discordLogs.unshift({ ...entry, id: ++_logId, ts: new Date().toISOString() });
+  if (_discordLogs.length > 50) _discordLogs.pop();
+  _listeners.forEach((fn) => fn());
+}
+
+export function useDiscordLogs() {
+  const [, tick] = useState(0);
+  useEffect(() => {
+    const fn = () => tick((n) => n + 1);
+    _listeners.add(fn);
+    return () => { _listeners.delete(fn); };
+  }, []);
+  return _discordLogs;
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function getDivision(sr: number): { div: string; color: string } {
   if (sr >= 3000) return { div: "Elite",  color: "#f59e0b" };
   if (sr >= 2700) return { div: "Div 1",  color: "#f59e0b" };
@@ -20,16 +59,6 @@ function getDivision(sr: number): { div: string; color: string } {
   return              { div: "Div 10", color: "#6b7280" };
 }
 
-const kpiCardStyle: React.CSSProperties = {
-  background: "var(--hover)", borderRadius: 8, padding: "14px 10px",
-  textAlign: "center", border: "1px solid var(--border)",
-};
-
-const sectionStyle: React.CSSProperties = {
-  background: "var(--surface)", borderRadius: 10, padding: "16px",
-  border: "1px solid var(--border)", marginBottom: 16,
-};
-
 interface PerMatchStat {
   matchId: string;
   date: string;
@@ -41,16 +70,164 @@ interface PerMatchStat {
   position: string;
 }
 
+// ── Bento Card ────────────────────────────────────────────────────────────────
+function Card({
+  children, className = "", style,
+}: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
+  return (
+    <div
+      className={`rounded-2xl border border-slate-800/60 bg-slate-900/40 backdrop-blur-sm ${className}`}
+      style={style}
+    >
+      {children}
+    </div>
+  );
+}
+
+function CardTitle({ icon: Icon, label, accent = "text-slate-400" }: {
+  icon: React.ElementType; label: string; accent?: string;
+}) {
+  return (
+    <div className="flex items-center gap-2 mb-3">
+      <Icon size={13} className={accent} />
+      <span className="text-[10px] tracking-[0.12em] font-semibold text-slate-500 uppercase">{label}</span>
+    </div>
+  );
+}
+
+function NoData({ label }: { label: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-10 gap-2">
+      <Activity size={26} className="text-slate-700" />
+      <span className="text-xs text-slate-600">{label}</span>
+    </div>
+  );
+}
+
+// ── Debug console ─────────────────────────────────────────────────────────────
+function DebugConsole() {
+  const logs = useDiscordLogs();
+  const [open, setOpen] = useState(false);
+  const endRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (open) endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [logs, open]);
+
+  const statusColor = (status: number | null, error: string | null) => {
+    if (error) return "text-red-400";
+    if (status && status >= 200 && status < 300) return "text-emerald-400";
+    if (status && status >= 400) return "text-red-400";
+    return "text-yellow-400";
+  };
+
+  const statusIcon = (status: number | null, error: string | null) => {
+    if (error || (status && status >= 400)) return <AlertCircle size={11} className="text-red-400 shrink-0" />;
+    if (status && status >= 200 && status < 300) return <CheckCircle2 size={11} className="text-emerald-400 shrink-0" />;
+    return <Clock size={11} className="text-yellow-400 shrink-0" />;
+  };
+
+  return (
+    <Card className="overflow-hidden">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-800/40 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <Terminal size={13} className="text-cyan-400" />
+          <span className="text-[10px] tracking-[0.12em] font-semibold text-slate-400 uppercase">
+            Discord Debug Console
+          </span>
+          {logs.length > 0 && (
+            <span className="text-[10px] bg-slate-800 text-slate-400 rounded px-1.5 py-0.5">
+              {logs.length}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {logs.some((l) => l.error || (l.status && l.status >= 400)) && (
+            <span className="text-[10px] text-red-400 font-medium">erreurs détectées</span>
+          )}
+          {open ? <ChevronUp size={13} className="text-slate-500" /> : <ChevronDown size={13} className="text-slate-500" />}
+        </div>
+      </button>
+
+      {open && (
+        <div className="border-t border-slate-800/60">
+          {/* Explanation banner */}
+          <div className="px-4 py-2 bg-slate-950/60 border-b border-slate-800/40 text-[10px] text-slate-500">
+            Intercepte chaque appel Discord · URL · payload · statut HTTP · erreur exacte.
+            Si tu vois <span className="text-red-400">403</span> = webhook invalide/expiré.
+            <span className="text-yellow-400"> CORS</span> n'affecte pas Tauri (utilise{" "}
+            <code className="text-cyan-400">@tauri-apps/plugin-http</code>, pas le navigateur).
+          </div>
+
+          {logs.length === 0 ? (
+            <div className="px-4 py-6 text-center text-xs text-slate-600 font-mono">
+              Aucun appel Discord intercepté pour l'instant…
+            </div>
+          ) : (
+            <div className="bg-black/80 max-h-64 overflow-y-auto font-mono text-[11px]">
+              {logs.map((log) => (
+                <div key={log.id} className="border-b border-slate-900 px-3 py-2 space-y-1">
+                  <div className="flex items-center gap-2">
+                    {statusIcon(log.status, log.error)}
+                    <span className="text-slate-600 text-[10px]">{log.ts.slice(11, 19)}</span>
+                    <span className={`font-bold ${statusColor(log.status, log.error)}`}>
+                      {log.status ?? "—"}
+                    </span>
+                    <span className="text-slate-400 truncate">{log.url.slice(0, 60)}{log.url.length > 60 ? "…" : ""}</span>
+                  </div>
+                  {log.error && (
+                    <div className="text-red-400 pl-4 text-[10px] leading-relaxed">{log.error}</div>
+                  )}
+                  <details className="pl-4">
+                    <summary className="text-slate-600 cursor-pointer hover:text-slate-400 text-[10px]">payload</summary>
+                    <pre className="text-green-400 text-[9px] whitespace-pre-wrap break-all mt-1 max-h-32 overflow-y-auto">
+                      {log.payload}
+                    </pre>
+                  </details>
+                </div>
+              ))}
+              <div ref={endRef} />
+            </div>
+          )}
+
+          <div className="px-4 py-2 border-t border-slate-800/40 flex justify-between items-center">
+            <button
+              onClick={() => logger.downloadLogs()}
+              className="flex items-center gap-1.5 text-[10px] text-slate-500 hover:text-cyan-400 transition-colors"
+            >
+              <FileText size={11} /> Télécharger tous les logs
+            </button>
+            <button
+              onClick={() => { _discordLogs.splice(0); _listeners.forEach((fn) => fn()); }}
+              className="flex items-center gap-1.5 text-[10px] text-slate-600 hover:text-red-400 transition-colors"
+            >
+              <Trash2 size={11} /> Vider
+            </button>
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
 export function MyProfilePage() {
   const { eaProfile, currentClub, players, sessions, matches, matchCache } = useAppStore();
 
-  // ── Season stats from the API (the real totals) ────────────────────
+  // staggered animation counter
+  const [visible, setVisible] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setVisible(true), 60); return () => clearTimeout(t); }, []);
+
+  // ── Season stats ───────────────────────────────────────────────────────
   const seasonPlayer = useMemo(() => {
     if (!eaProfile?.gamertag) return null;
-    return players.find(p => p.name.toLowerCase() === eaProfile.gamertag.toLowerCase()) ?? null;
+    return players.find((p) => p.name.toLowerCase() === eaProfile.gamertag.toLowerCase()) ?? null;
   }, [eaProfile, players]);
 
-  // ── Collect ALL matches where this player appears ──────────────────
+  // ── All match appearances ──────────────────────────────────────────────
   const allPlayerMatches = useMemo(() => {
     if (!eaProfile?.gamertag || !eaProfile?.clubId) return [];
     const gt = eaProfile.gamertag.toLowerCase();
@@ -71,7 +248,6 @@ export function MyProfilePage() {
 
       const p = entry[1];
       const myClub = m.clubs?.[cid] as Record<string, unknown> | undefined;
-      // Result via wins/losses flags (same method as MatchModal)
       const res = myClub?.["wins"] === "1" ? "W" : myClub?.["losses"] === "1" ? "L" : "D";
 
       result.push({
@@ -86,61 +262,51 @@ export function MyProfilePage() {
       });
     };
 
-    // From sessions
     for (const s of sessions) {
       if (s.clubId === cid) s.matches.forEach(processMatch);
     }
-    // From current matches
     matches.forEach(processMatch);
-    // From match cache
     for (const key of Object.keys(matchCache)) {
-      if (key.startsWith(`${cid}_`)) {
-        matchCache[key]?.forEach(processMatch);
-      }
+      if (key.startsWith(`${cid}_`)) matchCache[key]?.forEach(processMatch);
     }
-
-    // Sort by date newest first
     result.sort((a, b) => {
       const ta = Number(a.date) || new Date(a.date).getTime();
       const tb = Number(b.date) || new Date(b.date).getTime();
       return tb - ta;
     });
-
     return result;
   }, [eaProfile, sessions, matches, matchCache]);
 
-  // ── Aggregated stats (season from API when available) ───────────────
-  const matchWins = allPlayerMatches.filter((m: PerMatchStat) => m.result === "W").length;
-  const matchDraws = allPlayerMatches.filter((m: PerMatchStat) => m.result === "D").length;
-  const matchLosses = allPlayerMatches.filter((m: PerMatchStat) => m.result === "L").length;
+  // ── Aggregated stats ───────────────────────────────────────────────────
+  const matchWins   = allPlayerMatches.filter((m) => m.result === "W").length;
+  const matchDraws  = allPlayerMatches.filter((m) => m.result === "D").length;
+  const matchLosses = allPlayerMatches.filter((m) => m.result === "L").length;
 
   const agg = useMemo(() => {
-    // Prefer season stats from the API (real totals)
     if (seasonPlayer) {
       const sp = seasonPlayer;
       const clubW = currentClub?.wins ?? matchWins;
       const clubD = currentClub?.ties ?? matchDraws;
       const clubL = currentClub?.losses ?? matchLosses;
       const clubTotal = clubW + clubD + clubL;
-      const winRate = clubTotal > 0 ? Math.round((clubW / clubTotal) * 100) : 0;
       return {
         games: sp.gamesPlayed, totalGoals: sp.goals, totalAssists: sp.assists,
         totalMotm: sp.motm, avgRating: sp.rating,
-        wins: clubW, draws: clubD, losses: clubL, winRate,
+        wins: clubW, draws: clubD, losses: clubL,
+        winRate: clubTotal > 0 ? Math.round((clubW / clubTotal) * 100) : 0,
         passesMade: sp.passesMade, tacklesMade: sp.tacklesMade,
         source: "season" as const,
       };
     }
-    // Fallback to match-by-match analysis
     const ms = allPlayerMatches;
     if (!ms.length) return null;
-    const rated = ms.filter((m: PerMatchStat) => m.rating > 0);
-    const avgRating = rated.length > 0 ? rated.reduce((s: number, m: PerMatchStat) => s + m.rating, 0) / rated.length : 0;
+    const rated = ms.filter((m) => m.rating > 0);
+    const avgRating = rated.length ? rated.reduce((s, m) => s + m.rating, 0) / rated.length : 0;
     return {
       games: ms.length,
-      totalGoals: ms.reduce((s: number, m: PerMatchStat) => s + m.goals, 0),
-      totalAssists: ms.reduce((s: number, m: PerMatchStat) => s + m.assists, 0),
-      totalMotm: ms.filter((m: PerMatchStat) => m.motm).length,
+      totalGoals: ms.reduce((s, m) => s + m.goals, 0),
+      totalAssists: ms.reduce((s, m) => s + m.assists, 0),
+      totalMotm: ms.filter((m) => m.motm).length,
       avgRating,
       wins: matchWins, draws: matchDraws, losses: matchLosses,
       winRate: ms.length > 0 ? Math.round((matchWins / ms.length) * 100) : 0,
@@ -149,16 +315,13 @@ export function MyProfilePage() {
     };
   }, [seasonPlayer, currentClub, allPlayerMatches, matchWins, matchDraws, matchLosses]);
 
-  // ── Rating evolution (last 40 matches, oldest first) ───────────────
-  const ratingData = useMemo(() => {
-    return allPlayerMatches
-      .slice(0, 40)
-      .reverse()
-      .filter((m: PerMatchStat) => m.rating > 0)
-      .map((m: PerMatchStat, i: number) => ({ idx: i + 1, rating: Number(m.rating.toFixed(2)), result: m.result }));
-  }, [allPlayerMatches]);
+  // ── Charts data ────────────────────────────────────────────────────────
+  const ratingData = useMemo(() =>
+    allPlayerMatches.slice(0, 40).reverse()
+      .filter((m) => m.rating > 0)
+      .map((m, i) => ({ idx: i + 1, rating: Number(m.rating.toFixed(2)), result: m.result })),
+  [allPlayerMatches]);
 
-  // ── Goals + Assists per batch of 5 matches ─────────────────────────
   const batchData = useMemo(() => {
     const reversed = [...allPlayerMatches].reverse();
     const batches: { label: string; goals: number; assists: number }[] = [];
@@ -173,308 +336,402 @@ export function MyProfilePage() {
     return batches;
   }, [allPlayerMatches]);
 
-  // ── Position breakdown ─────────────────────────────────────────────
-  const positionStats = useMemo(() => {
-    const map: Record<string, { count: number; goals: number; assists: number; ratingSum: number; ratingCount: number }> = {};
-    for (const m of allPlayerMatches) {
-      const pos = m.position || "Inconnu";
-      if (!map[pos]) map[pos] = { count: 0, goals: 0, assists: 0, ratingSum: 0, ratingCount: 0 };
-      map[pos].count++;
-      map[pos].goals += m.goals;
-      map[pos].assists += m.assists;
-      if (m.rating > 0) { map[pos].ratingSum += m.rating; map[pos].ratingCount++; }
-    }
-    return Object.entries(map)
-      .map(([pos, d]) => ({
-        pos, count: d.count, goals: d.goals, assists: d.assists,
-        avgRating: d.ratingCount > 0 ? (d.ratingSum / d.ratingCount).toFixed(2) : "—",
-      }))
-      .sort((a, b) => b.count - a.count);
-  }, [allPlayerMatches]);
+  // ── Radar data ─────────────────────────────────────────────────────────
+  const radarData = useMemo(() => {
+    if (!agg || !agg.games) return null;
+    const norm = (v: number, max: number) => Math.min(100, Math.round((v / max) * 100));
+    return [
+      { axis: "Buts/match",    value: norm(agg.totalGoals   / agg.games, 1.5) },
+      { axis: "PD/match",      value: norm(agg.totalAssists / agg.games, 1.5) },
+      { axis: "Note",          value: norm(agg.avgRating,                 10)  },
+      { axis: "Victoires",     value: agg.winRate                              },
+      { axis: "MOTM%",         value: norm(agg.totalMotm    / agg.games, 0.3)  },
+    ];
+  }, [agg]);
 
-  // ── SR / Division ──────────────────────────────────────────────────
+  // ── Last 3 sessions ────────────────────────────────────────────────────
+  const lastSessions = useMemo(() => {
+    if (!eaProfile?.clubId) return [];
+    return [...sessions]
+      .filter((s) => s.clubId === eaProfile.clubId && !s.archived)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 3);
+  }, [sessions, eaProfile]);
+
+  // ── Division ───────────────────────────────────────────────────────────
   const srNum = currentClub?.id === eaProfile?.clubId && currentClub?.skillRating
     ? Number(currentClub.skillRating) || null : null;
   const division = srNum ? getDivision(srNum) : null;
 
+  // ── Forme (last 10) ────────────────────────────────────────────────────
+  const forme = allPlayerMatches.slice(0, 10).reverse().map((m) => m.result);
+
+  // ── Stagger helper ─────────────────────────────────────────────────────
+  const tile = useCallback((delay: number) => ({
+    style: {
+      opacity: visible ? 1 : 0,
+      transform: visible ? "translateY(0)" : "translateY(12px)",
+      transition: `opacity 0.4s ease ${delay}ms, transform 0.4s ease ${delay}ms`,
+    },
+  }), [visible]);
+
+  // ── Empty state ────────────────────────────────────────────────────────
   if (!eaProfile?.clubId) {
     return (
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted)", fontSize: 14 }}>
-        Lie un profil EA pour voir tes statistiques personnelles.
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-center space-y-3 p-8">
+          <Swords size={36} className="mx-auto text-slate-700" />
+          <p className="text-sm text-slate-500">Lie un profil EA pour voir tes statistiques personnelles.</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={{ flex: 1, overflow: "auto", padding: "20px 24px" }}>
-      <div style={{ maxWidth: 900, margin: "0 auto" }}>
+    <div className="flex-1 overflow-auto px-4 py-5">
+      <div className="max-w-5xl mx-auto space-y-4">
 
-        {/* ── Header ── */}
-        <div style={{ display: "flex", alignItems: "center", gap: 18, marginBottom: 24 }}>
-          <div style={{
-            width: 72, height: 72, borderRadius: "50%",
-            background: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center",
-            border: "3px solid var(--border)", flexShrink: 0,
-          }}>
-            <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 34, color: "#fff" }}>
-              {eaProfile.gamertag[0].toUpperCase()}
-            </span>
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 28, color: "var(--text)", letterSpacing: "0.04em" }}>
-              {eaProfile.gamertag}
-            </div>
-            <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 2 }}>
-              {eaProfile.clubName} · {eaProfile.platform}
-              {agg && (
-                <span style={{ marginLeft: 8, color: "var(--accent)" }}>
-                  {agg.games} matchs
-                  {agg.source === "season" && allPlayerMatches.length > 0 && (
-                    <span style={{ color: "var(--muted)", marginLeft: 6, fontSize: 11 }}>
-                      ({allPlayerMatches.length} analysés)
-                    </span>
+        {/* ── BENTO GRID ─────────────────────────────────────────────────── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 auto-rows-auto">
+
+          {/* IDENTITY — 2 cols × 2 rows */}
+          <div className="sm:col-span-2 xl:row-span-2" {...tile(0)}>
+            <Card className="h-full p-5 flex flex-col gap-4">
+              <div className="flex items-start gap-4">
+                {/* Avatar */}
+                <div
+                  className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 border-2 border-cyan-500/30"
+                  style={{ background: "linear-gradient(135deg, #0e7490 0%, #164e63 100%)" }}
+                >
+                  <span className="font-['Bebas_Neue'] text-3xl text-white">
+                    {eaProfile.gamertag[0].toUpperCase()}
+                  </span>
+                </div>
+                {/* Name + club */}
+                <div className="flex-1 min-w-0">
+                  <div className="font-['Bebas_Neue'] text-2xl text-white tracking-wide leading-none truncate">
+                    {eaProfile.gamertag}
+                  </div>
+                  <div className="text-xs text-slate-400 mt-1 truncate">
+                    {eaProfile.clubName} · <span className="text-slate-500">{eaProfile.platform}</span>
+                  </div>
+                  {agg && (
+                    <div className="text-xs text-cyan-400 mt-1">{agg.games} matchs</div>
                   )}
-                </span>
+                </div>
+                {/* Division badge */}
+                {division ? (
+                  <div
+                    className="shrink-0 px-3 py-2 rounded-xl text-center border"
+                    style={{ background: division.color + "1a", borderColor: division.color + "44" }}
+                  >
+                    <div className="font-['Bebas_Neue'] text-xl" style={{ color: division.color }}>
+                      {division.div}
+                    </div>
+                    {srNum && <div className="text-[10px] text-slate-500 mt-0.5">{srNum} SR</div>}
+                  </div>
+                ) : null}
+              </div>
+
+              {/* W/D/L bar */}
+              {agg && agg.games > 0 && (
+                <div>
+                  <div className="flex h-2 rounded-full overflow-hidden gap-0.5">
+                    <div style={{ width: `${(agg.wins / agg.games) * 100}%` }} className="bg-emerald-500 rounded-l-full" />
+                    <div style={{ width: `${(agg.draws / agg.games) * 100}%` }} className="bg-amber-400" />
+                    <div style={{ width: `${(agg.losses / agg.games) * 100}%` }} className="bg-red-500 rounded-r-full" />
+                  </div>
+                  <div className="flex justify-between mt-1.5 text-[10px]">
+                    <span className="text-emerald-400">{agg.wins} V</span>
+                    <span className="text-amber-400">{agg.draws} N</span>
+                    <span className="text-red-400">{agg.losses} D</span>
+                  </div>
+                </div>
               )}
-            </div>
-          </div>
-          {division && (
-            <div style={{
-              padding: "8px 16px", borderRadius: 8, background: division.color + "22",
-              border: `1px solid ${division.color}44`, textAlign: "center",
-            }}>
-              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, color: division.color }}>
-                {division.div}
-              </div>
-              {srNum && <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{srNum} SR</div>}
-            </div>
-          )}
-        </div>
 
-        {/* ── KPI Cards ── */}
-        {agg && (() => {
-          const kpis = [
-            { label: "MATCHS", value: agg.games, color: "var(--accent)", icon: <Swords size={14} /> },
-            { label: "BUTS", value: agg.totalGoals, color: "var(--green)", icon: <Target size={14} /> },
-            { label: "PASSES D.", value: agg.totalAssists, color: "var(--accent)", icon: <TrendingUp size={14} /> },
-            { label: "MOTM", value: agg.totalMotm, color: "var(--gold)", icon: <Trophy size={14} /> },
-            { label: "NOTE MOY.", value: agg.avgRating > 0 ? agg.avgRating.toFixed(2) : "—", color: "var(--text)", icon: <Star size={14} /> },
-            { label: "% VICTOIRES", value: `${agg.winRate}%`, color: agg.winRate >= 50 ? "var(--green)" : "var(--red)", icon: <Shield size={14} /> },
-          ];
-          if (agg.source === "season" && agg.passesMade > 0) {
-            kpis.push({ label: "PASSES", value: agg.passesMade, color: "var(--text)", icon: <TrendingUp size={14} /> });
-          }
-          if (agg.source === "season" && agg.tacklesMade > 0) {
-            kpis.push({ label: "TACLES", value: agg.tacklesMade, color: "var(--text)", icon: <Shield size={14} /> });
-          }
-          const cols = kpis.length <= 6 ? 6 : kpis.length <= 8 ? 4 : 6;
-          return (
-          <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 10, marginBottom: 20 }}>
-            {kpis.map(({ label, value, color, icon }) => (
-              <div key={label} style={kpiCardStyle}>
-                <div style={{ color: "var(--muted)", marginBottom: 6, display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
-                  {icon}
-                </div>
-                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 26, color, lineHeight: 1 }}>
-                  {value}
-                </div>
-                <div style={{ fontSize: 9, color: "var(--muted)", marginTop: 6, letterSpacing: "0.06em" }}>
-                  {label}
-                </div>
-              </div>
-            ))}
-          </div>
-          );
-        })()}
-
-        {/* ── Win/Draw/Loss bar ── */}
-        {agg && agg.games > 0 && (
-          <div style={{ ...sectionStyle, padding: "12px 16px" }}>
-            <div style={{ display: "flex", height: 8, borderRadius: 4, overflow: "hidden", gap: 2 }}>
-              <div style={{ width: `${(agg.wins / agg.games) * 100}%`, background: "var(--green)", borderRadius: 4 }} />
-              <div style={{ width: `${(agg.draws / agg.games) * 100}%`, background: "var(--gold)", borderRadius: 4 }} />
-              <div style={{ width: `${(agg.losses / agg.games) * 100}%`, background: "var(--red)", borderRadius: 4 }} />
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 11 }}>
-              <span style={{ color: "var(--green)" }}>{agg.wins}V</span>
-              <span style={{ color: "var(--gold)" }}>{agg.draws}N</span>
-              <span style={{ color: "var(--red)" }}>{agg.losses}D</span>
-            </div>
-          </div>
-        )}
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
-          {/* ── Rating evolution chart ── */}
-          {ratingData.length >= 3 && (
-            <div style={sectionStyle}>
-              <div style={{ fontSize: 10, color: "var(--muted)", letterSpacing: "0.1em",
-                fontFamily: "'Bebas Neue', sans-serif", marginBottom: 12 }}>
-                ÉVOLUTION DE LA NOTE · {ratingData.length} derniers matchs
-              </div>
-              <ResponsiveContainer width="100%" height={180}>
-                <LineChart data={ratingData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                  <XAxis dataKey="idx" tick={{ fontSize: 10, fill: "var(--muted)" }} />
-                  <YAxis domain={[5, 10]} tick={{ fontSize: 10, fill: "var(--muted)" }} />
-                  <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 11 }} />
-                  <Line type="monotone" dataKey="rating" stroke="var(--accent)" strokeWidth={2} dot={{ r: 3, fill: "var(--accent)" }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-
-          {/* ── Goals + Assists per 5 matches ── */}
-          {batchData.length >= 2 && (
-            <div style={sectionStyle}>
-              <div style={{ fontSize: 10, color: "var(--muted)", letterSpacing: "0.1em",
-                fontFamily: "'Bebas Neue', sans-serif", marginBottom: 12 }}>
-                BUTS & PASSES D. PAR TRANCHE DE 5 MATCHS
-              </div>
-              <ResponsiveContainer width="100%" height={180}>
-                <BarChart data={batchData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                  <XAxis dataKey="label" tick={{ fontSize: 9, fill: "var(--muted)" }} />
-                  <YAxis tick={{ fontSize: 10, fill: "var(--muted)" }} />
-                  <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 11 }} />
-                  <Bar dataKey="goals" fill="var(--green)" name="Buts" radius={[3, 3, 0, 0]} />
-                  <Bar dataKey="assists" fill="var(--accent)" name="Passes D." radius={[3, 3, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </div>
-
-        {/* ── Position breakdown ── */}
-        {positionStats.length > 0 && positionStats[0].pos !== "Inconnu" && (
-          <div style={sectionStyle}>
-            <div style={{ fontSize: 10, color: "var(--muted)", letterSpacing: "0.1em",
-              fontFamily: "'Bebas Neue', sans-serif", marginBottom: 12 }}>
-              RÉPARTITION PAR POSTE
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(positionStats.length, 5)}, 1fr)`, gap: 8 }}>
-              {positionStats.slice(0, 5).map(({ pos, count, goals, assists, avgRating }: { pos: string; count: number; goals: number; assists: number; avgRating: string }) => (
-                <div key={pos} style={{
-                  background: "var(--hover)", borderRadius: 6, padding: "10px",
-                  border: "1px solid var(--border)", textAlign: "center",
-                }}>
-                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, color: "var(--accent)" }}>
-                    {pos}
-                  </div>
-                  <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 4 }}>{count} matchs</div>
-                  <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 6, fontSize: 11 }}>
-                    <span style={{ color: "var(--green)" }}>{goals}B</span>
-                    <span style={{ color: "var(--accent)" }}>{assists}PD</span>
-                  </div>
-                  <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 4 }}>Moy. {avgRating}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── Recent performances table ── */}
-        {allPlayerMatches.length > 0 && (
-          <div style={sectionStyle}>
-            <div style={{ fontSize: 10, color: "var(--muted)", letterSpacing: "0.1em",
-              fontFamily: "'Bebas Neue', sans-serif", marginBottom: 12 }}>
-              DERNIÈRES PERFORMANCES · {Math.min(allPlayerMatches.length, 25)} matchs
-            </div>
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-                <thead>
-                  <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                    {["Date", "Résultat", "Buts", "PD", "Note", "MOTM", "Poste"].map(h => (
-                      <th key={h} style={{
-                        padding: "6px 8px", textAlign: "center", fontSize: 10,
-                        color: "var(--muted)", fontFamily: "'Bebas Neue', sans-serif",
-                        letterSpacing: "0.06em", fontWeight: 400,
-                      }}>{h}</th>
+              {/* Forme pills */}
+              {forme.length > 0 && (
+                <div>
+                  <div className="text-[10px] text-slate-600 uppercase tracking-widest mb-1.5">Forme récente</div>
+                  <div className="flex gap-1">
+                    {forme.map((r, i) => (
+                      <div
+                        key={i}
+                        className={`w-6 h-6 rounded text-[10px] font-bold flex items-center justify-center ${
+                          r === "W" ? "bg-emerald-500/20 text-emerald-400" :
+                          r === "L" ? "bg-red-500/20 text-red-400" :
+                          "bg-amber-500/20 text-amber-400"
+                        }`}
+                      >
+                        {r === "W" ? "V" : r === "L" ? "D" : "N"}
+                      </div>
                     ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {allPlayerMatches.slice(0, 25).map((m: PerMatchStat) => {
-                    const ts = Number(m.date) ? new Date(Number(m.date) * 1000) : new Date(m.date);
-                    const dateStr = ts.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" });
-                    const resColor = m.result === "W" ? "var(--green)" : m.result === "L" ? "var(--red)" : "var(--gold)";
-                    const resLabel = m.result === "W" ? "V" : m.result === "L" ? "D" : "N";
+                  </div>
+                </div>
+              )}
+            </Card>
+          </div>
+
+          {/* MAIN STATS — 1 col */}
+          {agg && (
+            <div {...tile(60)}>
+              <Card className="h-full p-4">
+                <CardTitle icon={Target} label="Stats clés" accent="text-cyan-400" />
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { label: "Note", value: agg.avgRating > 0 ? agg.avgRating.toFixed(2) : "—", color: "text-white" },
+                    { label: "Buts", value: agg.totalGoals, color: "text-emerald-400" },
+                    { label: "PD", value: agg.totalAssists, color: "text-cyan-400" },
+                    { label: "MOTM", value: agg.totalMotm, color: "text-amber-400" },
+                    { label: "Victoires", value: `${agg.winRate}%`,
+                      color: agg.winRate >= 60 ? "text-emerald-400" : agg.winRate >= 45 ? "text-amber-400" : "text-red-400" },
+                    { label: "Matchs", value: agg.games, color: "text-slate-300" },
+                  ].map(({ label, value, color }) => (
+                    <div key={label} className="bg-slate-800/40 rounded-xl p-2.5 text-center">
+                      <div className={`font-['Bebas_Neue'] text-2xl leading-none ${color}`}>{value}</div>
+                      <div className="text-[9px] text-slate-600 uppercase tracking-widest mt-1">{label}</div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </div>
+          )}
+
+          {/* DERNIÈRES SESSIONS — 1 col */}
+          <div {...tile(90)}>
+            <Card className="h-full p-4">
+              <CardTitle icon={Swords} label="Dernières sessions" accent="text-violet-400" />
+              {lastSessions.length === 0 ? (
+                <NoData label="Aucune session trouvée" />
+              ) : (
+                <div className="space-y-2">
+                  {lastSessions.map((s: Session) => {
+                    let w = 0;
+                    for (const m of s.matches) {
+                      const c = m.clubs[s.clubId] as Record<string, unknown> | undefined;
+                      if (c?.["wins"] === "1") w++;
+                    }
+                    const total = s.matches.length;
+                    const wr = total > 0 ? Math.round((w / total) * 100) : 0;
+                    const dateStr = new Date(s.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
                     return (
-                      <tr key={m.matchId} style={{ borderBottom: "1px solid var(--border)" }}>
-                        <td style={{ padding: "6px 8px", textAlign: "center", color: "var(--muted)", fontSize: 11 }}>{dateStr}</td>
-                        <td style={{ padding: "6px 8px", textAlign: "center" }}>
-                          <span style={{
-                            display: "inline-block", width: 22, height: 22, lineHeight: "22px",
-                            borderRadius: 4, background: resColor + "22", color: resColor,
-                            fontWeight: 700, fontSize: 11, textAlign: "center",
-                          }}>{resLabel}</span>
-                        </td>
-                        <td style={{ padding: "6px 8px", textAlign: "center", color: m.goals > 0 ? "var(--green)" : "var(--muted)", fontWeight: m.goals > 0 ? 700 : 400 }}>
-                          {m.goals}
-                        </td>
-                        <td style={{ padding: "6px 8px", textAlign: "center", color: m.assists > 0 ? "var(--accent)" : "var(--muted)", fontWeight: m.assists > 0 ? 700 : 400 }}>
-                          {m.assists}
-                        </td>
-                        <td style={{ padding: "6px 8px", textAlign: "center", color: m.rating >= 7.5 ? "var(--green)" : m.rating >= 6.5 ? "var(--text)" : m.rating > 0 ? "var(--red)" : "var(--muted)" }}>
-                          {m.rating > 0 ? m.rating.toFixed(1) : "—"}
-                        </td>
-                        <td style={{ padding: "6px 8px", textAlign: "center" }}>
-                          {m.motm && <Trophy size={13} color="var(--gold)" />}
-                        </td>
-                        <td style={{ padding: "6px 8px", textAlign: "center", color: "var(--muted)", fontSize: 11 }}>
-                          {m.position || "—"}
-                        </td>
-                      </tr>
+                      <div key={s.id} className="flex items-center gap-3 bg-slate-800/30 rounded-xl px-3 py-2">
+                        <div className="text-[10px] text-slate-500 shrink-0 w-12">{dateStr}</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs text-slate-300 truncate">{s.clubName}</div>
+                          <div className="text-[10px] text-slate-600">{total} matchs</div>
+                        </div>
+                        <div className={`text-[11px] font-bold ${
+                          wr >= 60 ? "text-emerald-400" : wr >= 40 ? "text-amber-400" : "text-red-400"
+                        }`}>{wr}%</div>
+                        <div className="flex gap-0.5">
+                          {[...s.matches].slice(-5).map((m, i) => {
+                            const c = m.clubs[s.clubId] as Record<string, unknown> | undefined;
+                            const r = c?.["wins"] === "1" ? "W" : c?.["losses"] === "1" ? "L" : "D";
+                            return (
+                              <div key={i} className={`w-2 h-4 rounded-sm ${
+                                r === "W" ? "bg-emerald-500/70" : r === "L" ? "bg-red-500/70" : "bg-amber-400/70"
+                              }`} />
+                            );
+                          })}
+                        </div>
+                      </div>
                     );
                   })}
-                </tbody>
-              </table>
-            </div>
+                </div>
+              )}
+            </Card>
+          </div>
+
+          {/* RADAR — 2 cols */}
+          <div className="sm:col-span-2" {...tile(120)}>
+            <Card className="p-4">
+              <CardTitle icon={Activity} label="Profil de performance" accent="text-cyan-400" />
+              {radarData ? (
+                <ResponsiveContainer width="100%" height={200}>
+                  <RadarChart data={radarData} outerRadius={78}>
+                    <defs>
+                      <linearGradient id="profileRadarFill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.35} />
+                        <stop offset="100%" stopColor="#22d3ee" stopOpacity={0.05} />
+                      </linearGradient>
+                    </defs>
+                    <PolarGrid stroke="#1e293b" />
+                    <PolarAngleAxis dataKey="axis" tick={{ fill: "#64748b", fontSize: 11 }} />
+                    <Radar dataKey="value" stroke="#22d3ee" strokeWidth={2}
+                      fill="url(#profileRadarFill)" dot={{ fill: "#22d3ee", r: 3 }} />
+                  </RadarChart>
+                </ResponsiveContainer>
+              ) : (
+                <NoData label="Pas assez de données" />
+              )}
+            </Card>
+          </div>
+
+          {/* RATING EVOLUTION — 2 cols */}
+          <div className="sm:col-span-2" {...tile(150)}>
+            <Card className="p-4">
+              <CardTitle icon={TrendingUp} label={`Évolution de la note · ${ratingData.length} matchs`} accent="text-emerald-400" />
+              {ratingData.length >= 3 ? (
+                <ResponsiveContainer width="100%" height={160}>
+                  <LineChart data={ratingData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                    <XAxis dataKey="idx" tick={{ fontSize: 10, fill: "#475569" }} />
+                    <YAxis domain={[5, 10]} tick={{ fontSize: 10, fill: "#475569" }} width={28} />
+                    <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #1e293b", borderRadius: 8, fontSize: 11 }} />
+                    <Line type="monotone" dataKey="rating" stroke="#22d3ee" strokeWidth={2}
+                      dot={({ cx, cy, payload }: { cx: number; cy: number; payload: { result: string } }) => (
+                        <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={3}
+                          fill={payload.result === "W" ? "#22c55e" : payload.result === "L" ? "#ef4444" : "#f59e0b"}
+                          stroke="none"
+                        />
+                      )}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <NoData label="Joue plus de matchs pour voir l'évolution" />
+              )}
+            </Card>
+          </div>
+
+          {/* BUTS & PD — 2 cols */}
+          <div className="sm:col-span-2" {...tile(180)}>
+            <Card className="p-4">
+              <CardTitle icon={Star} label="Buts & passes D. par tranche de 5" accent="text-amber-400" />
+              {batchData.length >= 2 ? (
+                <ResponsiveContainer width="100%" height={160}>
+                  <BarChart data={batchData} barSize={12}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                    <XAxis dataKey="label" tick={{ fontSize: 9, fill: "#475569" }} />
+                    <YAxis tick={{ fontSize: 10, fill: "#475569" }} width={24} />
+                    <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #1e293b", borderRadius: 8, fontSize: 11 }} />
+                    <Bar dataKey="goals" fill="#22c55e" name="Buts" radius={[3, 3, 0, 0]} />
+                    <Bar dataKey="assists" fill="#22d3ee" name="PD" radius={[3, 3, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <NoData label="Pas assez de données" />
+              )}
+            </Card>
+          </div>
+
+        </div>
+
+        {/* ── RECENT PERFORMANCES TABLE ──────────────────────────────────── */}
+        {allPlayerMatches.length > 0 && (
+          <div {...tile(210)}>
+            <Card className="p-4">
+              <CardTitle icon={Shield} label={`Dernières performances · ${Math.min(allPlayerMatches.length, 25)} matchs`} accent="text-slate-400" />
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-800/60">
+                      {["Date", "Résultat", "Buts", "PD", "Note", "MOTM", "Poste"].map((h) => (
+                        <th key={h} className="px-2 py-1.5 text-center text-[10px] text-slate-600 font-['Bebas_Neue'] tracking-widest font-normal">
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allPlayerMatches.slice(0, 25).map((m: PerMatchStat) => {
+                      const ts = Number(m.date) ? new Date(Number(m.date) * 1000) : new Date(m.date);
+                      const dateStr = ts.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" });
+                      const resColor = m.result === "W" ? "text-emerald-400 bg-emerald-500/10" :
+                        m.result === "L" ? "text-red-400 bg-red-500/10" : "text-amber-400 bg-amber-400/10";
+                      const resLabel = m.result === "W" ? "V" : m.result === "L" ? "D" : "N";
+                      return (
+                        <tr key={m.matchId} className="border-b border-slate-800/30 hover:bg-slate-800/20 transition-colors">
+                          <td className="px-2 py-1.5 text-center text-slate-500 text-[11px]">{dateStr}</td>
+                          <td className="px-2 py-1.5 text-center">
+                            <span className={`inline-flex items-center justify-center w-6 h-6 rounded font-bold text-[10px] ${resColor}`}>
+                              {resLabel}
+                            </span>
+                          </td>
+                          <td className={`px-2 py-1.5 text-center font-bold ${m.goals > 0 ? "text-emerald-400" : "text-slate-600"}`}>
+                            {m.goals}
+                          </td>
+                          <td className={`px-2 py-1.5 text-center font-bold ${m.assists > 0 ? "text-cyan-400" : "text-slate-600"}`}>
+                            {m.assists}
+                          </td>
+                          <td className={`px-2 py-1.5 text-center ${
+                            m.rating >= 7.5 ? "text-emerald-400" : m.rating >= 6.5 ? "text-white" :
+                            m.rating > 0 ? "text-red-400" : "text-slate-600"
+                          }`}>
+                            {m.rating > 0 ? m.rating.toFixed(1) : "—"}
+                          </td>
+                          <td className="px-2 py-1.5 text-center">
+                            {m.motm && <Trophy size={12} className="inline text-amber-400" />}
+                          </td>
+                          <td className="px-2 py-1.5 text-center text-slate-500 text-[11px]">{m.position || "—"}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
           </div>
         )}
 
-        {/* Empty state */}
+        {/* ── EMPTY STATE ────────────────────────────────────────────────── */}
         {allPlayerMatches.length === 0 && (
-          <div style={{ ...sectionStyle, textAlign: "center", padding: "40px 20px", color: "var(--muted)" }}>
-            <Swords size={32} style={{ marginBottom: 12, opacity: 0.4 }} />
-            <div style={{ fontSize: 14 }}>Aucune donnée de match trouvée pour <strong style={{ color: "var(--accent)" }}>{eaProfile.gamertag}</strong></div>
-            <div style={{ fontSize: 12, marginTop: 6 }}>Charge ton club via le bouton "Charger mon club" dans les paramètres du profil pour remplir le cache de matchs.</div>
-          </div>
+          <Card className="p-10 text-center space-y-3">
+            <Swords size={32} className="mx-auto text-slate-700" />
+            <p className="text-sm text-slate-500">
+              Aucune donnée de match pour{" "}
+              <strong className="text-cyan-400">{eaProfile.gamertag}</strong>
+            </p>
+            <p className="text-xs text-slate-600">
+              Charge ton club via "Charger mon club" dans les paramètres du profil.
+            </p>
+          </Card>
         )}
 
-        {/* ── Public Player Card ── */}
-        <div style={{ ...sectionStyle, padding: 0, overflow: "hidden", marginBottom: 16 }}>
-          <div style={{ padding: 20, borderBottom: "1px solid var(--border)", background: "rgba(0,0,0,0.2)" }}>
-            <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 24, margin: 0, color: "var(--text)" }}>
-              CARTE JOUEUR PUBLIQUE <span style={{ fontSize: 12, verticalAlign: "middle", background: "var(--accent)", color: "#fff", padding: "2px 6px", borderRadius: 4, marginLeft: 8 }}>NOUVEAU</span>
-            </h2>
-            <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>
-              Configurez, prévisualisez et exportez votre carte de joueur personnalisée pour Discord.
+        {/* ── PUBLIC PLAYER CARD ─────────────────────────────────────────── */}
+        <Card className="overflow-hidden" style={tile(240).style}>
+          <div className="px-5 py-4 border-b border-slate-800/60 flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <Zap size={13} className="text-cyan-400" />
+                <span className="text-[10px] tracking-[0.12em] font-semibold text-slate-400 uppercase">
+                  Carte Joueur Publique
+                </span>
+                <span className="text-[9px] bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded px-1.5 py-0.5">
+                  NOUVEAU
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 mt-0.5">
+                Configurez, prévisualisez et exportez pour Discord.
+              </p>
             </div>
           </div>
-          <div style={{ padding: "0 20px 20px 20px" }}>
+          <div className="p-5">
             <PublicProfileSection />
           </div>
+        </Card>
+
+        {/* ── DISCORD DEBUG CONSOLE ──────────────────────────────────────── */}
+        <div style={tile(270).style}>
+          <DebugConsole />
         </div>
 
-        {/* ── Logging Section ── */}
-        <div style={{ ...sectionStyle, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        {/* ── EXPORT LOGS ────────────────────────────────────────────────── */}
+        <Card className="px-5 py-3 flex items-center justify-between" style={tile(290).style}>
           <div>
-            <div style={{ fontSize: 10, color: "var(--muted)", letterSpacing: "0.1em",
-              fontFamily: "'Bebas Neue', sans-serif", marginBottom: 4 }}>
-              LOGS SYSTÈME
-            </div>
-            <div style={{ fontSize: 12, color: "var(--muted)" }}>
-              Télécharge les logs de diagnostic pour le support technique.
-            </div>
+            <div className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold">Logs système</div>
+            <div className="text-xs text-slate-600 mt-0.5">Télécharge les logs de diagnostic pour le support.</div>
           </div>
-          <button onClick={() => logger.downloadLogs()}
-            style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px",
-              background: "rgba(0,212,255,0.1)", border: "1px solid var(--accent)",
-              borderRadius: 6, color: "var(--accent)", fontSize: 12, cursor: "pointer",
-              fontFamily: "'Bebas Neue', sans-serif" }}>
-            <FileText size={14} /> EXPORTER LES LOGS
+          <button
+            onClick={() => logger.downloadLogs()}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/30
+              text-cyan-400 text-xs hover:bg-cyan-500/20 transition-colors font-['Bebas_Neue'] tracking-wider"
+          >
+            <FileText size={13} /> Exporter les logs
           </button>
-        </div>
+        </Card>
+
       </div>
     </div>
   );

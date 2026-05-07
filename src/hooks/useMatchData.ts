@@ -3,6 +3,9 @@ import { getMatches } from "../api/tauri";
 import { useAppStore } from "../store/useAppStore";
 import type { Match } from "../types";
 
+// Re-export store instance for inline access after sync
+export { useAppStore };
+
 export type MatchTabType = "leagueMatch" | "playoffMatch" | "friendlyMatch";
 
 function oldestTimestamp(list: Match[]): string | null {
@@ -18,7 +21,7 @@ export function useMatchData() {
   const {
     currentClub, eaProfile,
     matches: leagueCache,
-    matchCache, setMatchCache, persistSettings,
+    matchCache, setMatchCache, syncMatchCache, persistSettings,
   } = useAppStore();
 
   const [type, setType] = useState<MatchTabType>("leagueMatch");
@@ -61,9 +64,10 @@ export function useMatchData() {
     setLoading(true);
     getMatches(currentClub.id, currentClub.platform, type)
       .then((data) => {
-        setPages((p) => ({ ...p, [type]: data }));
+        syncMatchCache(key, data);
+        const merged = useAppStore.getState().matchCache[key] ?? data;
+        setPages((p) => ({ ...p, [type]: merged }));
         setCursors((c) => ({ ...c, [type]: data.length >= 10 ? oldestTimestamp(data) : null }));
-        setMatchCache(key, data);
         persistSettings();
       })
       .finally(() => setLoading(false));
