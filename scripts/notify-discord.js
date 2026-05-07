@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 /**
- * notify-discord.js
- * Called by GitHub Actions on build failure.
- * Reads build.log, extracts the real error lines, sends a Discord embed.
+ * notify-discord.js  (ESM — compatible with "type": "module" in package.json)
+ * Called by GitHub Actions on build success or failure.
  *
  * Usage:
  *   node scripts/notify-discord.js \
@@ -16,121 +15,131 @@
  *   DISCORD_WEBHOOK_URL  — required
  */
 
-const fs   = require("fs");
-const https = require("https");
-const url  = require("url");
+import fs    from "node:fs";
+import https from "node:https";
+import { URL } from "node:url";
 
-// ── Parse args ────────────────────────────────────────────────────────────────
+// ── Parse CLI args ─────────────────────────────────────────────────────────
 function arg(name) {
   const idx = process.argv.indexOf(`--${name}`);
   return idx !== -1 ? process.argv[idx + 1] : undefined;
 }
 
-const logFile  = arg("log")     || "build.log";
-const status   = arg("status")  || "fail";
-const tag      = arg("tag")     || process.env.TAG      || "unknown";
-const commit   = arg("commit")  || process.env.COMMIT   || "unknown";
-const runUrl   = arg("run-url") || process.env.RUN_URL  || "";
+const logFile    = arg("log")     || "build.log";
+const status     = arg("status")  || "fail";
+const tag        = arg("tag")     || process.env.TAG     || "unknown";
+const commit     = arg("commit")  || process.env.COMMIT  || "unknown";
+const runUrl     = arg("run-url") || process.env.RUN_URL || "";
 const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
 
 if (!webhookUrl) {
   console.error("[notify-discord] DISCORD_WEBHOOK_URL is not set — skipping.");
-  process.exit(0); // non-fatal: don't break CI
+  process.exit(0); // non-fatal
 }
 
-// ── Extract meaningful error lines from build.log ─────────────────────────────
+// ── Extract meaningful error lines from build.log ──────────────────────────
 function extractErrors(logPath) {
   if (!fs.existsSync(logPath)) return ["(build.log not found)"];
 
   const lines = fs.readFileSync(logPath, "utf8").split("\n");
 
-  // Collect lines that look like Rust errors, panics, or TS/Vite errors
   const errorLines = lines.filter((l) =>
     /error(\[E\d+\])?:/i.test(l) ||
-    /^error\s/i.test(l) ||
-    /panic!/i.test(l) ||
-    /FAILED/i.test(l) ||
-    /Cannot find module/i.test(l) ||
+    /^error\s/i.test(l)          ||
+    /panic!/i.test(l)            ||
+    /\bFAILED\b/.test(l)         ||
+    /Cannot find module/i.test(l)||
     /TS\d{4}:/i.test(l)
   );
 
-  if (errorLines.length === 0) {
-    // Fallback: last 30 lines
-    return lines.filter(Boolean).slice(-30);
-  }
+  const source = errorLines.length > 0
+    ? errorLines
+    : lines.filter(Boolean).slice(-30); // fallback: last 30 lines
 
-  // Deduplicate and limit
+  // Deduplicate
   const seen = new Set();
-  return errorLines
+  return source
     .filter((l) => { const t = l.trim(); if (seen.has(t)) return false; seen.add(t); return true; })
     .slice(0, 20);
 }
 
-const errorSnippet = extractErrors(logFile).join("\n");
+const errorLines   = extractErrors(logFile);
 const shortCommit  = commit.slice(0, 7);
 const isSuccess    = status === "success";
 
-// ── Build embed ───────────────────────────────────────────────────────────────
-const embed = {
-  title: isSuccess
-    ? `✅ Build réussi — ${tag}`
-    : `❌ Build échoué — ${tag}`,
-  color: isSuccess ? 0x23a559 : 0xda373c,
-  fields: [
-    { name: "Commit",  value: `\`${shortCommit}\``, inline: true },
-    { name: "Version", value: `\`${tag}\``,         inline: true },
-    ...(runUrl ? [{ name: "Workflow", value: `[Voir les logs](${runUrl})`, inline: true }] : []),
-  ],
-  footer: { text: "ProStatClub CI · GitHub Actions" },
-  timestamp: new Date().toISOString(),
-};
+// ── Build Discord embed ────────────────────────────────────────────────────
+const fields = [
+  { name: "Commit",  value: `\`${shortCommit}\``, inline: true },
+  { name: "Version", value: `\`${tag}\``,         inline: true },
+  ...(runUrl ? [{ name: "Workflow", value: `[Voir les logs](${runUrl})`, inline: true }] : []),
+];
 
-if (!isSuccess && errorSnippet) {
-  const snippet = errorSnippet.length > 1000
-    ? errorSnippet.slice(0, 997) + "…"
-    : errorSnippet;
-  embed.fields.push({
-    name: "🔍 Erreurs détectées",
-    value: `\`\`\`\n${snippet}\n\`\`\``,
+if (!isSuccess && errorLines.length > 0) {
+  let snippet = errorLines.join("\n");
+  // Discord field value limit is 1024 chars; embed total limit is 6000
+  if (snippet.length > 900) snippet = snippet.slice(0, 897) + "…";
+  fields.push({
+    name:   "🔍 Erreurs détectées",
+    value:  `\`\`\`\n${snippet}\n\`\`\``,
     inline: false,
   });
 }
 
+const embed = {
+  title:     isSuccess ? `✅ Build réussi — ${tag}` : `❌ Build échoué — ${tag}`,
+  color:     isSuccess ? 0x23a559 : 0xda373c,
+  fields,
+  footer:    { text: "ProStatClub CI · GitHub Actions" },
+  timestamp: new Date().toISOString(),
+};
+
 const payload = JSON.stringify({ embeds: [embed] });
 
-// ── Send via native https (no dependencies needed) ────────────────────────────
-const parsed   = url.parse(webhookUrl);
-const options  = {
+// Guard: Discord total payload must be < 8 MB and content < 6000 chars
+if (payload.length > 5800) {
+  // Remove error snippet if over-limit and retry
+  fields.pop();
+  fields.push({ name: "🔍 Erreurs", value: "*(trop long — télécharge l'artifact build.log)*", inline: false });
+}
+
+const finalPayload = JSON.stringify({ embeds: [embed] });
+
+// ── Send via native https (zero dependencies) ──────────────────────────────
+const parsed  = new URL(webhookUrl);
+const options = {
   hostname: parsed.hostname,
-  path:     parsed.path,
+  path:     parsed.pathname + parsed.search,
   method:   "POST",
   headers:  {
     "Content-Type":   "application/json",
-    "Content-Length": Buffer.byteLength(payload),
+    "Content-Length": Buffer.byteLength(finalPayload),
     "User-Agent":     "ProStatClub-CI/1.0",
   },
 };
 
-console.log(`[notify-discord] Sending embed to Discord (status=${status}, tag=${tag}, commit=${shortCommit})`);
+console.log(`[notify-discord] status=${status}  tag=${tag}  commit=${shortCommit}  payload=${finalPayload.length}B`);
 
 const req = https.request(options, (res) => {
   let body = "";
   res.on("data", (chunk) => { body += chunk; });
   res.on("end", () => {
-    console.log(`[notify-discord] Discord API response — status: ${res.statusCode}`);
+    console.log(`[notify-discord] Discord API → HTTP ${res.statusCode}`);
     if (body) console.log(`[notify-discord] Response body: ${body}`);
-    if (res.statusCode < 200 || res.statusCode >= 300) {
-      console.error(`[notify-discord] ⚠️  Discord rejected the payload (${res.statusCode}).`);
-      if (res.statusCode === 401 || res.statusCode === 403) {
-        console.error("[notify-discord] 👉 Webhook URL invalide ou révoquée. Régénère-la dans Discord et mets à jour le secret DISCORD_WEBHOOK_URL.");
-      }
-      if (res.statusCode === 400) {
-        console.error("[notify-discord] 👉 Payload malformé (400 Bad Request). Vérifie la structure de l'embed.");
-      }
-      // Exit 0 — a notification failure must never fail the CI job
-      process.exit(0);
+
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      console.log("[notify-discord] ✅ Notification envoyée.");
+      return;
     }
-    console.log("[notify-discord] ✅ Notification Discord envoyée.");
+    // Diagnostic hints
+    if (res.statusCode === 401 || res.statusCode === 403) {
+      console.error("[notify-discord] ⚠️  Webhook invalide ou révoqué (401/403). Régénère-le dans Discord et mets à jour le secret DISCORD_WEBHOOK_URL.");
+    } else if (res.statusCode === 400) {
+      console.error("[notify-discord] ⚠️  Payload rejeté (400 Bad Request). Vérifie la structure de l'embed ci-dessus.");
+    } else {
+      console.error(`[notify-discord] ⚠️  Réponse inattendue : ${res.statusCode}.`);
+    }
+    // Always exit 0 — notification failure must not fail CI
+    process.exit(0);
   });
 });
 
@@ -139,5 +148,5 @@ req.on("error", (err) => {
   process.exit(0); // non-fatal
 });
 
-req.write(payload);
+req.write(finalPayload);
 req.end();

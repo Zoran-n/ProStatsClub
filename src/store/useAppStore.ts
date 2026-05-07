@@ -546,7 +546,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     });
     return added;
   },
-  exportMatchCacheJson: () => {
+  exportMatchCacheJson: (): string => {
     const s = useAppStore.getState();
     return JSON.stringify({ matchCache: s.matchCache, exportedAt: new Date().toISOString() }, null, 2);
   },
