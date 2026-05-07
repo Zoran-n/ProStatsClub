@@ -2,6 +2,13 @@ name: Release (Production)
 
 on:
   workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Type de version'
+        required: false
+        default: 'patch'
+        type: choice
+        options: [patch, minor, major]
 
 jobs:
   # ─────────────────────────────────────────────────────────────────────────────
@@ -36,7 +43,8 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           # Run bump script — outputs the new version string on stdout
-          NEW_VERSION=$(node scripts/bump-version.js)
+          BUMP_TYPE="${{ github.event.inputs.version_type || 'patch' }}"
+          NEW_VERSION=$(node scripts/bump-version.js "$BUMP_TYPE")
           NEW_TAG="v${NEW_VERSION}"
 
           echo "new_version=${NEW_VERSION}" >> "$GITHUB_OUTPUT"
