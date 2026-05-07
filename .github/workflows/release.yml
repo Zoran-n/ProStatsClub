@@ -146,16 +146,47 @@ jobs:
       - name: 🔨 Build Tauri
         shell: bash
         run: |
-          if ! npm run tauri build -- --bundles nsis,updater > build.log 2>&1; then
+          # tee: logs visible in real-time AND saved to build.log
+          if ! npm run tauri build -- --bundles nsis,updater 2>&1 | tee build.log; then
             echo "### ❌ Échec : Build Tauri" >> $GITHUB_STEP_SUMMARY
-            echo "<details><summary>🔍 Voir les logs d'erreur</summary>" >> $GITHUB_STEP_SUMMARY
+
+            # Extract meaningful error lines (Rust errors, panics, TS errors)
+            ERROR_LINES=$(grep -E "^error(\[E[0-9]+\])?:|^error |panic!|FAILED|Cannot find module|TS[0-9]{4}:" build.log || true)
+
+            echo "<details><summary>🔍 Erreurs détectées (grep error/panic)</summary>" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo '```text' >> $GITHUB_STEP_SUMMARY
-            tail -n 50 build.log >> $GITHUB_STEP_SUMMARY
+            if [ -n "$ERROR_LINES" ]; then
+              echo "$ERROR_LINES" | head -n 40 >> $GITHUB_STEP_SUMMARY
+            else
+              echo "Aucune ligne error/panic trouvée — affichage des 60 dernières lignes :" >> $GITHUB_STEP_SUMMARY
+              tail -n 60 build.log >> $GITHUB_STEP_SUMMARY
+            fi
             echo '```' >> $GITHUB_STEP_SUMMARY
             echo "</details>" >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
+
+      - name: 📎 Upload build.log (si échec)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log-${{ needs.tagging.outputs.new_tag }}
+          path: build.log
+          retention-days: 7
+
+      - name: 🔔 Notification Discord (si échec)
+        if: failure()
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        shell: bash
+        run: |
+          node scripts/notify-discord.js \
+            --log build.log \
+            --status fail \
+            --tag "${{ needs.tagging.outputs.new_tag }}" \
+            --commit "${{ github.sha }}" \
+            --run-url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
       - name: 🔍 Debug — listing complet de target/release
         if: always()
@@ -272,6 +303,10 @@ jobs:
     needs: [tagging, build-and-release]
     if: always()
     steps:
+      - name: 📥 Récupérer le code (pour notify-discord.js)
+        if: needs.build-and-release.result == 'success'
+        uses: actions/checkout@v4
+
       - name: 📝 Générer le résumé Markdown
         run: |
           echo "# 📊 Rapport de Release" >> $GITHUB_STEP_SUMMARY
@@ -284,3 +319,14 @@ jobs:
           echo "- 🚀 Build & Release : ${{ needs.build-and-release.result == 'success' && '✅ Succès' || '❌ Échec' }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "> 💡 *Ce rapport a été généré automatiquement.*" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🎉 Notification Discord (succès)
+        if: needs.build-and-release.result == 'success'
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          node scripts/notify-discord.js \
+            --status success \
+            --tag "${{ needs.tagging.outputs.new_tag }}" \
+            --commit "${{ github.sha }}" \
+            --run-url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
