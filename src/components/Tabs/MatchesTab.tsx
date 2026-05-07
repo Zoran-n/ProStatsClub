@@ -634,30 +634,29 @@ export function MatchesTab() {
           /* ── Calendar view ─────────────────────────────────────────────── */
           <div>
             {/* Header navigation */}
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-3">
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <button
                   onClick={() => setCalMonth((c) => { const d = new Date(c.year, c.month - 1, 1); return { year: d.getFullYear(), month: d.getMonth() }; })}
-                  className="p-1.5 rounded-lg border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-colors"
+                  style={{ ...BTN, padding: "5px 7px" }}
                 ><ChevronLeft size={14} /></button>
-                <span className="font-['Bebas_Neue'] text-lg tracking-widest text-white min-w-[160px] text-center">
+                <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, letterSpacing: 2, color: "var(--text)", minWidth: 160, textAlign: "center" }}>
                   {t(`months.${calMonth.month}`)} {calMonth.year}
                 </span>
                 <button
                   onClick={() => setCalMonth((c) => { const d = new Date(c.year, c.month + 1, 1); return { year: d.getFullYear(), month: d.getMonth() }; })}
-                  className="p-1.5 rounded-lg border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-colors"
+                  style={{ ...BTN, padding: "5px 7px" }}
                 ><ChevronRight size={14} /></button>
                 <button
                   onClick={() => setCalMonth(() => { const d = new Date(); return { year: d.getFullYear(), month: d.getMonth() }; })}
-                  className="text-[10px] px-2 py-1 rounded-md border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-colors font-['Bebas_Neue'] tracking-wider"
+                  style={{ ...BTN, fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 1 }}
                 >Aujourd'hui</button>
               </div>
-              <div className="flex items-center gap-3">
-                {/* Legend */}
-                <div className="hidden sm:flex items-center gap-3 text-[9px] text-slate-500">
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> Victoire</span>
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-slate-400 inline-block" /> Nul</span>
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500 inline-block" /> Défaite</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 9, color: "var(--muted)" }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--green)", display: "inline-block" }} /> Victoire</span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--muted)", display: "inline-block" }} /> Nul</span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--red)", display: "inline-block" }} /> Défaite</span>
                 </div>
                 <button onClick={() => setCalExportModal(true)} style={BTN}>
                   <Download size={11} /> PNG
@@ -665,18 +664,18 @@ export function MatchesTab() {
               </div>
             </div>
 
-            <div ref={calendarRef} className="rounded-xl border border-slate-800/60 overflow-hidden bg-slate-900/50">
+            <div ref={calendarRef} style={{ borderRadius: 8, border: "1px solid var(--border)", overflow: "hidden", background: "var(--card)" }}>
               {/* Day headers */}
-              <div className="grid grid-cols-7 border-b border-slate-800/60">
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", borderBottom: "1px solid var(--border)" }}>
                 {[t("days.mon"), t("days.tue"), t("days.wed"), t("days.thu"), t("days.fri"), t("days.sat"), t("days.sun")].map((d) => (
-                  <div key={d} className="text-center py-2 text-[9px] font-['Bebas_Neue'] tracking-widest text-slate-500 uppercase">
+                  <div key={d} style={{ textAlign: "center", padding: "8px 0", fontSize: 9, fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 2, color: "var(--muted)", textTransform: "uppercase" }}>
                     {d}
                   </div>
                 ))}
               </div>
 
               {/* Day cells */}
-              <div className="grid grid-cols-7">
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
                 {calendarDays.map((cell, i) => {
                   const isToday = cell.day > 0 && (() => {
                     const now = new Date();
@@ -693,21 +692,27 @@ export function MatchesTab() {
                         if (cell.matches.length === 1) setSelected(cell.matches[0]);
                         else setSelectedDayMatches(cell.matches);
                       }}
-                      className={[
-                        "relative min-h-[72px] p-2 border-b border-r border-slate-800/40 transition-colors",
-                        isLastRow ? "border-b-0" : "",
-                        cell.day === 0 ? "bg-transparent opacity-0 pointer-events-none" : "",
-                        hasMatches ? "cursor-pointer hover:bg-slate-800/50" : "",
-                      ].join(" ")}
+                      style={{
+                        position: "relative", minHeight: 72, padding: 8,
+                        borderBottom: isLastRow ? "none" : "1px solid var(--border)",
+                        borderRight: "1px solid var(--border)",
+                        cursor: hasMatches ? "pointer" : "default",
+                        opacity: cell.day === 0 ? 0 : 1,
+                        pointerEvents: cell.day === 0 ? "none" : "auto",
+                        transition: "background 0.1s",
+                      }}
+                      onMouseEnter={(e) => { if (hasMatches) e.currentTarget.style.background = "var(--surface)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = ""; }}
                     >
                       {cell.day > 0 && (
                         <>
                           {/* Day number */}
-                          <div className={`text-[11px] font-semibold mb-1.5 w-6 h-6 flex items-center justify-center rounded-full ${
-                            isToday
-                              ? "bg-cyan-500 text-white"
-                              : "text-slate-500"
-                          }`}>
+                          <div style={{
+                            fontSize: 11, fontWeight: 600, marginBottom: 6, width: 24, height: 24,
+                            display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%",
+                            background: isToday ? "var(--accent)" : "transparent",
+                            color: isToday ? "#fff" : "var(--muted)",
+                          }}>
                             {cell.day}
                           </div>
 
@@ -715,12 +720,12 @@ export function MatchesTab() {
                           {cell.matches.length === 1 && (() => {
                             const m = cell.matches[0];
                             const res = getResult(m);
-                            const dotCls = res === "W" ? "bg-emerald-500" : res === "L" ? "bg-red-500" : "bg-slate-400";
-                            const bgCls  = res === "W" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : res === "L" ? "bg-red-500/10 border-red-500/20 text-red-400" : "bg-slate-700/30 border-slate-600/20 text-slate-400";
+                            const dotColor2 = res === "W" ? "var(--green)" : res === "L" ? "var(--red)" : "var(--muted)";
+                            const bg2 = res === "W" ? "rgba(35,165,89,0.12)" : res === "L" ? "rgba(218,55,60,0.12)" : "rgba(148,155,164,0.1)";
                             return (
-                              <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[9px] font-bold ${bgCls}`}>
-                                <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dotCls}`} />
-                                <span className="truncate">{getScore(m)}</span>
+                              <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "2px 6px", borderRadius: 4, border: `1px solid ${dotColor2}44`, background: bg2, fontSize: 9, fontWeight: 700, color: dotColor2 }}>
+                                <span style={{ width: 6, height: 6, borderRadius: "50%", background: dotColor2, flexShrink: 0, display: "inline-block" }} />
+                                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{getScore(m)}</span>
                               </div>
                             );
                           })()}
@@ -729,19 +734,19 @@ export function MatchesTab() {
                             const wins   = cell.matches.filter((m) => getResult(m) === "W").length;
                             const losses = cell.matches.filter((m) => getResult(m) === "L").length;
                             return (
-                              <div className="space-y-0.5">
-                                <div className="flex gap-0.5 flex-wrap">
+                              <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                                <div style={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
                                   {cell.matches.slice(0, 4).map((m) => {
                                     const res = getResult(m);
                                     return (
-                                      <span key={m.matchId} className={`w-2 h-2 rounded-full ${res === "W" ? "bg-emerald-500" : res === "L" ? "bg-red-500" : "bg-slate-400"}`} />
+                                      <span key={m.matchId} style={{ width: 8, height: 8, borderRadius: "50%", background: res === "W" ? "var(--green)" : res === "L" ? "var(--red)" : "var(--muted)", display: "inline-block" }} />
                                     );
                                   })}
                                 </div>
-                                <div className="text-[8px] text-slate-500">
+                                <div style={{ fontSize: 8, color: "var(--muted)" }}>
                                   {cell.matches.length} matchs
-                                  {wins > 0 && <span className="text-emerald-400 ml-1">{wins}V</span>}
-                                  {losses > 0 && <span className="text-red-400 ml-1">{losses}D</span>}
+                                  {wins > 0 && <span style={{ color: "var(--green)", marginLeft: 4 }}>{wins}V</span>}
+                                  {losses > 0 && <span style={{ color: "var(--red)", marginLeft: 4 }}>{losses}D</span>}
                                 </div>
                               </div>
                             );
@@ -759,28 +764,31 @@ export function MatchesTab() {
 
       {/* Multi-match day picker */}
       {selectedDayMatches && !selected && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+        <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.8)" }}
           onClick={() => setSelectedDayMatches(null)}>
-          <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 w-72 shadow-2xl"
+          <div style={{ background: "var(--main-bg)", border: "1px solid var(--border)", borderRadius: 8, padding: 16, width: 288, boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}
             onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-3">
-              <span className="font-['Bebas_Neue'] text-sm tracking-widest text-slate-400">
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 13, letterSpacing: 2, color: "var(--muted)" }}>
                 {selectedDayMatches.length} MATCHS CE JOUR
               </span>
-              <button onClick={() => setSelectedDayMatches(null)} className="text-slate-500 hover:text-slate-200 text-sm">✕</button>
+              <button onClick={() => setSelectedDayMatches(null)} className="win-btn">✕</button>
             </div>
-            <div className="space-y-2">
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {selectedDayMatches.map((m) => {
                 const res = getResult(m);
-                const dotCls = res === "W" ? "bg-emerald-500" : res === "L" ? "bg-red-500" : "bg-slate-400";
-                const textCls = res === "W" ? "text-emerald-400" : res === "L" ? "text-red-400" : "text-slate-400";
+                const dotColor2 = res === "W" ? "var(--green)" : res === "L" ? "var(--red)" : "var(--muted)";
                 return (
                   <button key={m.matchId} onClick={() => { setSelected(m); setSelectedDayMatches(null); }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/[0.03] border border-slate-800/60 hover:bg-white/[0.07] transition-colors text-left">
-                    <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${dotCls}`} />
-                    <span className="font-['Bebas_Neue'] text-lg text-white">{getScore(m)}</span>
-                    <span className="text-xs text-slate-400 truncate flex-1">vs {getOppName(m)}</span>
-                    <span className={`text-[10px] font-bold font-['Bebas_Neue'] tracking-wide ${textCls}`}>
+                    style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "8px 12px",
+                      borderRadius: 6, background: "var(--surface)", border: "1px solid var(--border)",
+                      cursor: "pointer", textAlign: "left", transition: "border-color 0.1s" }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; }}>
+                    <span style={{ width: 10, height: 10, borderRadius: "50%", background: dotColor2, flexShrink: 0, display: "inline-block" }} />
+                    <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, color: "var(--text)" }}>{getScore(m)}</span>
+                    <span style={{ fontSize: 12, color: "var(--muted)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>vs {getOppName(m)}</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 1, color: dotColor2 }}>
                       {RESULT_LABEL[res].text}
                     </span>
                   </button>

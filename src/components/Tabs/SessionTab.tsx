@@ -756,23 +756,23 @@ export function SessionTab() {
           )}
         </div>
       ) : currentClub ? (
-        <div className="relative overflow-hidden rounded-2xl border border-slate-800/60 bg-gradient-to-br from-slate-900 via-slate-900/80 to-cyan-950/30 p-6">
-          {/* glow */}
-          <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-cyan-400/10 blur-3xl pointer-events-none" />
+        <div className="relative overflow-hidden rounded-lg p-6" style={{ border: "1px solid var(--border)", background: "var(--surface)" }}>
           <div className="relative flex flex-col items-center gap-4 text-center" style={{ marginBottom: sessionTemplates.length > 0 ? 20 : 0 }}>
-            <div className="w-14 h-14 rounded-full border border-cyan-500/30 bg-cyan-500/10 flex items-center justify-center">
-              <Trophy size={26} className="text-cyan-400" />
+            <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ border: "1px solid var(--border)", background: "var(--active)" }}>
+              <Trophy size={26} style={{ color: "var(--accent)" }} />
             </div>
             <div>
-              <p className="text-slate-300 font-semibold text-sm">{t("session.noActive")}</p>
-              <p className="text-slate-500 text-xs mt-1">Lance une session pour tracker tes stats en temps réel</p>
+              <p className="font-semibold text-sm" style={{ color: "var(--text)" }}>{t("session.noActive")}</p>
+              <p className="text-xs mt-1" style={{ color: "var(--muted)" }}>Lance une session pour tracker tes stats en temps réel</p>
             </div>
             <button
               onClick={() => startSession(currentClub)}
-              className="relative flex items-center gap-2 px-6 py-2.5 rounded-xl bg-cyan-500/15 border border-cyan-500/40 text-cyan-400 text-sm font-semibold hover:bg-cyan-500/25 transition-colors cursor-pointer group"
+              className="relative flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold transition-colors cursor-pointer"
+              style={{ background: "var(--active)", border: "1px solid var(--accent)", color: "var(--accent)" }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "var(--accent)22"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "var(--active)"; }}
             >
-              <span className="absolute inset-0 rounded-xl bg-cyan-400/5 animate-pulse group-hover:opacity-0 transition-opacity" />
-              <Play size={14} className="relative" /> <span className="relative">{t("session.startBtn")}</span>
+              <Play size={14} /> <span>{t("session.startBtn")}</span>
             </button>
           </div>
 
@@ -1206,7 +1206,7 @@ export function SessionTab() {
           )}
 
           {allVisible.length === 0 && (
-            <div className="text-center text-slate-500 text-xs py-8">
+            <div className="text-center text-xs py-8" style={{ color: "var(--muted)" }}>
               {showArchived ? t("session.noArchived") : t("session.noSessions")}
             </div>
           )}
@@ -1220,36 +1220,32 @@ export function SessionTab() {
               const isEditingTags = editingTagsId === s.id;
               const total = s.matches.length;
               const winRate = total > 0 ? Math.round((wld.w / total) * 100) : 0;
+              const winRateColor = winRate >= 60 ? "var(--green)" : winRate >= 40 ? "var(--gold)" : "var(--red)";
               const recentResults = [...s.matches]
                 .sort((a, b) => Number(a.timestamp) - Number(b.timestamp))
                 .slice(-5)
                 .map((m) => matchResult(m, s.clubId));
-              const resultBorderCls = wld.w > wld.l
-                ? "hover:border-emerald-500/50"
-                : wld.l > wld.w
-                ? "hover:border-red-500/40"
-                : "hover:border-cyan-500/40";
 
               return (
                 <div
                   key={s.id}
-                  className={`group flex flex-col rounded-2xl border border-slate-800/60 bg-slate-900/40 backdrop-blur-sm transition-all duration-200 ${resultBorderCls} hover:bg-slate-900/60`}
+                  className="flex flex-col rounded-lg transition-all duration-200"
+                  style={{ border: "1px solid var(--border)", background: "var(--card)" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; }}
                 >
                   {/* ── Card header ── */}
-                  <div className="px-4 pt-4 pb-3 border-b border-slate-800/60">
+                  <div className="px-4 pt-4 pb-3" style={{ borderBottom: "1px solid var(--border)" }}>
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div className="min-w-0">
-                        <div className="font-['Bebas_Neue'] text-base text-white tracking-wide truncate">{s.clubName}</div>
-                        <div className="text-[10px] text-slate-500 mt-0.5">
+                        <div className="font-['Bebas_Neue'] text-base tracking-wide truncate" style={{ color: "var(--text)" }}>{s.clubName}</div>
+                        <div className="text-[10px] mt-0.5" style={{ color: "var(--muted)" }}>
                           {new Date(s.date).toLocaleDateString()} · {total} match{total !== 1 ? "s" : ""}
                         </div>
                       </div>
                       {/* Win rate badge */}
-                      <div className={`flex-shrink-0 text-center px-2 py-0.5 rounded-lg text-[10px] font-bold font-['Bebas_Neue'] tracking-wider ${
-                        winRate >= 60 ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
-                        : winRate >= 40 ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/25"
-                        : "bg-red-500/10 text-red-400 border border-red-500/25"
-                      }`}>
+                      <div className="flex-shrink-0 text-center px-2 py-0.5 rounded text-[10px] font-bold font-['Bebas_Neue'] tracking-wider"
+                        style={{ color: winRateColor, border: `1px solid ${winRateColor}55`, background: winRateColor + "18" }}>
                         {winRate}%
                       </div>
                     </div>
@@ -1257,13 +1253,13 @@ export function SessionTab() {
                     {/* Forme pills */}
                     {recentResults.length > 0 && (
                       <div className="flex gap-1">
-                        {recentResults.map((r, i) => (
-                          <span key={i} className={`w-5 h-5 rounded-md text-[8px] font-bold flex items-center justify-center ${
-                            r === "W" ? "bg-emerald-500/20 text-emerald-400"
-                            : r === "L" ? "bg-red-500/20 text-red-400"
-                            : "bg-slate-700 text-slate-400"
-                          }`}>{r}</span>
-                        ))}
+                        {recentResults.map((r, i) => {
+                          const rc = r === "W" ? "var(--green)" : r === "L" ? "var(--red)" : "var(--muted)";
+                          return (
+                            <span key={i} className="w-5 h-5 rounded text-[8px] font-bold flex items-center justify-center"
+                              style={{ background: rc + "22", color: rc }}>{r}</span>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -1271,51 +1267,51 @@ export function SessionTab() {
                   {/* ── KPI grid ── */}
                   <div className="px-4 py-3 grid grid-cols-2 gap-2">
                     {/* MJ — large */}
-                    <div className="col-span-2 flex items-center gap-3 rounded-xl bg-slate-800/40 px-3 py-2 border border-slate-700/40">
+                    <div className="col-span-2 flex items-center gap-3 rounded-lg px-3 py-2" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
                       <div>
-                        <div className="font-['Bebas_Neue'] text-3xl text-cyan-400 leading-none">{total}</div>
-                        <div className="text-[9px] text-slate-500 tracking-wider mt-0.5 font-['Bebas_Neue'] uppercase">{t("players.gp")}</div>
+                        <div className="font-['Bebas_Neue'] text-3xl leading-none" style={{ color: "var(--accent)" }}>{total}</div>
+                        <div className="text-[9px] tracking-wider mt-0.5 font-['Bebas_Neue'] uppercase" style={{ color: "var(--muted)" }}>{t("players.gp")}</div>
                       </div>
                       <div className="flex-1 flex justify-end gap-3 text-center">
-                        <div><div className="font-['Bebas_Neue'] text-lg text-emerald-400 leading-none">{wld.w}</div><div className="text-[8px] text-slate-500">V</div></div>
-                        <div><div className="font-['Bebas_Neue'] text-lg text-yellow-400 leading-none">{wld.d}</div><div className="text-[8px] text-slate-500">N</div></div>
-                        <div><div className="font-['Bebas_Neue'] text-lg text-red-400 leading-none">{wld.l}</div><div className="text-[8px] text-slate-500">D</div></div>
+                        <div><div className="font-['Bebas_Neue'] text-lg leading-none" style={{ color: "var(--green)" }}>{wld.w}</div><div className="text-[8px]" style={{ color: "var(--muted)" }}>V</div></div>
+                        <div><div className="font-['Bebas_Neue'] text-lg leading-none" style={{ color: "var(--gold)" }}>{wld.d}</div><div className="text-[8px]" style={{ color: "var(--muted)" }}>N</div></div>
+                        <div><div className="font-['Bebas_Neue'] text-lg leading-none" style={{ color: "var(--red)" }}>{wld.l}</div><div className="text-[8px]" style={{ color: "var(--muted)" }}>D</div></div>
                       </div>
                     </div>
 
                     {/* Buts */}
-                    <div className="flex items-center gap-2 rounded-xl bg-slate-800/30 px-3 py-2 border border-slate-700/30">
+                    <div className="flex items-center gap-2 rounded-lg px-3 py-2" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
                       <span className="text-sm">⚽</span>
                       <div>
-                        <div className="font-['Bebas_Neue'] text-lg text-cyan-400 leading-none">{k.goals}</div>
-                        <div className="text-[8px] text-slate-500 tracking-wider">{t("players.goals")}</div>
+                        <div className="font-['Bebas_Neue'] text-lg leading-none" style={{ color: "var(--accent)" }}>{k.goals}</div>
+                        <div className="text-[8px] tracking-wider" style={{ color: "var(--muted)" }}>{t("players.goals")}</div>
                       </div>
                     </div>
 
                     {/* PD */}
-                    <div className="flex items-center gap-2 rounded-xl bg-slate-800/30 px-3 py-2 border border-slate-700/30">
+                    <div className="flex items-center gap-2 rounded-lg px-3 py-2" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
                       <span className="text-sm">🅰️</span>
                       <div>
-                        <div className="font-['Bebas_Neue'] text-lg text-violet-400 leading-none">{k.assists}</div>
-                        <div className="text-[8px] text-slate-500 tracking-wider">{t("players.assists")}</div>
+                        <div className="font-['Bebas_Neue'] text-lg leading-none" style={{ color: "#c4b5fd" }}>{k.assists}</div>
+                        <div className="text-[8px] tracking-wider" style={{ color: "var(--muted)" }}>{t("players.assists")}</div>
                       </div>
                     </div>
 
                     {/* MOTM */}
-                    <div className="flex items-center gap-2 rounded-xl bg-slate-800/30 px-3 py-2 border border-slate-700/30">
+                    <div className="flex items-center gap-2 rounded-lg px-3 py-2" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
                       <span className="text-sm">★</span>
                       <div>
-                        <div className="font-['Bebas_Neue'] text-lg text-yellow-400 leading-none">{k.motm}</div>
-                        <div className="text-[8px] text-slate-500 tracking-wider">{t("session.motm")}</div>
+                        <div className="font-['Bebas_Neue'] text-lg leading-none" style={{ color: "var(--gold)" }}>{k.motm}</div>
+                        <div className="text-[8px] tracking-wider" style={{ color: "var(--muted)" }}>{t("session.motm")}</div>
                       </div>
                     </div>
 
                     {/* Passes */}
-                    <div className="flex items-center gap-2 rounded-xl bg-slate-800/30 px-3 py-2 border border-slate-700/30">
+                    <div className="flex items-center gap-2 rounded-lg px-3 py-2" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
                       <span className="text-sm">🎯</span>
                       <div>
-                        <div className="font-['Bebas_Neue'] text-lg text-orange-400 leading-none">{k.passes}</div>
-                        <div className="text-[8px] text-slate-500 tracking-wider">{t("players.passes")}</div>
+                        <div className="font-['Bebas_Neue'] text-lg leading-none" style={{ color: "#fb923c" }}>{k.passes}</div>
+                        <div className="text-[8px] tracking-wider" style={{ color: "var(--muted)" }}>{t("players.passes")}</div>
                       </div>
                     </div>
                   </div>
@@ -1324,14 +1320,15 @@ export function SessionTab() {
                   {(s.tags ?? []).length > 0 && !isEditingTags && (
                     <div className="flex flex-wrap gap-1 px-4 pb-2">
                       {(s.tags ?? []).map((tag) => (
-                        <span key={tag} className="px-2 py-0.5 rounded-full text-[9px] border border-slate-700/60 text-slate-500 bg-slate-800/40">{tag}</span>
+                        <span key={tag} className="px-2 py-0.5 rounded-full text-[9px]"
+                          style={{ border: "1px solid var(--border)", color: "var(--muted)", background: "var(--surface)" }}>{tag}</span>
                       ))}
                     </div>
                   )}
 
                   {/* Notes display */}
                   {s.notes?.trim() && !isEditingNote && (
-                    <div className="mx-4 mb-2 px-3 py-2 text-[10px] text-slate-400 bg-slate-800/30 rounded-lg border-l-2 border-cyan-500/40">
+                    <div className="mx-4 mb-2 px-3 py-2 text-[10px] rounded-lg" style={{ color: "var(--muted)", background: "var(--surface)", borderLeft: "2px solid var(--accent)" }}>
                       {s.notes.length > 80 ? s.notes.slice(0, 80) + "…" : s.notes}
                     </div>
                   )}
@@ -1339,7 +1336,7 @@ export function SessionTab() {
                   {/* Tags editor */}
                   {isEditingTags && (
                     <div className="px-4 pb-3">
-                      <div className="text-[9px] text-slate-500 mb-2 tracking-wider">{t("session.tags")}</div>
+                      <div className="text-[9px] mb-2 tracking-wider" style={{ color: "var(--muted)" }}>{t("session.tags")}</div>
                       <div className="flex flex-wrap gap-1.5">
                         {PRESET_TAGS.map((tag) => {
                           const active = (s.tags ?? []).includes(tag);
@@ -1350,9 +1347,12 @@ export function SessionTab() {
                               updateSession(s.id, { tags: next });
                               persistSettings();
                             }}
-                              className={`px-2.5 py-1 rounded-full text-[9px] cursor-pointer transition-colors border ${
-                                active ? "bg-cyan-500/15 border-cyan-500/40 text-cyan-400" : "bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500"
-                              }`}>
+                              className="px-2.5 py-1 rounded-full text-[9px] cursor-pointer transition-colors"
+                              style={{
+                                border: `1px solid ${active ? "var(--accent)" : "var(--border)"}`,
+                                background: active ? "var(--active)" : "var(--surface)",
+                                color: active ? "var(--accent)" : "var(--muted)",
+                              }}>
                               {tag}
                             </button>
                           );
@@ -1366,14 +1366,16 @@ export function SessionTab() {
                     <div className="px-4 pb-3">
                       <textarea value={noteValue} onChange={(e) => setNoteValue(e.target.value)}
                         placeholder={t("session.notesPlaceholder")} rows={3}
-                        className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-cyan-500/50 resize-none font-inherit" />
+                        style={{ width: "100%", background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text)", fontSize: 12, padding: "8px 10px", resize: "vertical", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}
+                        onFocus={(e) => { e.target.style.borderColor = "var(--accent)"; }}
+                        onBlur={(e) => { e.target.style.borderColor = "var(--border)"; }} />
                       <div className="flex gap-2 justify-end mt-2">
                         <button onClick={() => setEditingNoteId(null)}
-                          className="px-3 py-1 text-[10px] border border-slate-700 rounded-lg text-slate-400 hover:text-slate-200 cursor-pointer">
+                          style={{ padding: "4px 12px", fontSize: 10, border: "1px solid var(--border)", borderRadius: 6, color: "var(--muted)", background: "none", cursor: "pointer" }}>
                           {t("session.noThanks")}
                         </button>
                         <button onClick={() => { updateSession(s.id, { notes: noteValue }); persistSettings(); setEditingNoteId(null); }}
-                          className="px-3 py-1 text-[10px] border border-cyan-500/40 rounded-lg text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 cursor-pointer">
+                          style={{ padding: "4px 12px", fontSize: 10, border: "1px solid var(--accent)", borderRadius: 6, color: "var(--accent)", background: "var(--active)", cursor: "pointer" }}>
                           ✓ Sauvegarder
                         </button>
                       </div>
@@ -1381,34 +1383,52 @@ export function SessionTab() {
                   )}
 
                   {/* ── Footer actions ── */}
-                  <div className="mt-auto px-4 py-2.5 border-t border-slate-800/60 flex items-center justify-between">
+                  <div className="mt-auto px-4 py-2.5 flex items-center justify-between" style={{ borderTop: "1px solid var(--border)" }}>
                     <button onClick={() => setDetailSession(s)} title={t("session.details")}
-                      className="p-1.5 rounded-lg text-cyan-400 hover:bg-cyan-500/10 transition-colors cursor-pointer">
+                      className="p-1.5 rounded-lg transition-colors cursor-pointer"
+                      style={{ color: "var(--accent)", background: "none" }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = "var(--active)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = "none"; }}>
                       <Info size={13} />
                     </button>
                     <div className="flex items-center gap-0.5">
                       <button onClick={() => { if (isEditingNote) setEditingNoteId(null); else { setNoteValue(s.notes ?? ""); setEditingNoteId(s.id); } }}
                         title={t("session.notes")}
-                        className={`p-1.5 rounded-lg transition-colors cursor-pointer ${isEditingNote ? "text-cyan-400 bg-cyan-500/10" : "text-slate-500 hover:text-slate-300 hover:bg-slate-800"}`}>
+                        className="p-1.5 rounded-lg transition-colors cursor-pointer"
+                        style={{ color: isEditingNote ? "var(--accent)" : "var(--muted)", background: isEditingNote ? "var(--active)" : "none" }}
+                        onMouseEnter={(e) => { e.currentTarget.style.color = "var(--accent)"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.color = isEditingNote ? "var(--accent)" : "var(--muted)"; }}>
                         <FileText size={13} />
                       </button>
                       <button onClick={() => setEditingTagsId(isEditingTags ? null : s.id)} title={t("session.tags")}
-                        className={`p-1.5 rounded-lg transition-colors cursor-pointer ${isEditingTags ? "text-cyan-400 bg-cyan-500/10" : "text-slate-500 hover:text-slate-300 hover:bg-slate-800"}`}>
+                        className="p-1.5 rounded-lg transition-colors cursor-pointer"
+                        style={{ color: isEditingTags ? "var(--accent)" : "var(--muted)", background: isEditingTags ? "var(--active)" : "none" }}
+                        onMouseEnter={(e) => { e.currentTarget.style.color = "var(--accent)"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.color = isEditingTags ? "var(--accent)" : "var(--muted)"; }}>
                         <Tag size={13} />
                       </button>
                       {discordWebhook && (
                         <button onClick={() => shareToDiscord(s)} title={t("discord.share")} disabled={sharingId === s.id}
-                          className="p-1.5 rounded-lg text-indigo-400 hover:bg-indigo-500/10 transition-colors cursor-pointer disabled:opacity-40">
+                          className="p-1.5 rounded-lg transition-colors cursor-pointer disabled:opacity-40"
+                          style={{ color: "var(--accent)", background: "none" }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--active)"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = "none"; }}>
                           <Send size={13} />
                         </button>
                       )}
                       <button onClick={() => { archiveSession(s.id); persistSettings(); }}
                         title={s.archived ? t("session.unarchive") : t("session.archive")}
-                        className={`p-1.5 rounded-lg transition-colors cursor-pointer ${s.archived ? "text-cyan-400 bg-cyan-500/10" : "text-slate-500 hover:text-slate-300 hover:bg-slate-800"}`}>
+                        className="p-1.5 rounded-lg transition-colors cursor-pointer"
+                        style={{ color: s.archived ? "var(--accent)" : "var(--muted)", background: s.archived ? "var(--active)" : "none" }}
+                        onMouseEnter={(e) => { e.currentTarget.style.color = "var(--accent)"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.color = s.archived ? "var(--accent)" : "var(--muted)"; }}>
                         <Archive size={13} />
                       </button>
                       <button onClick={() => { deleteSession(s.id); persistSettings(); }} title={t("misc.delete")}
-                        className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer">
+                        className="p-1.5 rounded-lg transition-colors cursor-pointer"
+                        style={{ color: "var(--muted)", background: "none" }}
+                        onMouseEnter={(e) => { e.currentTarget.style.color = "var(--red)"; e.currentTarget.style.background = "rgba(218,55,60,0.1)"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.color = "var(--muted)"; e.currentTarget.style.background = "none"; }}>
                         <Trash2 size={13} />
                       </button>
                     </div>

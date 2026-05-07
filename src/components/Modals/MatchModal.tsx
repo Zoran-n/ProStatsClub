@@ -80,12 +80,10 @@ export function extractMatchEvents(match: Match, clubId: string): MatchEvent[] {
 
 /* ─── Rating badge ─── */
 function RatingBadge({ rating }: { rating: number }) {
-  const color =
-    rating >= 7.5 ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40" :
-    rating >= 6.5 ? "bg-yellow-500/20 text-yellow-400 border-yellow-500/40" :
-                    "bg-red-500/20 text-red-400 border-red-500/40";
+  const c = rating >= 7.5 ? "#23a559" : rating >= 6.5 ? "#f59e0b" : "#da373c";
   return (
-    <span className={`inline-flex items-center justify-center w-10 h-10 rounded-full border text-sm font-bold ${color}`}>
+    <span className="inline-flex items-center justify-center text-sm font-bold rounded-full"
+      style={{ width: 38, height: 38, background: c + "22", color: c, border: `1px solid ${c}55` }}>
       {rating > 0 ? rating.toFixed(1) : "—"}
     </span>
   );
@@ -99,8 +97,9 @@ function Avatar({ name }: { name: string }) {
     .map((w) => w[0]?.toUpperCase() ?? "")
     .join("");
   return (
-    <div className="w-9 h-9 rounded-full bg-slate-700 border border-slate-600 flex items-center justify-center flex-shrink-0">
-      <span className="text-xs font-bold text-slate-300 tracking-wide">{initials || "?"}</span>
+    <div className="flex items-center justify-center flex-shrink-0 rounded-full"
+      style={{ width: 34, height: 34, background: "var(--surface)", border: "1px solid var(--border)" }}>
+      <span className="text-xs font-bold tracking-wide" style={{ color: "var(--text)" }}>{initials || "?"}</span>
     </div>
   );
 }
@@ -110,7 +109,7 @@ function EventChip({ ev, isVictory }: { ev: MatchEvent; isVictory: boolean }) {
   if (ev.type === "motm") {
     if (!isVictory) return null;
     return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-yellow-400/60 bg-yellow-400/10 text-yellow-300">
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold" style={{ border: "1px solid #f59e0b66", background: "#f59e0b15", color: "#fcd34d" }}>
         <Star size={11} className="fill-yellow-400 text-yellow-400" />
         {ev.player}
         <span className="text-[9px] font-normal opacity-70 tracking-wider">MOTM</span>
@@ -120,7 +119,7 @@ function EventChip({ ev, isVictory }: { ev: MatchEvent; isVictory: boolean }) {
 
   if (ev.type === "goal") {
     return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-cyan-500/40 bg-cyan-500/10 text-cyan-300">
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold" style={{ border: "1px solid var(--accent)", background: "var(--active)", color: "var(--accent)" }}>
         <span className="text-sm leading-none">⚽</span>
         {ev.player}
         <span className="text-[9px] font-normal opacity-60 tracking-wider">But</span>
@@ -130,7 +129,7 @@ function EventChip({ ev, isVictory }: { ev: MatchEvent; isVictory: boolean }) {
 
   if (ev.type === "assist") {
     return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-violet-500/40 bg-violet-500/10 text-violet-300">
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold" style={{ border: "1px solid #8b5cf655", background: "#8b5cf615", color: "#c4b5fd" }}>
         <span className="text-sm leading-none font-bold italic">A</span>
         {ev.player}
         <span className="text-[9px] font-normal opacity-60 tracking-wider">Passe déc.</span>
@@ -142,11 +141,10 @@ function EventChip({ ev, isVictory }: { ev: MatchEvent; isVictory: boolean }) {
     const isRed = ev.detail?.startsWith("red");
     const count = ev.detail?.split(":")[1] ?? "1";
     return (
-      <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border ${
-        isRed
-          ? "border-red-500/40 bg-red-500/10 text-red-300"
-          : "border-yellow-500/40 bg-yellow-500/10 text-yellow-300"
-      }`}>
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold"
+        style={isRed
+          ? { border: "1px solid #da373c55", background: "#da373c15", color: "#fca5a5" }
+          : { border: "1px solid #f59e0b55", background: "#f59e0b15", color: "#fcd34d" }}>
         <span className={`inline-block w-2.5 h-3.5 rounded-sm ${isRed ? "bg-red-500" : "bg-yellow-400"}`} />
         {count} {ev.player}
         <span className="text-[9px] font-normal opacity-60 tracking-wider">{isRed ? "Rouge" : "Jaune"}</span>
@@ -203,10 +201,10 @@ export function MatchModal({ match, clubId, onClose }: { match: Match; clubId: s
   const hasCards         = myPlayers.some((p) => p.yellowCards > 0 || p.redCards > 0);
 
   const resultBadge = isVictory
-    ? { label: t("match.win").toUpperCase(),  cls: "bg-emerald-500/20 text-emerald-400 border-emerald-500/40" }
+    ? { label: t("match.win").toUpperCase(),  color: "var(--green)" }
     : isDraw
-    ? { label: t("match.draw").toUpperCase(), cls: "bg-yellow-500/20 text-yellow-400 border-yellow-500/40" }
-    : { label: t("match.loss").toUpperCase(), cls: "bg-red-500/20 text-red-400 border-red-500/40" };
+    ? { label: t("match.draw").toUpperCase(), color: "var(--gold)" }
+    : { label: t("match.loss").toUpperCase(), color: "var(--red)" };
 
   const shareToDiscord = async () => {
     if (!discordWebhook) { addToast(t("discord.noWebhook"), "error"); return; }
@@ -260,43 +258,37 @@ export function MatchModal({ match, clubId, onClose }: { match: Match; clubId: s
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ background: "rgba(0,0,0,0.8)" }}
       onClick={onClose}
     >
       <div
-        className="relative w-[680px] max-h-[90vh] overflow-y-auto rounded-2xl bg-slate-950 border border-slate-800/60 shadow-2xl"
+        className="relative w-[680px] max-h-[90vh] overflow-y-auto rounded-lg shadow-2xl"
+        style={{ background: "var(--main-bg)", border: "1px solid var(--border)" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* ── Hero Scoreboard ─────────────────────────────────── */}
-        <div className={`relative overflow-hidden px-6 pt-6 pb-5 ${
-          isVictory
-            ? "bg-gradient-to-br from-emerald-950/60 via-slate-950 to-slate-950"
-            : isDraw
-            ? "bg-gradient-to-br from-yellow-950/40 via-slate-950 to-slate-950"
-            : "bg-gradient-to-br from-red-950/50 via-slate-950 to-slate-950"
-        }`}>
-          {/* Glow orb */}
-          <div className={`absolute -top-10 -left-10 w-40 h-40 rounded-full blur-3xl opacity-20 ${
-            isVictory ? "bg-emerald-400" : isDraw ? "bg-yellow-400" : "bg-red-500"
-          }`} />
+        <div className="relative overflow-hidden px-6 pt-6 pb-5"
+          style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
 
           <div className="relative flex items-start justify-between">
             {/* Score block */}
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-[10px] font-bold tracking-widest border ${resultBadge.cls}`}>
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold tracking-widest"
+                  style={{ background: resultBadge.color + "22", color: resultBadge.color, border: `1px solid ${resultBadge.color}55` }}>
                   {resultBadge.label}
                 </span>
               </div>
-              <div className="font-['Bebas_Neue'] text-6xl leading-none tracking-wider text-white mb-2">
+              <div className="font-['Bebas_Neue'] text-6xl leading-none tracking-wider mb-2" style={{ color: "var(--text)" }}>
                 {myGoals}
-                <span className="text-slate-500 mx-2">—</span>
+                <span className="mx-2" style={{ color: "var(--muted)" }}>—</span>
                 {oppGoals}
               </div>
-              <div className="text-base font-semibold text-slate-200 mb-0.5">
-                vs <span className="text-white">{oppName}</span>
+              <div className="text-base font-semibold mb-0.5" style={{ color: "var(--text)" }}>
+                vs <span>{oppName}</span>
               </div>
-              <div className="text-xs text-slate-500">
+              <div style={{ fontSize: 11, color: "var(--muted)" }}>
                 {formatDate(match.timestamp, locale)}
                 {match.matchDuration ? ` · ${formatDuration(match.matchDuration)}` : ""}
               </div>
@@ -308,14 +300,15 @@ export function MatchModal({ match, clubId, onClose }: { match: Match; clubId: s
                 <button
                   onClick={shareToDiscord}
                   disabled={sharing}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20 transition-colors disabled:opacity-40"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-colors disabled:opacity-40"
+                  style={{ border: "1px solid var(--border)", background: "var(--active)", color: "var(--accent)" }}
                 >
                   <Send size={11} /> Discord
                 </button>
               )}
               <button
                 onClick={onClose}
-                className="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-colors text-sm"
+                className="win-btn"
               >
                 ✕
               </button>
@@ -327,7 +320,7 @@ export function MatchModal({ match, clubId, onClose }: { match: Match; clubId: s
           {/* ── Highlights / Event chips ─────────────────────── */}
           {events.length > 0 && (
             <div>
-              <p className="text-[9px] text-slate-500 tracking-widest font-['Bebas_Neue'] uppercase mb-2">Highlights</p>
+              <p className="category-header mb-2">Highlights</p>
               <div className="flex flex-wrap gap-2">
                 {events.map((ev, i) => (
                   <EventChip key={i} ev={ev} isVictory={isVictory} />
@@ -339,19 +332,23 @@ export function MatchModal({ match, clubId, onClose }: { match: Match; clubId: s
           {/* ── Team stats ───────────────────────────────────── */}
           {teamStats.length > 0 && (
             <div>
-              <p className="text-[9px] text-slate-500 tracking-widest font-['Bebas_Neue'] uppercase mb-2">
+              <p className="category-header mb-2">
                 {t("matches.teamStats")}
               </p>
-              <div className="rounded-xl border border-slate-800/60 bg-slate-900/40 divide-y divide-slate-800/60">
-                {teamStats.map(({ label, my, opp }) => {
+              <div className="rounded-lg" style={{ border: "1px solid var(--border)", background: "var(--surface)" }}>
+                {teamStats.map(({ label, my, opp }, idx) => {
                   const nMy = Number(String(my).replace("%", "")), nOpp = Number(String(opp).replace("%", ""));
                   const myWins  = !isNaN(nMy) && !isNaN(nOpp) && nMy > nOpp;
                   const oppWins = !isNaN(nMy) && !isNaN(nOpp) && nOpp > nMy;
                   return (
-                    <div key={label} className="grid grid-cols-3 items-center px-4 py-2">
-                      <span className={`text-right text-sm font-['Bebas_Neue'] ${myWins ? "text-cyan-400" : "text-slate-300"}`}>{my}</span>
-                      <span className="text-center text-[9px] text-slate-500 tracking-wider font-['Bebas_Neue'] uppercase">{label}</span>
-                      <span className={`text-left text-sm font-['Bebas_Neue'] ${oppWins ? "text-red-400" : "text-slate-300"}`}>{opp}</span>
+                    <div key={label} className="grid grid-cols-3 items-center px-4 py-2"
+                      style={idx > 0 ? { borderTop: "1px solid var(--border)" } : {}}>
+                      <span className="text-right text-sm font-['Bebas_Neue']"
+                        style={{ color: myWins ? "var(--accent)" : "var(--text)" }}>{my}</span>
+                      <span className="text-center text-[9px] tracking-wider font-['Bebas_Neue'] uppercase"
+                        style={{ color: "var(--muted)" }}>{label}</span>
+                      <span className="text-left text-sm font-['Bebas_Neue']"
+                        style={{ color: oppWins ? "var(--red)" : "var(--text)" }}>{opp}</span>
                     </div>
                   );
                 })}
@@ -362,70 +359,70 @@ export function MatchModal({ match, clubId, onClose }: { match: Match; clubId: s
           {/* ── Player list ──────────────────────────────────── */}
           {myPlayers.length > 0 ? (
             <div>
-              <p className="text-[9px] text-slate-500 tracking-widest font-['Bebas_Neue'] uppercase mb-2">
+              <p className="category-header mb-2">
                 {t("matches.playerStats")}
               </p>
               <div className="space-y-1.5">
                 {/* Header row */}
-                <div className="grid items-center gap-2 px-3 pb-1 border-b border-slate-800/60"
-                  style={{ gridTemplateColumns: "2.25rem 1fr 2.5rem 2.5rem 2.5rem 3rem 2.5rem" + (hasTackles ? " 2.5rem" : "") + (hasCards ? " 2.5rem" : "") + (isVictory ? " 2rem" : "") }}>
+                <div className="grid items-center gap-2 px-3 pb-1"
+                  style={{ borderBottom: "1px solid var(--border)", gridTemplateColumns: "2.25rem 1fr 2.5rem 2.5rem 2.5rem 3rem 2.5rem" + (hasTackles ? " 2.5rem" : "") + (hasCards ? " 2.5rem" : "") + (isVictory ? " 2rem" : "") }}>
                   <div />
-                  <div className="text-[9px] text-slate-500 tracking-wider uppercase">Joueur</div>
-                  <div className="text-[9px] text-slate-500 tracking-wider uppercase text-center">Note</div>
-                  <div className="text-[9px] text-slate-500 tracking-wider uppercase text-center">Buts</div>
-                  <div className="text-[9px] text-slate-500 tracking-wider uppercase text-center">PD</div>
-                  <div className="text-[9px] text-slate-500 tracking-wider uppercase text-center">Passes</div>
-                  {hasTackles && <div className="text-[9px] text-slate-500 tracking-wider uppercase text-center">Tacles</div>}
-                  {hasInterceptions && <div className="text-[9px] text-slate-500 tracking-wider uppercase text-center">Int.</div>}
-                  {hasFouls && <div className="text-[9px] text-slate-500 tracking-wider uppercase text-center">Fts</div>}
-                  {hasCards && <div className="text-[9px] text-slate-500 tracking-wider uppercase text-center">Cartons</div>}
-                  {isVictory && <div className="text-[9px] text-slate-500 tracking-wider uppercase text-center"><Star size={9} className="inline" /></div>}
+                  <div className="text-[9px] tracking-wider uppercase" style={{ color: "var(--muted)" }}>Joueur</div>
+                  <div className="text-[9px] tracking-wider uppercase text-center" style={{ color: "var(--muted)" }}>Note</div>
+                  <div className="text-[9px] tracking-wider uppercase text-center" style={{ color: "var(--muted)" }}>Buts</div>
+                  <div className="text-[9px] tracking-wider uppercase text-center" style={{ color: "var(--muted)" }}>PD</div>
+                  <div className="text-[9px] tracking-wider uppercase text-center" style={{ color: "var(--muted)" }}>Passes</div>
+                  {hasTackles && <div className="text-[9px] tracking-wider uppercase text-center" style={{ color: "var(--muted)" }}>Tacles</div>}
+                  {hasInterceptions && <div className="text-[9px] tracking-wider uppercase text-center" style={{ color: "var(--muted)" }}>Int.</div>}
+                  {hasFouls && <div className="text-[9px] tracking-wider uppercase text-center" style={{ color: "var(--muted)" }}>Fts</div>}
+                  {hasCards && <div className="text-[9px] tracking-wider uppercase text-center" style={{ color: "var(--muted)" }}>Cartons</div>}
+                  {isVictory && <div className="text-[9px] tracking-wider uppercase text-center" style={{ color: "var(--muted)" }}><Star size={9} className="inline" /></div>}
                 </div>
 
                 {/* Player rows */}
                 {myPlayers.map((p, i) => (
                   <div
                     key={i}
-                    className={`grid items-center gap-2 px-3 py-2.5 rounded-xl border transition-colors ${
-                      p.motm && isVictory
-                        ? "bg-yellow-400/5 border-yellow-400/20 hover:bg-yellow-400/8"
-                        : "bg-white/[0.03] border-slate-800/40 hover:bg-white/[0.06]"
-                    }`}
-                    style={{ gridTemplateColumns: "2.25rem 1fr 2.5rem 2.5rem 2.5rem 3rem 2.5rem" + (hasTackles ? " 2.5rem" : "") + (hasCards ? " 2.5rem" : "") + (isVictory ? " 2rem" : "") }}
+                    className="grid items-center gap-2 px-3 py-2.5 rounded-lg transition-colors"
+                    style={{
+                      border: p.motm && isVictory ? "1px solid #f59e0b33" : "1px solid var(--border)",
+                      background: p.motm && isVictory ? "#f59e0b08" : "var(--surface)",
+                      gridTemplateColumns: "2.25rem 1fr 2.5rem 2.5rem 2.5rem 3rem 2.5rem" + (hasTackles ? " 2.5rem" : "") + (hasCards ? " 2.5rem" : "") + (isVictory ? " 2rem" : ""),
+                    }}
                   >
                     <Avatar name={p.name} />
                     <div className="min-w-0">
-                      <span className="text-sm font-semibold text-slate-200 truncate block">{p.name}</span>
+                      <span className="text-sm font-semibold truncate block" style={{ color: "var(--text)" }}>{p.name}</span>
                     </div>
                     <div className="flex justify-center">
                       <RatingBadge rating={p.rating} />
                     </div>
-                    <div className="text-center text-sm font-bold text-cyan-400">{p.goals || <span className="text-slate-600 font-normal">—</span>}</div>
-                    <div className="text-center text-sm font-bold text-violet-400">{p.assists || <span className="text-slate-600 font-normal">—</span>}</div>
-                    <div className="text-center text-sm text-slate-300 font-medium">{p.passes || <span className="text-slate-600">—</span>}</div>
-                    {hasTackles && <div className="text-center text-sm text-slate-300">{p.tackles || <span className="text-slate-600">—</span>}</div>}
-                    {hasInterceptions && <div className="text-center text-sm text-slate-300">{p.interceptions || <span className="text-slate-600">—</span>}</div>}
-                    {hasFouls && <div className="text-center text-sm text-slate-300">{p.fouls || <span className="text-slate-600">—</span>}</div>}
+                    <div className="text-center text-sm font-bold" style={{ color: "var(--accent)" }}>{p.goals || <span className="font-normal" style={{ color: "var(--muted)" }}>—</span>}</div>
+                    <div className="text-center text-sm font-bold" style={{ color: "#c4b5fd" }}>{p.assists || <span className="font-normal" style={{ color: "var(--muted)" }}>—</span>}</div>
+                    <div className="text-center text-sm font-medium" style={{ color: "var(--text)" }}>{p.passes || <span style={{ color: "var(--muted)" }}>—</span>}</div>
+                    {hasTackles && <div className="text-center text-sm" style={{ color: "var(--text)" }}>{p.tackles || <span style={{ color: "var(--muted)" }}>—</span>}</div>}
+                    {hasInterceptions && <div className="text-center text-sm" style={{ color: "var(--text)" }}>{p.interceptions || <span style={{ color: "var(--muted)" }}>—</span>}</div>}
+                    {hasFouls && <div className="text-center text-sm" style={{ color: "var(--text)" }}>{p.fouls || <span style={{ color: "var(--muted)" }}>—</span>}</div>}
                     {hasCards && (
                       <div className="flex justify-center items-center gap-1">
                         {p.yellowCards > 0 && (
-                          <span className="inline-flex items-center gap-0.5 text-[10px] text-yellow-300 font-semibold">
+                          <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold" style={{ color: "#fcd34d" }}>
                             <span className="w-2 h-3 rounded-sm bg-yellow-400 inline-block" />{p.yellowCards}
                           </span>
                         )}
                         {p.redCards > 0 && (
-                          <span className="inline-flex items-center gap-0.5 text-[10px] text-red-400 font-semibold">
+                          <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold" style={{ color: "#fca5a5" }}>
                             <span className="w-2 h-3 rounded-sm bg-red-500 inline-block" />{p.redCards}
                           </span>
                         )}
-                        {!p.yellowCards && !p.redCards && <span className="text-slate-600 text-sm">—</span>}
+                        {!p.yellowCards && !p.redCards && <span className="text-sm" style={{ color: "var(--muted)" }}>—</span>}
                       </div>
                     )}
                     {isVictory && (
                       <div className="flex justify-center">
                         {p.motm
-                          ? <Shield size={14} className="text-yellow-400 fill-yellow-400/20" />
-                          : <span className="text-slate-700 text-xs">—</span>
+                          ? <Shield size={14} style={{ color: "#fcd34d" }} />
+                          : <span className="text-xs" style={{ color: "var(--muted)" }}>—</span>
                         }
                       </div>
                     )}
@@ -434,7 +431,7 @@ export function MatchModal({ match, clubId, onClose }: { match: Match; clubId: s
               </div>
             </div>
           ) : (
-            <p className="text-center text-slate-500 text-sm py-4">{t("matches.noPlayerStats")}</p>
+            <p className="text-center text-sm py-4" style={{ color: "var(--muted)" }}>{t("matches.noPlayerStats")}</p>
           )}
         </div>
       </div>
