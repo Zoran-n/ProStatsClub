@@ -76,21 +76,21 @@ function Card({
 }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
   return (
     <div
-      className={`rounded-2xl border border-slate-800/60 bg-slate-900/40 backdrop-blur-sm ${className}`}
-      style={style}
+      className={`rounded-lg border ${className}`}
+      style={{ background: "var(--card)", borderColor: "var(--border)", ...style }}
     >
       {children}
     </div>
   );
 }
 
-function CardTitle({ icon: Icon, label, accent = "text-slate-400" }: {
-  icon: React.ElementType; label: string; accent?: string;
+function CardTitle({ icon: Icon, label, color }: {
+  icon: React.ElementType; label: string; color?: string;
 }) {
   return (
     <div className="flex items-center gap-2 mb-3">
-      <Icon size={13} className={accent} />
-      <span className="text-[10px] tracking-[0.12em] font-semibold text-slate-500 uppercase">{label}</span>
+      <Icon size={12} style={{ color: color ?? "var(--accent)" }} />
+      <span className="category-header" style={{ marginBottom: 0 }}>{label}</span>
     </div>
   );
 }
@@ -98,8 +98,8 @@ function CardTitle({ icon: Icon, label, accent = "text-slate-400" }: {
 function NoData({ label }: { label: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-10 gap-2">
-      <Activity size={26} className="text-slate-700" />
-      <span className="text-xs text-slate-600">{label}</span>
+      <Activity size={24} style={{ color: "var(--border)" }} />
+      <span style={{ fontSize: 11, color: "var(--muted)" }}>{label}</span>
     </div>
   );
 }
@@ -131,59 +131,63 @@ function DebugConsole() {
     <Card className="overflow-hidden">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-800/40 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 transition-colors"
+        style={{ background: "transparent" }}
+        onMouseEnter={e => (e.currentTarget.style.background = "var(--hover)")}
+        onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
       >
         <div className="flex items-center gap-2">
-          <Terminal size={13} className="text-cyan-400" />
-          <span className="text-[10px] tracking-[0.12em] font-semibold text-slate-400 uppercase">
-            Discord Debug Console
-          </span>
+          <Terminal size={12} style={{ color: "var(--accent)" }} />
+          <span className="category-header" style={{ marginBottom: 0 }}>Discord Debug Console</span>
           {logs.length > 0 && (
-            <span className="text-[10px] bg-slate-800 text-slate-400 rounded px-1.5 py-0.5">
+            <span style={{ fontSize: 10, background: "var(--surface)", color: "var(--muted)", borderRadius: 4, padding: "1px 6px" }}>
               {logs.length}
             </span>
           )}
         </div>
         <div className="flex items-center gap-2">
           {logs.some((l) => l.error || (l.status && l.status >= 400)) && (
-            <span className="text-[10px] text-red-400 font-medium">erreurs détectées</span>
+            <span style={{ fontSize: 10, color: "var(--red)", fontWeight: 600 }}>erreurs détectées</span>
           )}
-          {open ? <ChevronUp size={13} className="text-slate-500" /> : <ChevronDown size={13} className="text-slate-500" />}
+          {open
+            ? <ChevronUp size={12} style={{ color: "var(--muted)" }} />
+            : <ChevronDown size={12} style={{ color: "var(--muted)" }} />}
         </div>
       </button>
 
       {open && (
-        <div className="border-t border-slate-800/60">
-          {/* Explanation banner */}
-          <div className="px-4 py-2 bg-slate-950/60 border-b border-slate-800/40 text-[10px] text-slate-500">
+        <div style={{ borderTop: "1px solid var(--border)" }}>
+          <div className="px-4 py-2" style={{ background: "var(--guild-bar)", borderBottom: "1px solid var(--border)", fontSize: 10, color: "var(--muted)" }}>
             Intercepte chaque appel Discord · URL · payload · statut HTTP · erreur exacte.
-            Si tu vois <span className="text-red-400">403</span> = webhook invalide/expiré.
-            <span className="text-yellow-400"> CORS</span> n'affecte pas Tauri (utilise{" "}
-            <code className="text-cyan-400">@tauri-apps/plugin-http</code>, pas le navigateur).
+            Si tu vois <span style={{ color: "var(--red)" }}>403</span> = webhook invalide/expiré.
+            {" "}<span style={{ color: "var(--gold)" }}>CORS</span> n'affecte pas Tauri (utilise{" "}
+            <code style={{ color: "var(--accent)" }}>@tauri-apps/plugin-http</code>, pas le navigateur).
           </div>
 
           {logs.length === 0 ? (
-            <div className="px-4 py-6 text-center text-xs text-slate-600 font-mono">
+            <div className="px-4 py-6 text-center font-mono" style={{ fontSize: 11, color: "var(--muted)", background: "var(--guild-bar)" }}>
               Aucun appel Discord intercepté pour l'instant…
             </div>
           ) : (
-            <div className="bg-black/80 max-h-64 overflow-y-auto font-mono text-[11px]">
+            <div className="max-h-64 overflow-y-auto font-mono" style={{ background: "var(--guild-bar)", fontSize: 11 }}>
               {logs.map((log) => (
-                <div key={log.id} className="border-b border-slate-900 px-3 py-2 space-y-1">
+                <div key={log.id} className="px-3 py-2 space-y-1" style={{ borderBottom: "1px solid var(--border)" }}>
                   <div className="flex items-center gap-2">
                     {statusIcon(log.status, log.error)}
-                    <span className="text-slate-600 text-[10px]">{log.ts.slice(11, 19)}</span>
+                    <span style={{ fontSize: 10, color: "var(--muted)" }}>{log.ts.slice(11, 19)}</span>
                     <span className={`font-bold ${statusColor(log.status, log.error)}`}>
                       {log.status ?? "—"}
                     </span>
-                    <span className="text-slate-400 truncate">{log.url.slice(0, 60)}{log.url.length > 60 ? "…" : ""}</span>
+                    <span style={{ color: "var(--text)", opacity: 0.7 }} className="truncate">
+                      {log.url.slice(0, 60)}{log.url.length > 60 ? "…" : ""}
+                    </span>
                   </div>
                   {log.error && (
-                    <div className="text-red-400 pl-4 text-[10px] leading-relaxed">{log.error}</div>
+                    <div className="pl-4 text-[10px] leading-relaxed" style={{ color: "var(--red)" }}>{log.error}</div>
                   )}
                   <details className="pl-4">
-                    <summary className="text-slate-600 cursor-pointer hover:text-slate-400 text-[10px]">payload</summary>
-                    <pre className="text-green-400 text-[9px] whitespace-pre-wrap break-all mt-1 max-h-32 overflow-y-auto">
+                    <summary className="cursor-pointer text-[10px]" style={{ color: "var(--muted)" }}>payload</summary>
+                    <pre className="text-[9px] whitespace-pre-wrap break-all mt-1 max-h-32 overflow-y-auto" style={{ color: "var(--green)" }}>
                       {log.payload}
                     </pre>
                   </details>
@@ -193,16 +197,18 @@ function DebugConsole() {
             </div>
           )}
 
-          <div className="px-4 py-2 border-t border-slate-800/40 flex justify-between items-center">
+          <div className="px-4 py-2 flex justify-between items-center" style={{ borderTop: "1px solid var(--border)" }}>
             <button
               onClick={() => logger.downloadLogs()}
-              className="flex items-center gap-1.5 text-[10px] text-slate-500 hover:text-cyan-400 transition-colors"
+              className="flex items-center gap-1.5 channel-item"
+              style={{ fontSize: 10, padding: "2px 4px" }}
             >
               <FileText size={11} /> Télécharger tous les logs
             </button>
             <button
               onClick={() => { _discordLogs.splice(0); _listeners.forEach((fn) => fn()); }}
-              className="flex items-center gap-1.5 text-[10px] text-slate-600 hover:text-red-400 transition-colors"
+              className="flex items-center gap-1.5 channel-item"
+              style={{ fontSize: 10, padding: "2px 4px" }}
             >
               <Trash2 size={11} /> Vider
             </button>
@@ -380,8 +386,8 @@ export function MyProfilePage() {
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center space-y-3 p-8">
-          <Swords size={36} className="mx-auto text-slate-700" />
-          <p className="text-sm text-slate-500">Lie un profil EA pour voir tes statistiques personnelles.</p>
+          <Swords size={32} style={{ margin: "0 auto", color: "var(--border)" }} />
+          <p style={{ fontSize: 13, color: "var(--muted)" }}>Lie un profil EA pour voir tes statistiques personnelles.</p>
         </div>
       </div>
     );
@@ -400,35 +406,35 @@ export function MyProfilePage() {
               <div className="flex items-start gap-4">
                 {/* Avatar */}
                 <div
-                  className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 border-2 border-cyan-500/30"
-                  style={{ background: "linear-gradient(135deg, #0e7490 0%, #164e63 100%)" }}
+                  className="w-16 h-16 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ background: "var(--surface)", border: "2px solid var(--accent)", opacity: 0.9 }}
                 >
-                  <span className="font-['Bebas_Neue'] text-3xl text-white">
+                  <span className="font-['Bebas_Neue'] text-3xl" style={{ color: "var(--accent)" }}>
                     {eaProfile.gamertag[0].toUpperCase()}
                   </span>
                 </div>
                 {/* Name + club */}
                 <div className="flex-1 min-w-0">
-                  <div className="font-['Bebas_Neue'] text-2xl text-white tracking-wide leading-none truncate">
+                  <div className="font-['Bebas_Neue'] text-2xl tracking-wide leading-none truncate" style={{ color: "var(--text)" }}>
                     {eaProfile.gamertag}
                   </div>
-                  <div className="text-xs text-slate-400 mt-1 truncate">
-                    {eaProfile.clubName} · <span className="text-slate-500">{eaProfile.platform}</span>
+                  <div className="mt-1 truncate" style={{ fontSize: 12, color: "var(--muted)" }}>
+                    {eaProfile.clubName} · {eaProfile.platform}
                   </div>
                   {agg && (
-                    <div className="text-xs text-cyan-400 mt-1">{agg.games} matchs</div>
+                    <div style={{ fontSize: 11, color: "var(--accent)", marginTop: 2 }}>{agg.games} matchs</div>
                   )}
                 </div>
                 {/* Division badge */}
                 {division ? (
                   <div
-                    className="shrink-0 px-3 py-2 rounded-xl text-center border"
-                    style={{ background: division.color + "1a", borderColor: division.color + "44" }}
+                    className="shrink-0 px-3 py-2 rounded text-center"
+                    style={{ background: division.color + "1a", border: `1px solid ${division.color}55` }}
                   >
                     <div className="font-['Bebas_Neue'] text-xl" style={{ color: division.color }}>
                       {division.div}
                     </div>
-                    {srNum && <div className="text-[10px] text-slate-500 mt-0.5">{srNum} SR</div>}
+                    {srNum && <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{srNum} SR</div>}
                   </div>
                 ) : null}
               </div>
@@ -436,15 +442,15 @@ export function MyProfilePage() {
               {/* W/D/L bar */}
               {agg && agg.games > 0 && (
                 <div>
-                  <div className="flex h-2 rounded-full overflow-hidden gap-0.5">
-                    <div style={{ width: `${(agg.wins / agg.games) * 100}%` }} className="bg-emerald-500 rounded-l-full" />
-                    <div style={{ width: `${(agg.draws / agg.games) * 100}%` }} className="bg-amber-400" />
-                    <div style={{ width: `${(agg.losses / agg.games) * 100}%` }} className="bg-red-500 rounded-r-full" />
+                  <div className="flex h-1.5 rounded overflow-hidden gap-px">
+                    <div style={{ width: `${(agg.wins / agg.games) * 100}%`, background: "var(--green)" }} />
+                    <div style={{ width: `${(agg.draws / agg.games) * 100}%`, background: "var(--gold)" }} />
+                    <div style={{ width: `${(agg.losses / agg.games) * 100}%`, background: "var(--red)" }} />
                   </div>
-                  <div className="flex justify-between mt-1.5 text-[10px]">
-                    <span className="text-emerald-400">{agg.wins} V</span>
-                    <span className="text-amber-400">{agg.draws} N</span>
-                    <span className="text-red-400">{agg.losses} D</span>
+                  <div className="flex justify-between mt-1.5" style={{ fontSize: 10 }}>
+                    <span style={{ color: "var(--green)" }}>{agg.wins} V</span>
+                    <span style={{ color: "var(--gold)" }}>{agg.draws} N</span>
+                    <span style={{ color: "var(--red)" }}>{agg.losses} D</span>
                   </div>
                 </div>
               )}
@@ -452,16 +458,17 @@ export function MyProfilePage() {
               {/* Forme pills */}
               {forme.length > 0 && (
                 <div>
-                  <div className="text-[10px] text-slate-600 uppercase tracking-widest mb-1.5">Forme récente</div>
+                  <div className="category-header" style={{ marginBottom: 6 }}>Forme récente</div>
                   <div className="flex gap-1">
                     {forme.map((r, i) => (
                       <div
                         key={i}
-                        className={`w-6 h-6 rounded text-[10px] font-bold flex items-center justify-center ${
-                          r === "W" ? "bg-emerald-500/20 text-emerald-400" :
-                          r === "L" ? "bg-red-500/20 text-red-400" :
-                          "bg-amber-500/20 text-amber-400"
-                        }`}
+                        className="flex items-center justify-center rounded"
+                        style={{
+                          width: 22, height: 22, fontSize: 10, fontWeight: 700,
+                          background: r === "W" ? "rgba(35,165,89,0.2)" : r === "L" ? "rgba(218,55,60,0.2)" : "rgba(245,158,11,0.2)",
+                          color: r === "W" ? "var(--green)" : r === "L" ? "var(--red)" : "var(--gold)",
+                        }}
                       >
                         {r === "W" ? "V" : r === "L" ? "D" : "N"}
                       </div>
@@ -476,20 +483,20 @@ export function MyProfilePage() {
           {agg && (
             <div {...tile(60)}>
               <Card className="h-full p-4">
-                <CardTitle icon={Target} label="Stats clés" accent="text-cyan-400" />
-                <div className="grid grid-cols-2 gap-2">
+                <CardTitle icon={Target} label="Stats clés" />
+                <div className="grid grid-cols-2 gap-1.5">
                   {[
-                    { label: "Note", value: agg.avgRating > 0 ? agg.avgRating.toFixed(2) : "—", color: "text-white" },
-                    { label: "Buts", value: agg.totalGoals, color: "text-emerald-400" },
-                    { label: "PD", value: agg.totalAssists, color: "text-cyan-400" },
-                    { label: "MOTM", value: agg.totalMotm, color: "text-amber-400" },
-                    { label: "Victoires", value: `${agg.winRate}%`,
-                      color: agg.winRate >= 60 ? "text-emerald-400" : agg.winRate >= 45 ? "text-amber-400" : "text-red-400" },
-                    { label: "Matchs", value: agg.games, color: "text-slate-300" },
+                    { label: "Note",     value: agg.avgRating > 0 ? agg.avgRating.toFixed(2) : "—", color: "var(--text)" },
+                    { label: "Buts",     value: agg.totalGoals,   color: "var(--green)" },
+                    { label: "PD",       value: agg.totalAssists, color: "var(--accent)" },
+                    { label: "MOTM",     value: agg.totalMotm,    color: "var(--gold)" },
+                    { label: "Victoires",value: `${agg.winRate}%`,
+                      color: agg.winRate >= 60 ? "var(--green)" : agg.winRate >= 45 ? "var(--gold)" : "var(--red)" },
+                    { label: "Matchs",   value: agg.games,        color: "var(--muted)" },
                   ].map(({ label, value, color }) => (
-                    <div key={label} className="bg-slate-800/40 rounded-xl p-2.5 text-center">
-                      <div className={`font-['Bebas_Neue'] text-2xl leading-none ${color}`}>{value}</div>
-                      <div className="text-[9px] text-slate-600 uppercase tracking-widest mt-1">{label}</div>
+                    <div key={label} className="rounded text-center p-2" style={{ background: "var(--surface)" }}>
+                      <div className="font-['Bebas_Neue'] text-2xl leading-none" style={{ color }}>{value}</div>
+                      <div className="category-header" style={{ marginBottom: 0, marginTop: 3 }}>{label}</div>
                     </div>
                   ))}
                 </div>
@@ -500,11 +507,11 @@ export function MyProfilePage() {
           {/* DERNIÈRES SESSIONS — 1 col */}
           <div {...tile(90)}>
             <Card className="h-full p-4">
-              <CardTitle icon={Swords} label="Dernières sessions" accent="text-violet-400" />
+              <CardTitle icon={Swords} label="Dernières sessions" color="var(--accent)" />
               {lastSessions.length === 0 ? (
                 <NoData label="Aucune session trouvée" />
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {lastSessions.map((s: Session) => {
                     let w = 0;
                     for (const m of s.matches) {
@@ -515,23 +522,26 @@ export function MyProfilePage() {
                     const wr = total > 0 ? Math.round((w / total) * 100) : 0;
                     const dateStr = new Date(s.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
                     return (
-                      <div key={s.id} className="flex items-center gap-3 bg-slate-800/30 rounded-xl px-3 py-2">
-                        <div className="text-[10px] text-slate-500 shrink-0 w-12">{dateStr}</div>
+                      <div key={s.id} className="flex items-center gap-3 px-3 py-2 rounded" style={{ background: "var(--surface)" }}>
+                        <div className="shrink-0 w-10" style={{ fontSize: 10, color: "var(--muted)" }}>{dateStr}</div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-xs text-slate-300 truncate">{s.clubName}</div>
-                          <div className="text-[10px] text-slate-600">{total} matchs</div>
+                          <div className="truncate" style={{ fontSize: 12, color: "var(--text)" }}>{s.clubName}</div>
+                          <div style={{ fontSize: 10, color: "var(--muted)" }}>{total} matchs</div>
                         </div>
-                        <div className={`text-[11px] font-bold ${
-                          wr >= 60 ? "text-emerald-400" : wr >= 40 ? "text-amber-400" : "text-red-400"
-                        }`}>{wr}%</div>
+                        <div style={{ fontSize: 11, fontWeight: 700,
+                          color: wr >= 60 ? "var(--green)" : wr >= 40 ? "var(--gold)" : "var(--red)" }}>
+                          {wr}%
+                        </div>
                         <div className="flex gap-0.5">
                           {[...s.matches].slice(-5).map((m, i) => {
                             const c = m.clubs[s.clubId] as Record<string, unknown> | undefined;
                             const r = c?.["wins"] === "1" ? "W" : c?.["losses"] === "1" ? "L" : "D";
                             return (
-                              <div key={i} className={`w-2 h-4 rounded-sm ${
-                                r === "W" ? "bg-emerald-500/70" : r === "L" ? "bg-red-500/70" : "bg-amber-400/70"
-                              }`} />
+                              <div key={i} className="rounded-sm" style={{
+                                width: 6, height: 16,
+                                background: r === "W" ? "var(--green)" : r === "L" ? "var(--red)" : "var(--gold)",
+                                opacity: 0.7,
+                              }} />
                             );
                           })}
                         </div>
@@ -546,20 +556,14 @@ export function MyProfilePage() {
           {/* RADAR — 2 cols */}
           <div className="sm:col-span-2" {...tile(120)}>
             <Card className="p-4">
-              <CardTitle icon={Activity} label="Profil de performance" accent="text-cyan-400" />
+              <CardTitle icon={Activity} label="Profil de performance" />
               {radarData ? (
                 <ResponsiveContainer width="100%" height={200}>
                   <RadarChart data={radarData} outerRadius={78}>
-                    <defs>
-                      <linearGradient id="profileRadarFill" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.35} />
-                        <stop offset="100%" stopColor="#22d3ee" stopOpacity={0.05} />
-                      </linearGradient>
-                    </defs>
-                    <PolarGrid stroke="#1e293b" />
-                    <PolarAngleAxis dataKey="axis" tick={{ fill: "#64748b", fontSize: 11 }} />
-                    <Radar dataKey="value" stroke="#22d3ee" strokeWidth={2}
-                      fill="url(#profileRadarFill)" dot={{ fill: "#22d3ee", r: 3 }} />
+                    <PolarGrid stroke="#3f4147" />
+                    <PolarAngleAxis dataKey="axis" tick={{ fill: "#949ba4", fontSize: 11 }} />
+                    <Radar dataKey="value" stroke="var(--accent)" strokeWidth={2}
+                      fill="var(--accent)" fillOpacity={0.15} dot={{ fill: "var(--accent)", r: 3 }} />
                   </RadarChart>
                 </ResponsiveContainer>
               ) : (
@@ -571,18 +575,18 @@ export function MyProfilePage() {
           {/* RATING EVOLUTION — 2 cols */}
           <div className="sm:col-span-2" {...tile(150)}>
             <Card className="p-4">
-              <CardTitle icon={TrendingUp} label={`Évolution de la note · ${ratingData.length} matchs`} accent="text-emerald-400" />
+              <CardTitle icon={TrendingUp} label={`Évolution de la note · ${ratingData.length} matchs`} color="var(--green)" />
               {ratingData.length >= 3 ? (
                 <ResponsiveContainer width="100%" height={160}>
                   <LineChart data={ratingData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                    <XAxis dataKey="idx" tick={{ fontSize: 10, fill: "#475569" }} />
-                    <YAxis domain={[5, 10]} tick={{ fontSize: 10, fill: "#475569" }} width={28} />
-                    <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #1e293b", borderRadius: 8, fontSize: 11 }} />
-                    <Line type="monotone" dataKey="rating" stroke="#22d3ee" strokeWidth={2}
+                    <CartesianGrid strokeDasharray="3 3" stroke="#3f4147" />
+                    <XAxis dataKey="idx" tick={{ fontSize: 10, fill: "#949ba4" }} />
+                    <YAxis domain={[5, 10]} tick={{ fontSize: 10, fill: "#949ba4" }} width={28} />
+                    <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 4, fontSize: 11 }} />
+                    <Line type="monotone" dataKey="rating" stroke="var(--accent)" strokeWidth={2}
                       dot={({ cx, cy, payload }: { cx: number; cy: number; payload: { result: string } }) => (
                         <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={3}
-                          fill={payload.result === "W" ? "#22c55e" : payload.result === "L" ? "#ef4444" : "#f59e0b"}
+                          fill={payload.result === "W" ? "#23a559" : payload.result === "L" ? "#da373c" : "#f59e0b"}
                           stroke="none"
                         />
                       )}
@@ -598,16 +602,16 @@ export function MyProfilePage() {
           {/* BUTS & PD — 2 cols */}
           <div className="sm:col-span-2" {...tile(180)}>
             <Card className="p-4">
-              <CardTitle icon={Star} label="Buts & passes D. par tranche de 5" accent="text-amber-400" />
+              <CardTitle icon={Star} label="Buts & passes D. par tranche de 5" color="var(--gold)" />
               {batchData.length >= 2 ? (
                 <ResponsiveContainer width="100%" height={160}>
                   <BarChart data={batchData} barSize={12}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                    <XAxis dataKey="label" tick={{ fontSize: 9, fill: "#475569" }} />
-                    <YAxis tick={{ fontSize: 10, fill: "#475569" }} width={24} />
-                    <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #1e293b", borderRadius: 8, fontSize: 11 }} />
-                    <Bar dataKey="goals" fill="#22c55e" name="Buts" radius={[3, 3, 0, 0]} />
-                    <Bar dataKey="assists" fill="#22d3ee" name="PD" radius={[3, 3, 0, 0]} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#3f4147" />
+                    <XAxis dataKey="label" tick={{ fontSize: 9, fill: "#949ba4" }} />
+                    <YAxis tick={{ fontSize: 10, fill: "#949ba4" }} width={24} />
+                    <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 4, fontSize: 11 }} />
+                    <Bar dataKey="goals" fill="#23a559" name="Buts" radius={[2, 2, 0, 0]} />
+                    <Bar dataKey="assists" fill="var(--accent)" name="PD" radius={[2, 2, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
@@ -622,13 +626,13 @@ export function MyProfilePage() {
         {allPlayerMatches.length > 0 && (
           <div {...tile(210)}>
             <Card className="p-4">
-              <CardTitle icon={Shield} label={`Dernières performances · ${Math.min(allPlayerMatches.length, 25)} matchs`} accent="text-slate-400" />
+              <CardTitle icon={Shield} label={`Dernières performances · ${Math.min(allPlayerMatches.length, 25)} matchs`} />
               <div className="overflow-x-auto">
-                <table className="w-full text-xs">
+                <table className="w-full" style={{ fontSize: 12 }}>
                   <thead>
-                    <tr className="border-b border-slate-800/60">
+                    <tr style={{ borderBottom: "1px solid var(--border)" }}>
                       {["Date", "Résultat", "Buts", "PD", "Note", "MOTM", "Poste"].map((h) => (
-                        <th key={h} className="px-2 py-1.5 text-center text-[10px] text-slate-600 font-['Bebas_Neue'] tracking-widest font-normal">
+                        <th key={h} className="category-header text-center" style={{ padding: "4px 8px", fontWeight: 400, marginBottom: 0 }}>
                           {h}
                         </th>
                       ))}
@@ -638,33 +642,33 @@ export function MyProfilePage() {
                     {allPlayerMatches.slice(0, 25).map((m: PerMatchStat) => {
                       const ts = Number(m.date) ? new Date(Number(m.date) * 1000) : new Date(m.date);
                       const dateStr = ts.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" });
-                      const resColor = m.result === "W" ? "text-emerald-400 bg-emerald-500/10" :
-                        m.result === "L" ? "text-red-400 bg-red-500/10" : "text-amber-400 bg-amber-400/10";
+                      const resColor = m.result === "W" ? "var(--green)" : m.result === "L" ? "var(--red)" : "var(--gold)";
                       const resLabel = m.result === "W" ? "V" : m.result === "L" ? "D" : "N";
                       return (
-                        <tr key={m.matchId} className="border-b border-slate-800/30 hover:bg-slate-800/20 transition-colors">
-                          <td className="px-2 py-1.5 text-center text-slate-500 text-[11px]">{dateStr}</td>
-                          <td className="px-2 py-1.5 text-center">
-                            <span className={`inline-flex items-center justify-center w-6 h-6 rounded font-bold text-[10px] ${resColor}`}>
+                        <tr key={m.matchId} className="player-row" style={{ borderBottom: "1px solid var(--border)" }}>
+                          <td className="text-center" style={{ padding: "5px 8px", color: "var(--muted)", fontSize: 11 }}>{dateStr}</td>
+                          <td className="text-center" style={{ padding: "5px 8px" }}>
+                            <span className="inline-flex items-center justify-center rounded" style={{
+                              width: 22, height: 22, fontWeight: 700, fontSize: 10,
+                              background: resColor + "22", color: resColor,
+                            }}>
                               {resLabel}
                             </span>
                           </td>
-                          <td className={`px-2 py-1.5 text-center font-bold ${m.goals > 0 ? "text-emerald-400" : "text-slate-600"}`}>
+                          <td className="text-center font-bold" style={{ padding: "5px 8px", color: m.goals > 0 ? "var(--green)" : "var(--muted)" }}>
                             {m.goals}
                           </td>
-                          <td className={`px-2 py-1.5 text-center font-bold ${m.assists > 0 ? "text-cyan-400" : "text-slate-600"}`}>
+                          <td className="text-center font-bold" style={{ padding: "5px 8px", color: m.assists > 0 ? "var(--accent)" : "var(--muted)" }}>
                             {m.assists}
                           </td>
-                          <td className={`px-2 py-1.5 text-center ${
-                            m.rating >= 7.5 ? "text-emerald-400" : m.rating >= 6.5 ? "text-white" :
-                            m.rating > 0 ? "text-red-400" : "text-slate-600"
-                          }`}>
+                          <td className="text-center" style={{ padding: "5px 8px",
+                            color: m.rating >= 7.5 ? "var(--green)" : m.rating >= 6.5 ? "var(--text)" : m.rating > 0 ? "var(--red)" : "var(--muted)" }}>
                             {m.rating > 0 ? m.rating.toFixed(1) : "—"}
                           </td>
-                          <td className="px-2 py-1.5 text-center">
-                            {m.motm && <Trophy size={12} className="inline text-amber-400" />}
+                          <td className="text-center" style={{ padding: "5px 8px" }}>
+                            {m.motm && <Trophy size={12} style={{ display: "inline", color: "var(--gold)" }} />}
                           </td>
-                          <td className="px-2 py-1.5 text-center text-slate-500 text-[11px]">{m.position || "—"}</td>
+                          <td className="text-center" style={{ padding: "5px 8px", color: "var(--muted)", fontSize: 11 }}>{m.position || "—"}</td>
                         </tr>
                       );
                     })}
@@ -678,12 +682,12 @@ export function MyProfilePage() {
         {/* ── EMPTY STATE ────────────────────────────────────────────────── */}
         {allPlayerMatches.length === 0 && (
           <Card className="p-10 text-center space-y-3">
-            <Swords size={32} className="mx-auto text-slate-700" />
-            <p className="text-sm text-slate-500">
+            <Swords size={28} style={{ margin: "0 auto", color: "var(--border)" }} />
+            <p style={{ fontSize: 13, color: "var(--muted)" }}>
               Aucune donnée de match pour{" "}
-              <strong className="text-cyan-400">{eaProfile.gamertag}</strong>
+              <strong style={{ color: "var(--accent)" }}>{eaProfile.gamertag}</strong>
             </p>
-            <p className="text-xs text-slate-600">
+            <p style={{ fontSize: 11, color: "var(--muted)" }}>
               Charge ton club via "Charger mon club" dans les paramètres du profil.
             </p>
           </Card>
@@ -691,18 +695,17 @@ export function MyProfilePage() {
 
         {/* ── PUBLIC PLAYER CARD ─────────────────────────────────────────── */}
         <Card className="overflow-hidden" style={tile(240).style}>
-          <div className="px-5 py-4 border-b border-slate-800/60 flex items-center justify-between">
+          <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
             <div>
               <div className="flex items-center gap-2">
-                <Zap size={13} className="text-cyan-400" />
-                <span className="text-[10px] tracking-[0.12em] font-semibold text-slate-400 uppercase">
-                  Carte Joueur Publique
-                </span>
-                <span className="text-[9px] bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded px-1.5 py-0.5">
-                  NOUVEAU
-                </span>
+                <Zap size={12} style={{ color: "var(--accent)" }} />
+                <span className="category-header" style={{ marginBottom: 0 }}>Carte Joueur Publique</span>
+                <span className="rounded" style={{
+                  fontSize: 9, background: "var(--surface)", color: "var(--accent)",
+                  border: "1px solid var(--border)", padding: "1px 5px",
+                }}>NOUVEAU</span>
               </div>
-              <p className="text-xs text-slate-600 mt-0.5">
+              <p style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>
                 Configurez, prévisualisez et exportez pour Discord.
               </p>
             </div>
@@ -720,15 +723,15 @@ export function MyProfilePage() {
         {/* ── EXPORT LOGS ────────────────────────────────────────────────── */}
         <Card className="px-5 py-3 flex items-center justify-between" style={tile(290).style}>
           <div>
-            <div className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold">Logs système</div>
-            <div className="text-xs text-slate-600 mt-0.5">Télécharge les logs de diagnostic pour le support.</div>
+            <div className="category-header" style={{ marginBottom: 2 }}>Logs système</div>
+            <div style={{ fontSize: 11, color: "var(--muted)" }}>Télécharge les logs de diagnostic pour le support.</div>
           </div>
           <button
             onClick={() => logger.downloadLogs()}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/30
-              text-cyan-400 text-xs hover:bg-cyan-500/20 transition-colors font-['Bebas_Neue'] tracking-wider"
+            className="flex items-center gap-2"
+            style={{ padding: "5px 10px", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 4, cursor: "pointer", color: "var(--accent)", fontSize: 11 }}
           >
-            <FileText size={13} /> Exporter les logs
+            <FileText size={12} /> Exporter les logs
           </button>
         </Card>
 
