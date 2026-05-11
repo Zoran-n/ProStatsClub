@@ -361,7 +361,7 @@ export function MainPanel() {
           </button>
           <span style={{ fontSize: 15, fontWeight: 600, color: "var(--text)" }}>{t("settings.title")}</span>
         </div>
-        <div style={{ flex: 1, overflow: "auto", maxWidth: 600, margin: "0 auto", width: "100%" }}>
+        <div style={{ flex: 1, overflow: "auto", width: "100%" }}>
           <SettingsTab />
         </div>
       </main>

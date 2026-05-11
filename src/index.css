@@ -673,5 +673,44 @@ input[type="range"]::-webkit-slider-thumb { appearance: none; width: 14px; heigh
   }
 }
 
+/* ─── SettingsTab bento responsive ──────────────────────────────────────── */
+.settings-bento {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+  align-items: start;
+}
+
+.settings-bento-span2 {
+  grid-column: span 2;
+}
+
+.settings-bento-full {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 1024px) {
+  .settings-bento {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  .settings-bento-span2 {
+    grid-column: span 2 !important;
+  }
+  .settings-bento-full {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+@media (max-width: 680px) {
+  .settings-bento {
+    grid-template-columns: 1fr !important;
+  }
+  .settings-bento-span2,
+  .settings-bento-full {
+    grid-column: 1 !important;
+  }
+}
+
 
 

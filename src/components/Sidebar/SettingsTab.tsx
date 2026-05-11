@@ -226,15 +226,10 @@ export function SettingsTab() {
     <div style={{ flex: 1, overflowY: "auto", padding: "16px" }} role="region" aria-label={t("settings.title")}>
 
       {/* ══ BENTO GRID — row 1 ══ */}
-      <div className="settings-bento" style={{
-        display: "grid",
-        gridTemplateColumns: "1fr 1fr 1fr",
-        gridTemplateRows: "auto auto auto",
-        gap: 12,
-      }}>
+      <div className="settings-bento">
 
-        {/* ── TILE A: Apparence (col 1, row 1) ── */}
-        <div style={{ ...TILE, gridColumn: "1", gridRow: "1" }}>
+        {/* ── TILE A: Apparence ── */}
+        <div style={TILE}>
           <TileLabel>{t("settings.appearance")}</TileLabel>
 
           <Toggle label={t("settings.darkMode")} value={darkMode} onChange={(v) => apply(() => setDarkMode(v))} />
@@ -392,8 +387,8 @@ export function SettingsTab() {
           <Toggle label={t("settings.animations")} value={showAnimations} onChange={(v) => apply(() => setShowAnimations(v))} />
         </div>
 
-        {/* ── TILE B: Interface + Langue (col 2, row 1) ── */}
-        <div style={{ ...TILE, gridColumn: "2", gridRow: "1" }}>
+        {/* ── TILE B: Interface + Langue ── */}
+        <div style={TILE}>
 
           {/* Language */}
           <div>
@@ -481,8 +476,8 @@ export function SettingsTab() {
           </div>
         </div>
 
-        {/* ── TILE C: Système (col 3, row 1) ── */}
-        <div style={{ ...TILE, gridColumn: "3", gridRow: "1" }}>
+        {/* ── TILE C: Système ── */}
+        <div style={TILE}>
           <TileLabel>{t("settings.updates")}</TileLabel>
 
           <Toggle label={t("settings.autoUpdate")} value={autoUpdate}
@@ -611,8 +606,8 @@ export function SettingsTab() {
           </div>
         </div>
 
-        {/* ── TILE D: Raccourcis (col 1-2, row 2) ── */}
-        <div style={{ ...TILE, gridColumn: "1 / 3", gridRow: "2" }}>
+        {/* ── TILE D: Raccourcis (col-span-2) ── */}
+        <div className="settings-bento-span2" style={TILE}>
           <TileLabel>{t("settings.shortcuts")}</TileLabel>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 24px" }}>
@@ -672,9 +667,8 @@ export function SettingsTab() {
           )}
         </div>
 
-        {/* ── TILE E: placeholder to prevent grid hole (col 3, row 2) ── */}
-        {/* This col is already filled by TILE C spanning row 1 only, so row 2 col 3 is empty — fill it */}
-        <div style={{ ...TILE, gridColumn: "3", gridRow: "2", gap: 8 }}>
+        {/* ── TILE E: Effets visuels ── */}
+        <div style={{ ...TILE, gap: 8 }}>
           <TileLabel>EFFETS VISUELS</TileLabel>
           <Toggle label={t("settings.animations")} value={showAnimations} onChange={(v) => apply(() => setShowAnimations(v))} />
           <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}>
@@ -694,8 +688,8 @@ export function SettingsTab() {
           </div>
         </div>
 
-        {/* ── TILE F: Rappels planifiés (col 1-3, row 3) ── */}
-        <div style={{ ...TILE, gridColumn: "1 / 4", gridRow: "3" }}>
+        {/* ── TILE F: Rappels planifiés (full-width) ── */}
+        <div className="settings-bento-full" style={TILE}>
           <TileLabel><Bell size={11} /> RAPPELS PLANIFIÉS</TileLabel>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 6 }}>
