@@ -712,5 +712,31 @@ input[type="range"]::-webkit-slider-thumb { appearance: none; width: 14px; heigh
   }
 }
 
+/* ─── MatchesTab dashboard grid ──────────────────────────────────────────── */
+.matches-dashboard {
+  flex: 1;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 10px;
+  padding: 10px 14px 16px;
+  align-items: start;
+}
 
+/* Col droite sticky pour rester visible pendant le scroll de la liste */
+.matches-dashboard > *:last-child {
+  position: sticky;
+  top: 0;
+  max-height: calc(100vh - 160px);
+  overflow-y: auto;
+}
 
+@media (max-width: 1024px) {
+  .matches-dashboard {
+    grid-template-columns: 1fr !important;
+  }
+  .matches-dashboard > *:last-child {
+    position: static !important;
+    max-height: none !important;
+  }
+}

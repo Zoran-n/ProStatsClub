@@ -285,22 +285,52 @@ export function MatchesTab() {
   const streakColor = streak?.result === "W" ? "var(--green)" : streak?.result === "D" ? "#eab308" : "var(--red)";
   const streakLabel = streak?.result === "W" ? "Série V" : streak?.result === "D" ? "Série N" : "Série D";
 
+  // ── Derived: last match & global stats for side panel ─────────────────────
+  const lastMatch = allList.length > 0
+    ? [...allList].sort((a, b) => Number(b.timestamp) - Number(a.timestamp))[0]
+    : null;
+
+  const globalStats = useMemo(() => {
+    if (allList.length === 0) return null;
+    let w = 0, d = 0, l = 0, gf = 0, ga = 0;
+    for (const m of allList) {
+      const res = getResult(m);
+      if (res === "W") w++; else if (res === "L") l++; else d++;
+      const myId = currentClub?.id ?? "";
+      const my = m.clubs[myId] as Record<string, unknown> | undefined;
+      const opp = Object.entries(m.clubs).find(([k]) => k !== myId)?.[1] as Record<string, unknown> | undefined;
+      gf += Number(my?.["goals"] ?? 0);
+      ga += Number(opp?.["goals"] ?? 0);
+    }
+    const total = w + d + l;
+    return { w, d, l, total, gf, ga, winPct: Math.round((w / total) * 100), avgGf: (gf / total).toFixed(1), avgGa: (ga / total).toFixed(1) };
+  }, [allList, getResult, currentClub?.id]);
+
+  const SIDE_TILE: React.CSSProperties = {
+    background: "var(--card)", border: "1px solid var(--border)",
+    borderRadius: 8, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10,
+  };
+  const SIDE_LABEL: React.CSSProperties = {
+    fontSize: 9, color: "var(--muted)", fontFamily: "'Bebas Neue', sans-serif",
+    letterSpacing: "0.1em", marginBottom: 2,
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--bg)" }}>
 
-      {/* Tab bar */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 16px",
+      {/* ── Tab bar ─────────────────────────────────────────────────────── */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px",
         flexShrink: 0, borderBottom: "1px solid var(--border)", flexWrap: "wrap" }}>
-        <div style={{ display: "flex", gap: 8, flex: 1, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 6, flex: 1, flexWrap: "wrap" }}>
           {TYPES.map((tp) => {
             const active = type === tp.value;
             return (
               <button key={tp.value} onClick={() => setType(tp.value)} style={{
-                display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 6,
+                display: "flex", alignItems: "center", gap: 5, padding: "5px 12px", borderRadius: 6,
                 border: `1px solid ${active ? "var(--accent)" : "var(--border)"}`,
                 background: active ? "rgba(0,212,255,0.08)" : "transparent",
                 color: active ? "var(--accent)" : "var(--muted)",
-                fontFamily: "'Bebas Neue', sans-serif", fontSize: 13, letterSpacing: 1,
+                fontFamily: "'Bebas Neue', sans-serif", fontSize: 12, letterSpacing: 1,
                 cursor: "pointer", whiteSpace: "nowrap",
               }}>
                 <span>{tp.icon}</span>{tp.label}
@@ -316,7 +346,7 @@ export function MatchesTab() {
         </div>
 
         {/* Search */}
-        <div style={{ position: "relative", minWidth: 120 }}>
+        <div style={{ position: "relative", minWidth: 110 }}>
           <Search size={11} style={{ position: "absolute", left: 7, top: "50%", transform: "translateY(-50%)",
             color: "var(--muted)", pointerEvents: "none" }} />
           <input value={oppFilter} onChange={(e) => setOppFilter(e.target.value)}
@@ -386,80 +416,33 @@ export function MatchesTab() {
         <input ref={importRef} type="file" accept=".json" className="hidden" onChange={handleImportCache} />
       </div>
 
-      {/* Content */}
-      <div ref={contentRef} style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column",
-        gap: 6, padding: "10px 16px 16px" }}>
+      {/* ── Dashboard grid ───────────────────────────────────────────── */}
+      <div className="matches-dashboard" ref={contentRef}>
 
-        {/* Bilan vs adversaire */}
-        {oppBilan && (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 16px",
-            background: "var(--card)", border: "1px solid var(--accent)", borderRadius: 8, flexWrap: "wrap", flexShrink: 0 }}>
-            <span style={{ fontSize: 12, color: "var(--accent)", fontFamily: "'Bebas Neue', sans-serif",
-              letterSpacing: 1, flexShrink: 0 }}>
-              Bilan vs "{debouncedOppFilter}" — {oppBilan.total} match{oppBilan.total > 1 ? "s" : ""}
-            </span>
-            <div style={{ display: "flex", gap: 6 }}>
-              <span style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(0,255,136,0.12)",
-                color: "var(--green)", fontSize: 11, fontWeight: 700 }}>{oppBilan.w}V</span>
-              <span style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(234,179,8,0.12)",
-                color: "#eab308", fontSize: 11, fontWeight: 700 }}>{oppBilan.d}N</span>
-              <span style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(255,51,85,0.12)",
-                color: "var(--red)", fontSize: 11, fontWeight: 700 }}>{oppBilan.l}D</span>
-            </div>
-            <span style={{ fontSize: 11, color: "var(--muted)" }}>
-              Moy. {oppBilan.avgFor} — {oppBilan.avgAgainst}
-            </span>
-          </div>
-        )}
+        {/* ══ COL GAUCHE : flux de matchs ══ */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
 
-        {/* Forme + streak */}
-        {formData.length >= 3 && viewMode === "list" && (
-          <div style={{ padding: "12px 16px 8px", background: "var(--card)", border: "1px solid var(--border)",
-            borderRadius: 8, flexShrink: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-              <div style={{ fontSize: 11, color: "var(--muted)",
-                fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 1 }}>
-                Forme — {formData.length} derniers matchs
+          {/* Bilan vs adversaire */}
+          {oppBilan && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px",
+              background: "var(--card)", border: "1px solid var(--accent)", borderRadius: 8, flexWrap: "wrap", flexShrink: 0 }}>
+              <span style={{ fontSize: 12, color: "var(--accent)", fontFamily: "'Bebas Neue', sans-serif",
+                letterSpacing: 1, flexShrink: 0 }}>
+                Bilan vs "{debouncedOppFilter}" — {oppBilan.total} match{oppBilan.total > 1 ? "s" : ""}
+              </span>
+              <div style={{ display: "flex", gap: 6 }}>
+                <span style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(0,255,136,0.12)",
+                  color: "var(--green)", fontSize: 11, fontWeight: 700 }}>{oppBilan.w}V</span>
+                <span style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(234,179,8,0.12)",
+                  color: "#eab308", fontSize: 11, fontWeight: 700 }}>{oppBilan.d}N</span>
+                <span style={{ padding: "2px 8px", borderRadius: 4, background: "rgba(255,51,85,0.12)",
+                  color: "var(--red)", fontSize: 11, fontWeight: 700 }}>{oppBilan.l}D</span>
               </div>
-              {streak && (
-                <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "2px 10px",
-                  borderRadius: 4, background: `${streakColor}18`, border: `1px solid ${streakColor}44` }}>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: streakColor,
-                    fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 1 }}>
-                    {streakLabel}
-                  </span>
-                  <span style={{ fontSize: 16, fontFamily: "'Bebas Neue', sans-serif",
-                    color: streakColor, lineHeight: 1 }}>{streak.count}</span>
-                  <span style={{ fontSize: 9, color: streakColor, opacity: 0.7 }}>en cours</span>
-                </div>
-              )}
+              <span style={{ fontSize: 11, color: "var(--muted)" }}>
+                Moy. {oppBilan.avgFor} — {oppBilan.avgAgainst}
+              </span>
             </div>
-            <ResponsiveContainer width="100%" height={60}>
-              <LineChart data={formData} margin={{ top: 4, right: 8, left: -36, bottom: 0 }}>
-                <XAxis dataKey="n" tick={{ fontSize: 9, fill: "var(--muted)" }} axisLine={false} tickLine={false} />
-                <YAxis domain={[0, 3]} ticks={[0, 1, 3]} tick={{ fontSize: 9, fill: "var(--muted)" }}
-                  axisLine={false} tickLine={false} />
-                <ReferenceLine y={1} stroke="var(--border)" strokeDasharray="3 3" />
-                <Tooltip content={({ payload }: { payload?: { payload: { r: string; v: number } }[] }) => {
-                  if (!payload?.length) return null;
-                  const p = payload[0].payload;
-                  const label = p.r === "W" ? t("match.win") : p.r === "D" ? t("match.draw") : t("match.loss");
-                  return (
-                    <div style={{ background: "var(--card)", border: "1px solid var(--border)",
-                      borderRadius: 4, padding: "3px 8px", fontSize: 10, color: dotColor(p.v) }}>{label}</div>
-                  );
-                }} />
-                <Line type="monotone" dataKey="v" stroke="var(--accent)" strokeWidth={2}
-                  dot={(props: { cx: number; cy: number; payload: { v: number; n: number } }) => {
-                    const { cx, cy, payload } = props;
-                    return <circle key={`dot-${payload.n}`} cx={cx} cy={cy} r={4}
-                      fill={dotColor(payload.v)} stroke="var(--bg)" strokeWidth={1} />;
-                  }}
-                  activeDot={{ r: 5 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        )}
+          )}
 
         {viewMode === "opponents" ? (
           /* Opponents analysis */
@@ -769,7 +752,146 @@ export function MatchesTab() {
             </div>
           </div>
         )}
-      </div>
+        </div>{/* fin col gauche */}
+
+        {/* ══ COL DROITE : side panel ══ */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+
+          {/* Tile 1 — Dernier Match */}
+          {lastMatch && (() => {
+            const res = getResult(lastMatch);
+            const accentColor = res === "W" ? "var(--green)" : res === "L" ? "var(--red)" : "#eab308";
+            const bgTint = res === "W" ? "rgba(35,165,89,0.07)" : res === "L" ? "rgba(218,55,60,0.07)" : "rgba(234,179,8,0.07)";
+            const resLabel = RESULT_LABEL[res];
+            const htScore = getHalfTimeScore(lastMatch);
+            return (
+              <div style={{ ...SIDE_TILE, background: bgTint, borderColor: `${accentColor}44` }}>
+                <div style={SIDE_LABEL}>DERNIER MATCH</div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 40, color: accentColor, lineHeight: 1, letterSpacing: 2 }}>
+                    {getScore(lastMatch)}
+                  </span>
+                  <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, color: accentColor, letterSpacing: 1 }}>
+                    {resLabel.text}
+                  </span>
+                </div>
+                <div style={{ fontSize: 12, color: "var(--text)", fontWeight: 600 }}>
+                  vs {getOppName(lastMatch)}
+                </div>
+                <div style={{ fontSize: 10, color: "var(--muted)" }}>
+                  {formatDate(lastMatch.timestamp, locale)}
+                  {htScore && <span style={{ marginLeft: 8 }}>· MT {htScore}</span>}
+                </div>
+                <button onClick={() => setSelected(lastMatch)}
+                  style={{ alignSelf: "flex-start", padding: "5px 12px", background: "transparent",
+                    border: `1px solid ${accentColor}66`, borderRadius: 5, color: accentColor,
+                    fontSize: 10, cursor: "pointer", fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.06em",
+                    transition: "all 0.15s" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = `${accentColor}18`; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}>
+                  ▶ VOIR RAPPORT
+                </button>
+              </div>
+            );
+          })()}
+
+          {/* Tile 2 — Analyse de Forme */}
+          {formData.length >= 3 && (
+            <div style={SIDE_TILE}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={SIDE_LABEL}>FORME — {formData.length} MATCHS</div>
+                {streak && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "2px 8px",
+                    borderRadius: 4, background: `${streakColor}18`, border: `1px solid ${streakColor}44` }}>
+                    <span style={{ fontSize: 9, fontWeight: 700, color: streakColor,
+                      fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 1 }}>
+                      {streakLabel} {streak.count}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <div style={{ display: "flex", gap: 3, alignItems: "flex-end", height: 28 }}>
+                {formData.map((d, i) => (
+                  <div key={i} title={d.r === "W" ? t("match.win") : d.r === "D" ? t("match.draw") : t("match.loss")}
+                    style={{
+                      flex: 1, borderRadius: 2, transition: "height 0.2s",
+                      height: d.v === 3 ? "100%" : d.v === 1 ? "60%" : "30%",
+                      background: dotColor(d.v), opacity: 0.85,
+                    }} />
+                ))}
+              </div>
+              <ResponsiveContainer width="100%" height={50}>
+                <LineChart data={formData} margin={{ top: 4, right: 4, left: -36, bottom: 0 }}>
+                  <XAxis dataKey="n" tick={{ fontSize: 8, fill: "var(--muted)" }} axisLine={false} tickLine={false} />
+                  <YAxis domain={[0, 3]} ticks={[0, 1, 3]} tick={{ fontSize: 8, fill: "var(--muted)" }}
+                    axisLine={false} tickLine={false} />
+                  <ReferenceLine y={1} stroke="var(--border)" strokeDasharray="3 3" />
+                  <Tooltip content={({ payload }: { payload?: { payload: { r: string; v: number } }[] }) => {
+                    if (!payload?.length) return null;
+                    const p = payload[0].payload;
+                    const label = p.r === "W" ? t("match.win") : p.r === "D" ? t("match.draw") : t("match.loss");
+                    return (
+                      <div style={{ background: "var(--card)", border: "1px solid var(--border)",
+                        borderRadius: 4, padding: "3px 8px", fontSize: 10, color: dotColor(p.v) }}>{label}</div>
+                    );
+                  }} />
+                  <Line type="monotone" dataKey="v" stroke="var(--accent)" strokeWidth={2}
+                    dot={(props: { cx: number; cy: number; payload: { v: number; n: number } }) => {
+                      const { cx, cy, payload } = props;
+                      return <circle key={`dot-${payload.n}`} cx={cx} cy={cy} r={3}
+                        fill={dotColor(payload.v)} stroke="var(--bg)" strokeWidth={1} />;
+                    }}
+                    activeDot={{ r: 4 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* Tile 3 — Bilan Global */}
+          {globalStats && (
+            <div style={SIDE_TILE}>
+              <div style={SIDE_LABEL}>BILAN GLOBAL — {globalStats.total} MATCHS</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+                {[
+                  { label: "V", value: globalStats.w, color: "var(--green)" },
+                  { label: "N", value: globalStats.d, color: "#eab308" },
+                  { label: "D", value: globalStats.l, color: "var(--red)" },
+                ].map(({ label, value, color }) => (
+                  <div key={label} style={{ background: "var(--surface)", borderRadius: 6,
+                    padding: "8px 4px", textAlign: "center", border: "1px solid var(--border)" }}>
+                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 24, color, lineHeight: 1 }}>{value}</div>
+                    <div style={{ fontSize: 9, color: "var(--muted)", marginTop: 3, letterSpacing: "0.06em" }}>{label}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0",
+                borderTop: "1px solid var(--border)" }}>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 18,
+                    color: globalStats.winPct >= 60 ? "var(--green)" : globalStats.winPct >= 40 ? "#eab308" : "var(--red)" }}>
+                    {globalStats.winPct}%
+                  </div>
+                  <div style={{ fontSize: 9, color: "var(--muted)" }}>% Victoire</div>
+                </div>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, color: "var(--gold)" }}>
+                    {globalStats.avgGf}
+                  </div>
+                  <div style={{ fontSize: 9, color: "var(--muted)" }}>Moy. BF</div>
+                </div>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, color: "var(--muted)" }}>
+                    {globalStats.avgGa}
+                  </div>
+                  <div style={{ fontSize: 9, color: "var(--muted)" }}>Moy. BC</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>{/* fin col droite */}
+
+      </div>{/* fin matches-dashboard */}
 
       {/* Multi-match day picker */}
       {selectedDayMatches && !selected && (
