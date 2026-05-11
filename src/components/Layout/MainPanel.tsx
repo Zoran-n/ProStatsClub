@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { BarChart2, Trophy, Search, Sparkles, Settings, Send, Pencil, X, Minimize2, Megaphone, ListChecks, BookOpen, LayoutDashboard } from "lucide-react";
 import { GlassCard } from "../UI/GlassCard";
 import { useAppStore } from "../../store/useAppStore";
@@ -228,6 +228,51 @@ function DashboardView({
   );
 }
 
+// ─── Settings overlay modal ───────────────────────────────────────────────────
+
+function SettingsOverlay({ onClose, t }: { onClose: () => void; t: (k: string) => string }) {
+  return (
+    <div
+      role="dialog" aria-modal="true" aria-label={t("settings.title")}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      style={{
+        position: "fixed", inset: 0, zIndex: 1000,
+        background: "rgba(0,0,0,0.65)", backdropFilter: "blur(4px)",
+        display: "flex", alignItems: "flex-start", justifyContent: "center",
+        padding: "32px 16px", overflowY: "auto",
+      }}>
+      <div style={{
+        width: "100%", maxWidth: 1100,
+        background: "var(--main-bg)", border: "1px solid var(--border)",
+        borderRadius: 12, overflow: "hidden",
+        boxShadow: "0 24px 64px rgba(0,0,0,0.5)",
+      }}>
+        <div style={{
+          height: 48, display: "flex", alignItems: "center", gap: 8,
+          padding: "0 16px", borderBottom: "1px solid var(--border)",
+          background: "var(--surface)", flexShrink: 0,
+        }}>
+          <Settings size={15} style={{ color: "var(--accent)" }} />
+          <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.08em" }}>
+            {t("settings.title")}
+          </span>
+          <button onClick={onClose} style={{
+            marginLeft: "auto", background: "transparent", border: "none",
+            cursor: "pointer", color: "var(--muted)", display: "flex", alignItems: "center",
+            padding: 4, borderRadius: 4, transition: "color 0.15s",
+          }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "var(--text)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = "var(--muted)"; }}
+            aria-label="Fermer">
+            <X size={16} />
+          </button>
+        </div>
+        <SettingsTab />
+      </div>
+    </div>
+  );
+}
+
 export function MainPanel() {
   const { currentClub, players, matches, activeTab, isLoading, error, activeSession,
     sidebarTab, setSidebarTab, discordWebhook, addToast, visibleKpis, setVisibleKpis,
@@ -244,6 +289,17 @@ export function MainPanel() {
   const [showSeasonReport, setShowSeasonReport] = useState(false);
   const [dashboardMode, setDashboardMode] = useState(false);
   const [dashWidgets, setDashWidgets] = useState<string[]>(["forme", "serie", "derniers_matchs", "top_joueur", "kpis_rapides", "heatmap"]);
+
+  // Settings modal — intercepte sidebarTab === "settings" pour l'afficher en overlay
+  const showSettingsModal = sidebarTab === "settings";
+  const closeSettings = useCallback(() => setSidebarTab("search"), [setSidebarTab]);
+
+  useEffect(() => {
+    if (!showSettingsModal) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") closeSettings(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [showSettingsModal, closeSettings]);
 
   const shareTab = async () => {
     if (!discordWebhook || !currentClub) return;
@@ -326,6 +382,7 @@ export function MainPanel() {
   // ── Profile settings page ─────────────────────────────────────────
   if (sidebarTab === "profile") {
     return (
+      <>
       <main id="main-content" style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "var(--main-bg)" }}
         role="main" aria-label="Paramètres profil">
         <div style={{
@@ -337,34 +394,8 @@ export function MainPanel() {
         </div>
         <ProfilePanel />
       </main>
-    );
-  }
-
-  // ── Settings page ──────────────────────────────────────────────────
-  if (!isLoading && sidebarTab === "settings") {
-    return (
-      <main id="main-content" style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "var(--main-bg)" }}
-        role="main" aria-label={t("settings.title")}>
-        <div style={{
-          height: 48, display: "flex", alignItems: "center", gap: 8,
-          padding: "0 16px", borderBottom: "1px solid rgba(0,0,0,0.24)",
-          flexShrink: 0, background: "var(--main-bg)",
-        }}>
-          <button onClick={() => setSidebarTab("search")} style={{
-            background: "none", border: "none", cursor: "pointer", color: "var(--muted)",
-            display: "flex", alignItems: "center", padding: 4, borderRadius: 4,
-            transition: "color 0.15s",
-          }} aria-label={t("sidebar.search")}
-            onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = "var(--muted)"; }}>
-            <Settings size={18} />
-          </button>
-          <span style={{ fontSize: 15, fontWeight: 600, color: "var(--text)" }}>{t("settings.title")}</span>
-        </div>
-        <div style={{ flex: 1, overflow: "auto", width: "100%" }}>
-          <SettingsTab />
-        </div>
-      </main>
+      {showSettingsModal && <SettingsOverlay onClose={closeSettings} t={t} />}
+      </>
     );
   }
 
@@ -540,6 +571,17 @@ export function MainPanel() {
               ))}
             </div>
           )}
+          {/* Settings button */}
+          <button onClick={() => setSidebarTab("settings")} title="Paramètres"
+            style={{
+              display: "flex", alignItems: "center", padding: "5px 6px",
+              background: "transparent", border: "1px solid var(--border)",
+              borderRadius: 6, color: "var(--muted)", cursor: "pointer", transition: "all 0.15s",
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "var(--accent)"; (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--accent)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = "var(--muted)"; (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border)"; }}>
+            <Settings size={13} />
+          </button>
           {/* LIVE badge */}
           {activeSession && (
             <span style={{
@@ -740,6 +782,8 @@ export function MainPanel() {
     {showSeasonThread && <SeasonThreadModal   onClose={() => setShowSeasonThread(false)} />}
     {showWeeklyRanking && <WeeklyRankingModal onClose={() => setShowWeeklyRanking(false)} />}
     {showSeasonReport && <SeasonReportModal   onClose={() => setShowSeasonReport(false)} />}
-    </>
+
+    {showSettingsModal && <SettingsOverlay onClose={closeSettings} t={t} />}
+</>
   );
 }
