@@ -1,5 +1,88 @@
 # Changelog — ProClubs Stats
 
+## v0.7.2 — 2026-05-11 (Refonte Header & Standardisation du Thème)
+
+### Thème
+
+- **Palette "Classic" (Anthracite/Bleu)** : nouveau preset par défaut — `#121212`/`#1e1e1e`, accent bleu `#3b82f6`, sobre et neutre
+- **Thème par défaut** : `palettePreset: "classic"` (était `"neon-cyber"`) — Neon Cyber reste disponible dans les réglages
+- **Discord Classic** renommé "Discord" dans le sélecteur de palettes pour éviter la collision de labels
+
+### Header contextuel
+
+- **Background dynamique** : `background: var(--surface)` remplace le `rgba(3,3,3,0.85)` hardcodé — le header s'adapte à tous les thèmes (clair, classic, cyber)
+- **Épuration totale** : retrait du titre de page (`# Joueurs`), du nom de club, logo, SR et de tous les boutons Discord du header
+- **Barre de recherche** à gauche (flex, max 200px) avec raccourci `Ctrl+K` visible
+- **Boutons de vue textualisés** à droite : "VUE DASHBOARD" (`LayoutDashboard` + texte) et "VUE COMPACTE" (`Minimize2` + texte), Bebas Neue 10px, état actif en couleur accent
+
+### Bandeau Club — Centre de Commande
+
+- **Actions Discord déplacées** dans le bandeau club (sous le header) : bouton PARTAGER conditionnel sur l'onglet actif + 6 icônes d'actions (Annonce, Sondage, Highlight, Thread, Classement, Rapport)
+- **Hover interactif** sur les icônes Discord : couleur accent au survol
+- **Badge LIVE** conservé à droite du bandeau
+
+---
+
+## v0.6.9 — 2026-05-11 (Simplification & Automatisation)
+
+### Suppression
+
+- **CompareModal supprimé** : retrait de la modale de comparaison multi-joueurs et de toute la logique associée dans PlayersTab (`compareMode`, `compareSelected`, `COMPARE_COLORS`, bannière compare, bouton toolbar)
+- **MyProfilePage supprimé** : onglet "PROFIL" retiré de la sidebar et de `SidebarTab` — la gestion du compte EA reste dans les paramètres
+
+### Automatisation
+
+- **Auto-refresh permanent** : `useAutoRefresh` hook always-on (60 s), s'active dès qu'un club est chargé — remplace le toggle manuel
+- **Barre de progression 1 px** : `.refresh-bar` cyan animée (`@keyframes refresh-sweep` 60 s linéaire) en haut du panneau principal, indique le prochain refresh
+- **`discordLogger.ts`** : module singleton extrait dans `src/api/` — `addDiscordLog`, `useDiscordLogs`, `clearDiscordLogs` découplés de MyProfilePage
+
+### Responsive
+
+- **ProfilePanel** : grille de stats `repeat(auto-fill, minmax(100px, 1fr))` — passe naturellement de 4 à 2 colonnes sur panneau étroit
+
+---
+
+## v0.6.8 — 2026-05-11 (Refonte UI SaaS High-Tech)
+
+### Design System — Migration Discord → SaaS High-Tech
+
+- **Nouvelle palette "Neon Cyber"** : `--bg: #030303`, `--surface: #0a0a0b`, `--card: #0d0d10`, accent cyan `#00f2ff` + violet `#7000ff` — activée par défaut au premier lancement
+- **Tokens CSS centralisés** : `--app-bar-bg`, `--app-bar-w: 52px`, `--sidebar-w: 220px`, `--z-sidebar/header/modal/toast`, `--radius: 8px` — toutes les valeurs en une seule source de vérité
+- **Classe `.glass-card`** : `backdrop-filter: blur(12px)` + fallback opaque `@supports`, bordure `rgba(255,255,255,0.08)`, variantes glow cyan/violet
+- **Classe `.border-beam`** : animation `@property --border-angle` conic-gradient tournant en continu (bordure lumineuse)
+- **Classe `.stagger-container`** : 8 enfants animés en cascade (0–385 ms)
+- **Composant `GlassCard`** : `motion.div` framer-motion avec props `glow`, `beam`, `hover`, `padding` — micro-lift `y: -1` au survol
+
+### App Shell
+
+- **GuildBar réduite à 52 px** : icônes 40×40 px, `borderRadius: 8`, indicateur actif 2 px cyan (`cubic-bezier(0.4,0,0.2,1)`) avec `box-shadow` glow
+- **Suppression totale des vestiges Discord** : classes `.guild-pill`, `.guild-icon`, `.guild-icon-text`, variables `--guild-bar` → `--app-bar-bg`, prop `showDiscordLayout` → `showAppBar`
+- **TitleBar** : fond `var(--app-bar-bg)`, `paddingLeft` calé sur 52 px quand `showAppBar` actif
+- **Header MainPanel** : sticky, `backdrop-filter: blur(12px)`, hauteur 44 px, `z-index: var(--z-header)`
+- **Tooltip** : `.ui-tooltip` (remplace `.discord-tooltip`) — fond `var(--surface)`, bordure + box-shadow, sans flèche
+
+### Graphiques & Données
+
+- **AreaChart** avec gradients SVG uniques (`GRAD_IDS`) sur Possession, Shot Ratio, Performance — remplace LineChart
+- **RadarChart** : `PolarGrid` à 6 % opacité, fill gradient cyan
+- **CartesianGrid** : `strokeDasharray="2 4"`, opacité 4 %, sans lignes verticales
+- **Tooltip recharts** : fond `var(--surface)`, `boxShadow: 0 8px 24px rgba(0,0,0,0.5)`
+- **PlayersTab hover** : `borderColor: rgba(0,242,255,0.3)` + fond `rgba(0,242,255,0.03)`
+- **MatchesTab separators** : `0.5px solid rgba(255,255,255,0.04)` — plus discrets
+
+### Contraste & Accessibilité
+
+- **`--muted` → `#8892a4`** : ratio WCAG AA ~5.4:1 sur `#030303` (était `#4a5568`, ratio 2.6:1)
+- **`@media (forced-colors: active)`** : règle `.nav-icon-btn.active` conservée, règle obsolète `.guild-icon.active` supprimée
+
+### Qualité
+
+- **Scrollbar** : 4 px, track transparent, thumb `rgba(255,255,255,0.1)` → hover `rgba(0,242,255,0.4)` — bloc CSS dupliqué supprimé
+- **Empty states** : `GlassCard` centrée + icône `DatabaseZap` dans PlayersTab et MatchesTab (×3 emplacements)
+- **Palette `neon-cyber`** ajoutée dans `PALETTE_PRESETS` et dans `useAppStore` (défaut)
+
+---
+
 ## v0.4.1 — 2026-04-17 (comparaison de clubs enrichie)
 
 ### Comparaison multi-saisons

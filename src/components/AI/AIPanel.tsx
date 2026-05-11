@@ -65,7 +65,7 @@ export function AIPanel({ summary, goals, prediction }: AIPanelProps) {
 
           <div className="flex flex-wrap gap-2">
             {summary.keyPoints.map((pt, i) => (
-              <div key={i} className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-[var(--surface)] border border-[var(--border)] text-[10px] text-[var(--text)]">
+              <div key={i} className="flex items-center gap-1.5 px-2 py-1 rounded bg-[var(--surface)] border border-[var(--border)] text-[10px] text-[var(--text)]">
                 {pt}
               </div>
             ))}
@@ -88,7 +88,7 @@ export function AIPanel({ summary, goals, prediction }: AIPanelProps) {
                 <div key={g.id} className="flex flex-col gap-1.5">
                   <div className="flex items-center justify-between">
                     <span className="text-[12px] font-medium text-[var(--text)]">{g.label}</span>
-                    <span className={`text-[9px] px-1.5 rounded-full font-bold border ${
+                    <span className={`text-[9px] px-1.5 rounded-sm font-bold border ${
                       g.difficulty === 'hard' ? 'border-[var(--red)] text-[var(--red)]' : 
                       g.difficulty === 'easy' ? 'border-[var(--green)] text-[var(--green)]' : 'border-yellow-500 text-yellow-500'
                     }`}>

@@ -4,15 +4,15 @@ import { useAppStore } from "../../store/useAppStore";
 
 const win = getCurrentWindow();
 
-export function TitleBar({ showDiscordLayout }: { showDiscordLayout?: boolean }) {
+export function TitleBar({ showAppBar }: { showAppBar?: boolean }) {
   const { activeSession, proxyInfo, currentClub } = useAppStore();
   return (
     <div data-tauri-drag-region="" style={{
       height: 32, display: "flex", alignItems: "center", justifyContent: "space-between",
-      padding: "0 8px", background: "var(--guild-bar)", flexShrink: 0, userSelect: "none",
+      padding: "0 8px", background: "var(--app-bar-bg)", flexShrink: 0, userSelect: "none",
     }}>
       {/* Left: app name + context */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, pointerEvents: "none", paddingLeft: showDiscordLayout ? 72 : 12 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, pointerEvents: "none", paddingLeft: showAppBar ? 52 : 12 }}>
         <span style={{
           fontFamily: "'Bebas Neue', sans-serif", fontSize: 13, letterSpacing: "0.15em",
           color: "var(--muted)",

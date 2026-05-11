@@ -7,7 +7,7 @@ import { sendDiscordWebhook } from "../api/discord";
 import { buildSessionSummaryEmbed } from "../utils/discordEmbeds";
 
 export type ActiveTab = "players" | "matches" | "charts" | "session" | "compare";
-export type SidebarTab = "search" | "favs" | "settings" | "profile" | "myprofile" | "analyse";
+export type SidebarTab = "search" | "favs" | "settings" | "profile";
 
 // Injects a <style> tag that proportionally overrides hard-coded inline font-size px values.
 // This scales only text, without affecting layout dimensions or icons.
@@ -240,7 +240,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   favFolders: [],
   srAlerts: [],
   savedComparisons: [],
-  palettePreset: null,
+  palettePreset: "classic",
   autoPostSession: false,
   personalRecords: [],
   recordAlerts: [],

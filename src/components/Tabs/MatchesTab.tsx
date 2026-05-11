@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { Download, ChevronDown, Search, Calendar, List, ChevronLeft, ChevronRight, PenLine, Table2, Upload, FileDown } from "lucide-react";
+import { Download, ChevronDown, Search, Calendar, List, ChevronLeft, ChevronRight, PenLine, Table2, Upload, FileDown, DatabaseZap } from "lucide-react";
+import { GlassCard } from "../UI/GlassCard";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 import { useAppStore } from "../../store/useAppStore";
 import { ExportModal } from "../Modals/ExportModal";
@@ -295,7 +296,7 @@ export function MatchesTab() {
             const active = type === tp.value;
             return (
               <button key={tp.value} onClick={() => setType(tp.value)} style={{
-                display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 20,
+                display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 6,
                 border: `1px solid ${active ? "var(--accent)" : "var(--border)"}`,
                 background: active ? "rgba(0,212,255,0.08)" : "transparent",
                 color: active ? "var(--accent)" : "var(--muted)",
@@ -422,7 +423,7 @@ export function MatchesTab() {
               </div>
               {streak && (
                 <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "2px 10px",
-                  borderRadius: 12, background: `${streakColor}18`, border: `1px solid ${streakColor}44` }}>
+                  borderRadius: 4, background: `${streakColor}18`, border: `1px solid ${streakColor}44` }}>
                   <span style={{ fontSize: 10, fontWeight: 700, color: streakColor,
                     fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 1 }}>
                     {streakLabel}
@@ -464,7 +465,12 @@ export function MatchesTab() {
           /* Opponents analysis */
           <div>
             {opponentStats.length === 0 ? (
-              <div style={{ padding: 40, textAlign: "center", color: "var(--muted)", fontSize: 13 }}>Aucun match chargé</div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 40 }}>
+                <GlassCard glow="none" hover={false} padding="32px 48px" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+                  <DatabaseZap size={32} style={{ color: "var(--muted)", opacity: 0.4 }} />
+                  <span style={{ color: "var(--muted)", fontSize: 13 }}>Aucun match chargé</span>
+                </GlassCard>
+              </div>
             ) : (
               <div style={{ overflowX: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
@@ -483,8 +489,8 @@ export function MatchesTab() {
                       const wr = Math.round((opp.w / mj) * 100);
                       const diff = opp.gf - opp.ga;
                       return (
-                        <tr key={opp.name} style={{ borderBottom: "1px solid var(--border)" }}
-                          onMouseEnter={(e) => (e.currentTarget.style.background = "var(--hover)")}
+                        <tr key={opp.name} style={{ borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(0,242,255,0.03)")}
                           onMouseLeave={(e) => (e.currentTarget.style.background = "")}>
                           <td style={{ padding: "7px 10px", color: "var(--text)", fontWeight: 600 }}>{opp.name}</td>
                           <td style={{ padding: "7px 10px", textAlign: "center", color: "var(--muted)" }}>{mj}</td>
@@ -506,8 +512,11 @@ export function MatchesTab() {
         ) : viewMode === "list" ? (
           <>
             {!loading && list.length === 0 && (
-              <div style={{ padding: 40, textAlign: "center", color: "var(--muted)", fontSize: 13 }}>
-                {t("matches.noMatches")}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 40 }}>
+                <GlassCard glow="none" hover={false} padding="32px 48px" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+                  <DatabaseZap size={32} style={{ color: "var(--muted)", opacity: 0.4 }} />
+                  <span style={{ color: "var(--muted)", fontSize: 13 }}>{t("matches.noMatches")}</span>
+                </GlassCard>
               </div>
             )}
 

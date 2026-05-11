@@ -99,7 +99,7 @@ export function PublicPlayerCard({ config, player, division }: Props) {
           width: 340,
           background: theme.bg,
           border: `2px solid ${theme.border}`,
-          borderRadius: 16,
+          borderRadius: 8,
           padding: 24,
           position: "relative",
           overflow: "hidden",
@@ -194,8 +194,8 @@ export function PublicPlayerCard({ config, player, division }: Props) {
             onClick={handleShareDiscord}
             style={{
               display: "flex", alignItems: "center", gap: 8, padding: "10px 20px",
-              background: "#5865F2", border: "none",
-              borderRadius: 8, color: "#fff", cursor: "pointer",
+              background: "var(--accent)", border: "none",
+              borderRadius: 8, color: "var(--bg)", cursor: "pointer",
               fontFamily: "'Bebas Neue', sans-serif", fontSize: 16
             }}
           >

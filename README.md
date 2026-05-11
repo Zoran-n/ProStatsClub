@@ -6,6 +6,8 @@
 
 Application desktop pour suivre les statistiques de votre club EA FC Pro Clubs. Construite avec **Tauri 2** (Rust) + **React** + **TypeScript**.
 
+> **v0.7.2** — Refonte Header & Thème Classic : header contextuel dynamique (thème-aware), palette "Classic" Anthracite/Bleu par défaut, boutons de vue textualisés, actions Discord déplacées dans le bandeau club. Voir [CHANGELOG.md](CHANGELOG.md) pour les détails.
+
 ---
 
 ## Fonctionnalités

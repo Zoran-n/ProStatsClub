@@ -1,7 +1,7 @@
 {
   "name": "proclubs-tauri",
   "private": true,
-  "version": "0.6.8",
+  "version": "0.7.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -28,6 +28,7 @@
     "@tauri-apps/plugin-process": "^2.3.1",
     "@tauri-apps/plugin-updater": "^2.10.0",
     "@types/react-window": "^1.8.8",
+    "framer-motion": "^12.38.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.7",

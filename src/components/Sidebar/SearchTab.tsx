@@ -347,7 +347,7 @@ export function SearchTab({ compact }: { compact?: boolean } = {}) {
             shareOverview();
           }}
           disabled={sharing}
-          style={{ width: "100%", padding: "7px", background: "rgba(88,101,242,0.1)", border: "1px solid rgba(88,101,242,0.25)", color: sharing ? "var(--muted)" : "#5865f2", borderRadius: 4, fontFamily: "'Bebas Neue', sans-serif", fontSize: 12, cursor: sharing ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4, marginBottom: 6, opacity: sharing ? 0.6 : 1, transition: "all 0.15s" }}>
+          style={{ width: "100%", padding: "7px", background: "rgba(0,242,255,0.08)", border: "1px solid rgba(0,242,255,0.2)", color: sharing ? "var(--muted)" : "var(--accent)", borderRadius: 4, fontFamily: "'Bebas Neue', sans-serif", fontSize: 12, cursor: sharing ? "default" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4, marginBottom: 6, opacity: sharing ? 0.6 : 1, transition: "all 0.15s" }}>
           <Send size={12} /> {sharing ? "ENVOI…" : "STATS DISCORD"}
         </button>
         <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--muted)", cursor: "pointer" }}>

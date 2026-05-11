@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { TitleBar } from "./components/Layout/TitleBar";
-import { GuildBar } from "./components/Layout/GuildBar";
+import { AppBar } from "./components/Layout/AppBar";
 import { Sidebar } from "./components/Layout/Sidebar";
 import { MainPanel } from "./components/Layout/MainPanel";
 import { DevPanel } from "./components/DevPanel/DevPanel";
@@ -20,7 +20,7 @@ const win = getCurrentWindow();
 
 function App() {
   const {
-    loadSettings, theme, showGrid, showAnimations, darkMode, fontSize,
+    loadSettings, theme, palettePreset, showGrid, showAnimations, darkMode, fontSize,
     addRawLog, toggleDevPanel, showDevPanel, setProxyInfo,
     setSidebarTab, setActiveTab, onboarded, settingsLoaded, toggleGlobalSearch,
     navLayout, customShortcuts, scheduledNotifications, addToast,
@@ -33,6 +33,7 @@ function App() {
   useEffect(() => {
     const root = document.documentElement;
     root.setAttribute("data-theme", theme);
+    if (palettePreset) root.setAttribute("data-palette", palettePreset);
     document.documentElement.style.setProperty("--fs", `${fontSize}px`);
     root.toggleAttribute("data-no-grid", !showGrid);
     root.toggleAttribute("data-no-anim", !showAnimations);
@@ -168,7 +169,7 @@ function App() {
     <div style={{ display: "flex", flexDirection: "column", width: "100vw", height: "100vh", overflow: "hidden", background: "var(--bg)", position: "relative" }}>
       <a href="#main-content" className="skip-link">Skip to content</a>
       <div id="grid-overlay" />
-      <TitleBar showDiscordLayout />
+      <TitleBar showAppBar />
       {isOffline && (
         <div style={{
           background: "var(--gold)", color: "#000", padding: "3px 12px",
@@ -180,7 +181,7 @@ function App() {
         </div>
       )}
       <div style={{ display: "flex", flex: 1, overflow: "hidden", position: "relative", zIndex: 2 }}>
-        <GuildBar />
+        <AppBar />
         {navLayout === "horizontal" ? (
           <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
             <Sidebar />
