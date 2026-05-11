@@ -512,17 +512,12 @@ input[type="range"]::-webkit-slider-thumb { appearance: none; width: 14px; heigh
 /* ─── Glass Card ─────────────────────────────────────────────────────────── */
 .glass-card {
   position: relative;
-  background: rgba(13, 13, 16, 0.95); /* fallback sans backdrop-filter */
-  border: 1px solid var(--border);
+  background: var(--tile-bg, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--border-glass, rgba(255, 255, 255, 0.08));
   border-radius: var(--radius);
   overflow: hidden;
-}
-@supports (backdrop-filter: blur(12px)) {
-  .glass-card {
-    background: rgba(13, 13, 16, 0.72);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-  }
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 /* Gradient border subtil via mask */
 .glass-card::before {
