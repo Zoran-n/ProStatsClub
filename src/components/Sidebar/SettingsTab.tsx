@@ -13,13 +13,14 @@ import type { Lang } from "../../i18n";
 // ─── Shared tile styles ───────────────────────────────────────────────────────
 
 const TILE: React.CSSProperties = {
-  background: "var(--card)",
-  border: "1px solid var(--border)",
+  background: "var(--tile-bg)",
+  border: "1px solid var(--border-glass)",
   borderRadius: 8,
   padding: "16px",
   display: "flex",
   flexDirection: "column",
   gap: 12,
+  backdropFilter: "blur(8px)",
 };
 
 const TILE_TITLE: React.CSSProperties = {

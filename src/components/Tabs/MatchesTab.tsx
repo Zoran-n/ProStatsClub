@@ -309,8 +309,9 @@ export function MatchesTab() {
   }, [allList, getResult, currentClub?.id]);
 
   const SIDE_TILE: React.CSSProperties = {
-    background: "var(--card)", border: "1px solid var(--border)",
+    background: "var(--tile-bg)", border: "1px solid var(--border-glass)",
     borderRadius: 8, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10,
+    backdropFilter: "blur(8px)",
   };
   const SIDE_LABEL: React.CSSProperties = {
     fontSize: 9, color: "var(--muted)", fontFamily: "'Bebas Neue', sans-serif",

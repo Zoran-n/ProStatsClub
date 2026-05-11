@@ -30,13 +30,14 @@ function timeAgo(date: Date): string {
 // ─── Tile wrapper ─────────────────────────────────────────────────────────────
 
 const TILE: React.CSSProperties = {
-  background: "var(--card)",
-  border: "1px solid var(--border)",
+  background: "var(--tile-bg)",
+  border: "1px solid var(--border-glass)",
   borderRadius: 10,
   padding: "16px 18px",
   display: "flex",
   flexDirection: "column",
   gap: 12,
+  backdropFilter: "blur(8px)",
 };
 
 const TILE_LABEL: React.CSSProperties = {
