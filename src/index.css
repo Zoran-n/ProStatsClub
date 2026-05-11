@@ -662,5 +662,16 @@ input[type="range"]::-webkit-slider-thumb { appearance: none; width: 14px; heigh
   }
 }
 
+/* ─── ProfilePanel bento responsive ─────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .profile-panel-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .profile-panel-grid > * {
+    grid-column: 1 !important;
+    grid-row: auto !important;
+  }
+}
+
 
 
