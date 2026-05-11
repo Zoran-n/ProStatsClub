@@ -1661,7 +1661,7 @@ export function SessionTab() {
         }} onClick={() => setPdfPrompt(null)}>
           <div onClick={(e) => e.stopPropagation()} style={{
             background: "var(--card)", border: "1px solid var(--border)",
-            borderRadius: 12, padding: 24, width: 340, textAlign: "center",
+            borderRadius: 8, padding: 24, width: 340, textAlign: "center",
           }}>
             <Download size={28} style={{ color: "var(--accent)", marginBottom: 8 }} />
             <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, color: "var(--text)",

@@ -1,6 +1,6 @@
 import { useMemo, useRef, useEffect, useState, useCallback } from "react";
 import {
-  Trophy, Target, Star, TrendingUp, Shield, Swords, FileText,
+  Trophy, Star, Swords, FileText,
   Zap, Activity, Terminal, Trash2, ChevronDown, ChevronUp,
   AlertCircle, CheckCircle2, Clock,
 } from "lucide-react";

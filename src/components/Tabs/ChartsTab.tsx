@@ -4,9 +4,11 @@ import {
   PieChart, Pie, Cell, Label, ResponsiveContainer,
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   BarChart, Bar, RadarChart, Radar, PolarGrid, PolarAngleAxis,
+  AreaChart, Area,
 } from "recharts";
 import { useAppStore } from "../../store/useAppStore";
 import { ExportModal } from "../Modals/ExportModal";
+import { GlassCard } from "../UI/GlassCard";
 import { getSeasonHistory, getLeaderboard } from "../../api/tauri";
 import { useT } from "../../i18n";
 import type { Match, Player } from "../../types";
@@ -42,11 +44,28 @@ interface LeaderRow { rank: number; name: string; wins: number; losses: number; 
 
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`rounded-lg p-4 ${className}`} style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+    <GlassCard className={className} padding="16px">
       {children}
-    </div>
+    </GlassCard>
   );
 }
+
+/* IDs de gradient SVG uniques pour éviter les conflits de rendu ──────────── */
+const GRAD_IDS = {
+  radar:  "ct-radar-fill",
+  poss:   "ct-poss-area",
+  sr:     "ct-sr-area",
+  line:   "ct-line-area",
+} as const;
+
+/* Tooltip SaaS minimaliste ─────────────────────────────────────────────────── */
+const TOOLTIP_STYLE = {
+  background: "var(--surface)",
+  border: "1px solid var(--border)",
+  borderRadius: 6,
+  fontSize: 11,
+  boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+};
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return <p className="category-header">{children}</p>;
@@ -61,9 +80,6 @@ function NoData({ text = "Aucune donnée", icon: Icon = BarChart2 }: { text?: st
   );
 }
 
-const TOOLTIP_STYLE = {
-  background: "var(--card)", border: "1px solid var(--border)", borderRadius: 4, fontSize: 11,
-};
 const TOOLTIP_LABEL = { color: "var(--muted)" };
 
 /* ─── Donut ───────────────────────────────────────────────────────────────── */
@@ -87,7 +103,7 @@ function DonutChart({ data, centerValue, centerSub }: {
     <ResponsiveContainer width="100%" height={160}>
       <PieChart>
         <Pie data={safe} cx="50%" cy="50%" innerRadius={48} outerRadius={70}
-          dataKey="value" startAngle={90} endAngle={-270} strokeWidth={2} stroke="#2b2d31">
+          dataKey="value" startAngle={90} endAngle={-270} strokeWidth={2} stroke="var(--border)">
           {safe.map((d, i) => <Cell key={i} fill={d.color} />)}
           <Label content={(props: unknown) => {
             const p = props as { viewBox?: { cx: number; cy: number } };
@@ -208,15 +224,15 @@ function TeamRadarSection({ matches, clubId }: { matches: Match[]; clubId: strin
           <ResponsiveContainer width="100%" height={190}>
             <RadarChart data={data} margin={{ top: 8, right: 24, left: 24, bottom: 8 }}>
               <defs>
-                <linearGradient id="radarFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.35} />
-                  <stop offset="100%" stopColor="#22d3ee" stopOpacity={0.05} />
+                <linearGradient id={GRAD_IDS.radar} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#00f2ff" stopOpacity={0.3} />
+                  <stop offset="100%" stopColor="#00f2ff" stopOpacity={0.03} />
                 </linearGradient>
               </defs>
-              <PolarGrid stroke="#3f4147" />
-              <PolarAngleAxis dataKey="label" tick={{ fill: "#949ba4", fontSize: 9, fontFamily: "'Bebas Neue', sans-serif" }} />
-              <Radar name="Équipe" dataKey="value" stroke="#22d3ee" strokeWidth={2}
-                fill="url(#radarFill)" fillOpacity={1} />
+              <PolarGrid stroke="rgba(255,255,255,0.06)" />
+              <PolarAngleAxis dataKey="label" tick={{ fill: "var(--muted)", fontSize: 9, fontFamily: "'Bebas Neue', sans-serif" }} />
+              <Radar name="Équipe" dataKey="value" stroke="#00f2ff" strokeWidth={2}
+                fill={`url(#${GRAD_IDS.radar})`} fillOpacity={1} />
               <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={TOOLTIP_LABEL}
                 formatter={(v: unknown) => [`${v} / 100`, "Score"]} />
             </RadarChart>
@@ -254,21 +270,22 @@ function PossessionTrendSection({ matches, clubId }: { matches: Match[]; clubId:
         ? <NoData text="Données de possession non disponibles" icon={Activity} />
         : (
           <ResponsiveContainer width="100%" height={130}>
-            <LineChart data={data} margin={{ top: 4, right: 8, left: -28, bottom: 0 }}>
+            <AreaChart data={data} margin={{ top: 4, right: 8, left: -28, bottom: 0 }}>
               <defs>
-                <linearGradient id="possGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.3} />
-                  <stop offset="100%" stopColor="#22d3ee" stopOpacity={0} />
+                <linearGradient id={GRAD_IDS.poss} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#00f2ff" stopOpacity={0.25} />
+                  <stop offset="100%" stopColor="#00f2ff" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <XAxis dataKey="n" tick={{ fontSize: 8, fill: "#949ba4" }} axisLine={false} tickLine={false} />
-              <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tick={{ fontSize: 8, fill: "#949ba4" }} axisLine={false} tickLine={false} />
-              <CartesianGrid strokeDasharray="3 3" stroke="#3f4147" />
+              <XAxis dataKey="n" tick={{ fontSize: 8, fill: "var(--muted)" }} axisLine={false} tickLine={false} />
+              <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tick={{ fontSize: 8, fill: "var(--muted)" }} axisLine={false} tickLine={false} />
+              <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.04)" vertical={false} />
               <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={TOOLTIP_LABEL}
                 formatter={(v: unknown) => [`${v}%`, "Possession"]} />
-              <Line type="monotone" dataKey="poss" stroke="#22d3ee" strokeWidth={2}
-                dot={{ fill: "#22d3ee", r: 3 }} activeDot={{ r: 5 }} />
-            </LineChart>
+              <Area type="monotone" dataKey="poss" stroke="#00f2ff" strokeWidth={2}
+                fill={`url(#${GRAD_IDS.poss})`}
+                dot={{ fill: "#00f2ff", r: 2, strokeWidth: 0 }} activeDot={{ r: 4, fill: "#00f2ff" }} />
+            </AreaChart>
           </ResponsiveContainer>
         )}
     </Card>
@@ -367,7 +384,7 @@ function DayHourHeatmapSection({ matches, clubId }: { matches: Match[]; clubId: 
                         style={{
                           border: "1px solid var(--border)",
                           background: wr < 0
-                            ? "#2b2d31"
+                            ? "var(--surface)"
                             : `rgba(34,211,238,${0.08 + intensity * 0.82})`,
                         }}
                       >
@@ -491,7 +508,7 @@ function FormCalendarSection({ matches, clubId }: { matches: Match[]; clubId: st
                   className={`rounded-sm transition-transform hover:scale-125 cursor-default border border-white/[0.03] ${resCls}`}
                   style={{
                     height: 11,
-                    background: !cell.result && !isFuture ? "#2b2d31" : isFuture ? "transparent" : undefined,
+                    background: !cell.result && !isFuture ? "var(--surface)" : isFuture ? "transparent" : undefined,
                     opacity: !cell.result && !isFuture ? 0.35 : 1,
                     gridColumn: ci + 2, gridRow: di + 2,
                   }}

@@ -1,5 +1,5 @@
 import { fetch } from "@tauri-apps/plugin-http";
-import { addDiscordLog } from "../components/Tabs/MyProfilePage";
+import { addDiscordLog } from "./discordLogger";
 
 interface DiscordField { name: string; value: string; inline?: boolean }
 

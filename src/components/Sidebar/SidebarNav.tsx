@@ -7,10 +7,8 @@ const BASE_TABS: { id: SidebarTab; label: string }[] = [
 ];
 
 export function SidebarNav() {
-  const { sidebarTab, setSidebarTab, eaProfile } = useAppStore();
-  const TABS = eaProfile?.clubId
-    ? [...BASE_TABS, { id: "myprofile" as SidebarTab, label: "PROFIL" }]
-    : BASE_TABS;
+  const { sidebarTab, setSidebarTab } = useAppStore();
+  const TABS = BASE_TABS;
   return (
     <div style={{ display: "flex", borderBottom: "1px solid var(--border)", flexShrink: 0 }}>
       {TABS.map((t) => (

@@ -331,9 +331,9 @@ export function SettingsTab() {
           >↺ Tout réinitialiser</button>
           {([
             { id: "accent",  label: "Accent",      value: customAccent,  setter: setCustomAccent,  inputId: "custom-color-picker",         default: "#00d4ff" },
-            { id: "bg",      label: "Background",  value: customBg,      setter: setCustomBg,      inputId: "custom-bg-picker",            default: "#1e1f22" },
-            { id: "surface", label: "Surface",     value: customSurface, setter: setCustomSurface, inputId: "custom-surface-picker",       default: "#2b2d31" },
-            { id: "card",    label: "Card",        value: customCard,    setter: setCustomCard,    inputId: "custom-card-picker",          default: "#313338" },
+            { id: "bg",      label: "Background",  value: customBg,      setter: setCustomBg,      inputId: "custom-bg-picker",            default: "#030303" },
+            { id: "surface", label: "Surface",     value: customSurface, setter: setCustomSurface, inputId: "custom-surface-picker",       default: "#0a0a0b" },
+            { id: "card",    label: "Card",        value: customCard,    setter: setCustomCard,    inputId: "custom-card-picker",          default: "#0d0d10" },
           ] as const).map((row) => (
             <div key={row.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
               <span style={{ fontSize: 11, color: "var(--muted)", width: 68 }}>{row.label}</span>

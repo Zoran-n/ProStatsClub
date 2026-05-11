@@ -56,7 +56,7 @@ export function ExportModal({ type, pngSourceEl, csvHeaders, csvRows, defaultFil
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.82)", zIndex: 200,
       display: "flex", alignItems: "center", justifyContent: "center" }}
       onClick={onClose}>
-      <div style={{ background: "var(--card)", borderRadius: 12, padding: 24, width: 560,
+      <div style={{ background: "var(--card)", borderRadius: 8, padding: 24, width: 560,
         maxHeight: "88vh", display: "flex", flexDirection: "column", gap: 16,
         border: "1px solid var(--border)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)" }}
         onClick={(e) => e.stopPropagation()}>
