@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { BarChart2, Trophy, Search, Sparkles, Settings, Send, Pencil, X, Minimize2, Megaphone, ListChecks, BookOpen, LayoutDashboard } from "lucide-react";
 import { GlassCard } from "../UI/GlassCard";
 import { useAppStore } from "../../store/useAppStore";
+import { ClubOverview } from "../Tabs/ClubOverview";
 import { PlayersTab } from "../Tabs/PlayersTab";
 import { MatchesTab } from "../Tabs/MatchesTab";
 import { ChartsTab } from "../Tabs/ChartsTab";
@@ -316,6 +317,7 @@ export function MainPanel() {
   };
 
   const TAB_LABELS: Record<string, string> = {
+    club: "Vue Club",
     players: t("nav.players"),
     matches: t("nav.matches"),
     charts: t("nav.charts"),
@@ -767,6 +769,7 @@ export function MainPanel() {
           />
         ) : (
           <div key={activeTab} className="tab-content" style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+            {activeTab === "club"     && <ClubOverview />}
             {activeTab === "players"  && <PlayersTab />}
             {activeTab === "matches"  && <MatchesTab />}
             {activeTab === "charts"   && <ChartsTab />}

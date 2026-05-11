@@ -6,7 +6,7 @@ import type { Lang } from "../i18n";
 import { sendDiscordWebhook } from "../api/discord";
 import { buildSessionSummaryEmbed } from "../utils/discordEmbeds";
 
-export type ActiveTab = "players" | "matches" | "charts" | "session" | "compare";
+export type ActiveTab = "club" | "players" | "matches" | "charts" | "session" | "compare";
 export type SidebarTab = "search" | "favs" | "settings" | "profile";
 
 // Injects a <style> tag that proportionally overrides hard-coded inline font-size px values.
@@ -209,7 +209,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   settingsLoaded: false,
   proxyUrl: "",
   isLoading: false, error: null,
-  activeTab: "players", sidebarTab: "search",
+  activeTab: "club", sidebarTab: "search",
   activeSession: null, viewingSession: null,
   logs: ["Prêt."],
   rawLogs: [],
