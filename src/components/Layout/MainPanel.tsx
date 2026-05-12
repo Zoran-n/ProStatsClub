@@ -7,7 +7,6 @@ import { PlayersTab } from "../Tabs/PlayersTab";
 import { MatchesTab } from "../Tabs/MatchesTab";
 import { ChartsTab } from "../Tabs/ChartsTab";
 import { SessionTab } from "../Tabs/SessionTab";
-import { CompareTab } from "../Sidebar/CompareTab";
 import { SettingsTab } from "../Sidebar/SettingsTab";
 import { ProfilePanel } from "../Modals/ProfilePanel";
 import { Spinner } from "../UI/Spinner";
@@ -774,7 +773,6 @@ export function MainPanel() {
             {activeTab === "matches"  && <MatchesTab />}
             {activeTab === "charts"   && <ChartsTab />}
             {activeTab === "session"  && <SessionTab />}
-            {activeTab === "compare"  && <CompareTab />}
           </div>
         )}
       </div>

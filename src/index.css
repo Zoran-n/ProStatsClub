@@ -740,7 +740,47 @@ input[type="range"]::-webkit-slider-thumb { appearance: none; width: 14px; heigh
   }
 }
 
-/* ─── ClubOverview bento grid ────────────────────────────────────────────── */
+/* ─── Session dashboard 2-col ───────────────────────────────────────────── */
+.session-dashboard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 36%);
+  gap: 12px;
+  height: 100%;
+  overflow: hidden;
+}
+.session-left-col {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 0 16px 16px;
+}
+.session-right-col {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 16px 16px 0;
+  position: sticky;
+  top: 0;
+  max-height: 100%;
+}
+@media (max-width: 1024px) {
+  .session-dashboard {
+    grid-template-columns: 1fr !important;
+    overflow: auto;
+  }
+  .session-left-col {
+    padding: 16px;
+  }
+  .session-right-col {
+    position: static;
+    padding: 0 16px 16px;
+    max-height: none;
+  }
+}
+
+/* ─── ClubOverview bento grid ───────────────────────────────────────────── */
 .club-overview-grid {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
