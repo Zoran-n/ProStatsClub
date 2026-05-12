@@ -78,83 +78,6 @@ export function extractMatchEvents(match: Match, clubId: string): MatchEvent[] {
   return events;
 }
 
-/* ─── Rating badge ─── */
-function RatingBadge({ rating }: { rating: number }) {
-  const c = rating >= 7.5 ? "#23a559" : rating >= 6.5 ? "#f59e0b" : "#da373c";
-  return (
-    <span className="inline-flex items-center justify-center text-sm font-bold rounded-full"
-      style={{ width: 38, height: 38, background: c + "22", color: c, border: `1px solid ${c}55` }}>
-      {rating > 0 ? rating.toFixed(1) : "—"}
-    </span>
-  );
-}
-
-/* ─── Player initials avatar ─── */
-function Avatar({ name }: { name: string }) {
-  const initials = name
-    .split(/[\s_-]+/)
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? "")
-    .join("");
-  return (
-    <div className="flex items-center justify-center flex-shrink-0 rounded-full"
-      style={{ width: 34, height: 34, background: "var(--surface)", border: "1px solid var(--border)" }}>
-      <span className="text-xs font-bold tracking-wide" style={{ color: "var(--text)" }}>{initials || "?"}</span>
-    </div>
-  );
-}
-
-/* ─── Event chip ─── */
-function EventChip({ ev, isVictory }: { ev: MatchEvent; isVictory: boolean }) {
-  if (ev.type === "motm") {
-    if (!isVictory) return null;
-    return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold" style={{ border: "1px solid #f59e0b66", background: "#f59e0b15", color: "#fcd34d" }}>
-        <Star size={11} className="fill-yellow-400 text-yellow-400" />
-        {ev.player}
-        <span className="text-[9px] font-normal opacity-70 tracking-wider">MOTM</span>
-      </span>
-    );
-  }
-
-  if (ev.type === "goal") {
-    return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold" style={{ border: "1px solid var(--accent)", background: "var(--active)", color: "var(--accent)" }}>
-        <span className="text-sm leading-none">⚽</span>
-        {ev.player}
-        <span className="text-[9px] font-normal opacity-60 tracking-wider">But</span>
-      </span>
-    );
-  }
-
-  if (ev.type === "assist") {
-    return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold" style={{ border: "1px solid #8b5cf655", background: "#8b5cf615", color: "#c4b5fd" }}>
-        <span className="text-sm leading-none font-bold italic">A</span>
-        {ev.player}
-        <span className="text-[9px] font-normal opacity-60 tracking-wider">Passe déc.</span>
-      </span>
-    );
-  }
-
-  if (ev.type === "card") {
-    const isRed = ev.detail?.startsWith("red");
-    const count = ev.detail?.split(":")[1] ?? "1";
-    return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold"
-        style={isRed
-          ? { border: "1px solid #da373c55", background: "#da373c15", color: "#fca5a5" }
-          : { border: "1px solid #f59e0b55", background: "#f59e0b15", color: "#fcd34d" }}>
-        <span className={`inline-block w-2.5 h-3.5 rounded-sm ${isRed ? "bg-red-500" : "bg-yellow-400"}`} />
-        {count} {ev.player}
-        <span className="text-[9px] font-normal opacity-60 tracking-wider">{isRed ? "Rouge" : "Jaune"}</span>
-      </span>
-    );
-  }
-
-  return null;
-}
-
 /* ─── Main component ─── */
 export function MatchModal({ match, clubId, onClose }: { match: Match; clubId: string; onClose: () => void }) {
   const t = useT();
@@ -311,18 +234,6 @@ export function MatchModal({ match, clubId, onClose }: { match: Match; clubId: s
         </div>
 
         <div className="px-6 pb-6 space-y-4 mt-4">
-          {/* ── Highlights / Event chips ─────────────────────── */}
-          {events.length > 0 && (
-            <div>
-              <p className="category-header mb-2">Highlights</p>
-              <div className="flex flex-wrap gap-2">
-                {events.map((ev, i) => (
-                  <EventChip key={i} ev={ev} isVictory={isVictory} />
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* ── Team stats ───────────────────────────────────── */}
           {teamStats.length > 0 && (
             <div>
@@ -385,12 +296,16 @@ export function MatchModal({ match, clubId, onClose }: { match: Match; clubId: s
                       gridTemplateColumns: "2.25rem 1fr 2.5rem 2.5rem 2.5rem 3rem 2.5rem" + (hasTackles ? " 2.5rem" : "") + (hasCards ? " 2.5rem" : "") + (isVictory ? " 2rem" : ""),
                     }}
                   >
-                    <Avatar name={p.name} />
+                    <div className="flex items-center justify-center text-[11px] font-['Bebas_Neue'] tracking-wide" style={{ color: "var(--muted)" }}>
+                      {i + 1}
+                    </div>
                     <div className="min-w-0">
                       <span className="text-sm font-semibold truncate block" style={{ color: "var(--text)" }}>{p.name}</span>
                     </div>
                     <div className="flex justify-center">
-                      <RatingBadge rating={p.rating} />
+                      <span className="font-['Bebas_Neue'] text-base font-bold leading-none" style={{ color: p.rating >= 7.5 ? "#23a559" : p.rating >= 6.5 ? "#f59e0b" : p.rating > 0 ? "#da373c" : "var(--muted)" }}>
+                        {p.rating > 0 ? p.rating.toFixed(1) : "—"}
+                      </span>
                     </div>
                     <div className="text-center text-sm font-bold" style={{ color: "var(--accent)" }}>{p.goals || <span className="font-normal" style={{ color: "var(--muted)" }}>—</span>}</div>
                     <div className="text-center text-sm font-bold" style={{ color: "#c4b5fd" }}>{p.assists || <span className="font-normal" style={{ color: "var(--muted)" }}>—</span>}</div>

@@ -1,8 +1,8 @@
 import { useRef, useState, useMemo } from "react";
 import {
-  Play, Square, Trophy, Trash2, Archive, Download, Crown, Target,
-  Handshake, Send, Info, X, Tag, FileText, Flag, TrendingUp,
-  Copy, Merge, AlertTriangle, Layers,
+  Play, Square, Trash2, Archive, Download,
+  Send, Info, X, Tag, FileText, Flag, TrendingUp,
+  Merge, AlertTriangle, Layers,
 } from "lucide-react";
 import {
   AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -97,30 +97,6 @@ const BTN: React.CSSProperties = {
 
 const PRESET_TAGS = ["Tournoi", "Division", "Soirée", "Entraînement", "Friendly", "Ranked"];
 
-// ── Sub-components ─────────────────────────────────────────────────────────
-
-function KpiGrid({ kpis, t }: { kpis: ReturnType<typeof sessionKpis>; t: (key: string) => string }) {
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6, marginTop: 10 }}>
-      {[
-        { label: t("players.goals"),   value: kpis.goals   },
-        { label: t("players.assists"), value: kpis.assists },
-        { label: t("players.passes"),  value: kpis.passes  },
-        { label: t("players.tackles"), value: kpis.tackles },
-        { label: t("session.motm"),    value: kpis.motm    },
-      ].map(({ label, value }) => (
-        <div key={label} style={{ textAlign: "center", background: "var(--bg)", borderRadius: 8,
-          padding: "8px 4px", border: "1px solid var(--border)" }}>
-          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, color: "var(--accent)", lineHeight: 1 }}>
-            {value}
-          </div>
-          <div style={{ fontSize: 9, color: "var(--muted)", marginTop: 3, letterSpacing: "0.06em" }}>{label}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 // ── Main component ──────────────────────────────────────────────────────────
 
 export function SessionTab() {
@@ -131,7 +107,7 @@ export function SessionTab() {
     deleteSession, archiveSession, updateSession, setActiveSessionGoal,
     setActiveSessionAdvancedGoals,
     discordWebhook, addToast,
-    sessionTemplates, saveSessionTemplate, deleteSessionTemplate, mergeSessions,
+    sessionTemplates, deleteSessionTemplate, mergeSessions,
     autoPostSession, setAutoPostSession,
   } = useAppStore();
 
@@ -147,16 +123,12 @@ export function SessionTab() {
   const [noteValue, setNoteValue] = useState("");
   const [editingTagsId, setEditingTagsId] = useState<string | null>(null);
   const [goalInput, setGoalInput] = useState<string>("");
-  const [showAdvGoals, setShowAdvGoals] = useState(false);
-  const [advMaxLossesInput, setAdvMaxLossesInput] = useState<string>("");
-  const [advMinRatingInput, setAdvMinRatingInput] = useState<string>("");
+  const [advGoalsInput, setAdvGoalsInput] = useState<string>("");
+  const [advAssistsInput, setAdvAssistsInput] = useState<string>("");
   // Session comparison
   const [showCompare, setShowCompare] = useState(false);
   const [compareA, setCompareA] = useState<string>("");
   const [compareB, setCompareB] = useState<string>("");
-  // Templates
-  const [showTemplates, setShowTemplates] = useState(false);
-  const [tplNameInput, setTplNameInput] = useState("");
   // Merge sessions
   const [showMerge, setShowMerge] = useState(false);
   const [mergeSelected, setMergeSelected] = useState<Set<string>>(new Set());
@@ -351,11 +323,6 @@ export function SessionTab() {
     () => activeSession ? sessionKpis(activeSession.matches, activeSession.clubId) : null,
     [activeSession],
   );
-  const mvps = useMemo(
-    () => activeSession && activeSession.matches.length > 0
-      ? sessionMvpStats(activeSession.matches, activeSession.clubId) : null,
-    [activeSession],
-  );
   const activeWLD = useMemo(
     () => activeSession ? sessionWLD(activeSession.matches, activeSession.clubId) : null,
     [activeSession],
@@ -495,368 +462,32 @@ export function SessionTab() {
     <div ref={contentRef} className="session-dashboard">
       <div className="session-left-col">
 
-      {/* ── Active session ─────────────────────────────────────────────── */}
-      {activeSession ? (
-        <div style={{ background: "rgba(0,212,255,0.06)", border: "1px solid rgba(0,212,255,0.2)",
-          borderRadius: 10, padding: 14 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div>
-              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, color: "var(--accent)",
-                letterSpacing: "0.1em" }}>
-                {activeSession.clubName}
-              </div>
-              <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>
-                {new Date(activeSession.date).toLocaleString()} · {activeSession.matches.length} match{activeSession.matches.length !== 1 ? "s" : ""}
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: 6 }}>
-              {discordWebhook && (
-                <button
-                  onClick={() => { setAutoPostSession(!autoPostSession); persistSettings(); }}
-                  title={autoPostSession ? "Post auto Discord activé — cliquer pour désactiver" : "Activer le post Discord automatique à la fin de session"}
-                  style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 8px",
-                    background: autoPostSession ? "rgba(88,101,242,0.2)" : "var(--card)",
-                    border: `1px solid ${autoPostSession ? "rgba(88,101,242,0.5)" : "var(--border)"}`,
-                    borderRadius: 6, color: autoPostSession ? "#8b9cf4" : "var(--muted)",
-                    fontSize: 10, cursor: "pointer", transition: "all 0.15s" }}
-                >
-                  <Send size={10} />
-                  <span style={{ fontSize: 9, letterSpacing: "0.04em" }}>AUTO</span>
-                </button>
-              )}
-              {discordWebhook && activeSession.matches.length > 0 && (
-                <button onClick={shareLiveToDiscord}
-                  disabled={sharingId === activeSession.id}
-                  title="Partager le bilan en cours"
-                  style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px",
-                    background: "rgba(88,101,242,0.15)", border: "1px solid rgba(88,101,242,0.35)",
-                    borderRadius: 7, color: "#8b9cf4", fontSize: 12, cursor: "pointer",
-                    opacity: sharingId === activeSession.id ? 0.5 : 1 }}>
-                  <Send size={12} /> Discord
-                </button>
-              )}
-              <button onClick={handleStop} style={{ display: "flex", alignItems: "center", gap: 5,
-                padding: "6px 12px", background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)",
-                borderRadius: 7, color: "#ef4444", fontSize: 12, cursor: "pointer" }}>
-                <Square size={12} /> {t("session.end")}
-              </button>
-            </div>
-          </div>
-
-          {/* Objectifs — simple + avancés */}
-          <div style={{ marginTop: 10 }}>
-            {/* Ligne principale : victoires cibles */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <Flag size={13} style={{ color: "var(--gold)", flexShrink: 0 }} />
-              <span style={{ fontSize: 11, color: "var(--muted)", whiteSpace: "nowrap" }}>
-                {t("session.goalLabel")} :
-              </span>
-              <input
-                type="number" min={1}
-                value={goalInput !== "" ? goalInput : (activeSession.goal ?? "")}
-                placeholder="—"
-                onChange={(e) => setGoalInput(e.target.value)}
-                onBlur={() => {
-                  const v = parseInt(goalInput);
-                  setActiveSessionGoal(isNaN(v) ? undefined : v);
-                  setGoalInput("");
-                }}
-                style={{ width: 48, background: "var(--bg)", border: "1px solid var(--border)",
-                  color: "var(--text)", padding: "3px 6px", borderRadius: 4, fontSize: 12,
-                  outline: "none", textAlign: "center" }}
-              />
-              {activeSession.goal != null && activeWLD && (
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-                    <span style={{ fontSize: 10, color: "var(--muted)" }}>{activeWLD.w} / {activeSession.goal} {t("session.goalProgress")}</span>
-                    <span style={{ fontSize: 10, color: activeWLD.w >= activeSession.goal ? "var(--green)" : "var(--accent)" }}>
-                      {Math.min(100, Math.round((activeWLD.w / activeSession.goal) * 100))}%
-                    </span>
-                  </div>
-                  <div style={{ height: 5, background: "var(--border)", borderRadius: 3, overflow: "hidden" }}>
-                    <div style={{ height: "100%", borderRadius: 3,
-                      width: `${Math.min(100, (activeWLD.w / activeSession.goal) * 100)}%`,
-                      background: activeWLD.w >= activeSession.goal ? "var(--green)" : "var(--accent)",
-                      transition: "width 0.4s ease" }} />
-                  </div>
-                </div>
-              )}
-              <button onClick={() => setShowAdvGoals((v) => !v)}
-                title="Objectifs avancés"
-                style={{ background: "none", border: "none", cursor: "pointer", padding: "2px 4px",
-                  color: showAdvGoals ? "var(--accent)" : "var(--muted)", fontSize: 14, lineHeight: 1 }}>
-                {showAdvGoals ? "▾" : "▸"}
-              </button>
-            </div>
-
-            {/* Objectifs avancés */}
-            {showAdvGoals && (
-              <div style={{ marginTop: 8, padding: "10px 12px", background: "var(--bg)",
-                borderRadius: 8, border: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: 8 }}>
-                <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: "0.1em",
-                  fontFamily: "'Bebas Neue', sans-serif" }}>OBJECTIFS AVANCÉS</div>
-
-                {/* Max défaites */}
-                {(() => {
-                  const maxL = activeSession.advancedGoals?.maxLosses;
-                  const achieved = maxL != null && activeWLD ? activeWLD.l <= maxL : false;
-                  return (
-                    <div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-                        <span style={{ fontSize: 11, color: "var(--muted)", flex: 1 }}>Défaites max :</span>
-                        <input type="number" min={0}
-                          value={advMaxLossesInput !== "" ? advMaxLossesInput : (maxL ?? "")}
-                          placeholder="—"
-                          onChange={(e) => setAdvMaxLossesInput(e.target.value)}
-                          onBlur={() => {
-                            const v = parseInt(advMaxLossesInput);
-                            setActiveSessionAdvancedGoals({ ...activeSession.advancedGoals, maxLosses: isNaN(v) ? undefined : v });
-                            setAdvMaxLossesInput("");
-                          }}
-                          style={{ width: 40, background: "var(--card)", border: "1px solid var(--border)",
-                            color: "var(--text)", padding: "2px 5px", borderRadius: 4, fontSize: 11,
-                            outline: "none", textAlign: "center" }}
-                        />
-                        {maxL != null && activeWLD && (
-                          <span style={{ fontSize: 10, color: achieved ? "var(--green)" : "var(--red)", fontWeight: 700 }}>
-                            {activeWLD.l}D {achieved ? "✓" : "✗"}
-                          </span>
-                        )}
-                      </div>
-                      {maxL != null && activeWLD && (
-                        <div style={{ height: 4, background: "var(--border)", borderRadius: 2, overflow: "hidden" }}>
-                          <div style={{ height: "100%", borderRadius: 2,
-                            width: `${Math.min(100, (activeWLD.l / Math.max(1, maxL + 1)) * 100)}%`,
-                            background: achieved ? "var(--green)" : "var(--red)", transition: "width 0.4s ease" }} />
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
-
-                {/* Note moy min */}
-                {(() => {
-                  const minR = activeSession.advancedGoals?.minRating;
-                  const avgRating = (() => {
-                    if (!activeSession.matches.length) return null;
-                    const allRatings: number[] = [];
-                    for (const m of activeSession.matches) {
-                      const cps = m.players[activeSession.clubId] as Record<string, Record<string, unknown>> | undefined;
-                      if (!cps) continue;
-                      for (const p of Object.values(cps)) {
-                        const r = Number(p["rating"] ?? 0);
-                        if (r > 0) allRatings.push(r);
-                      }
-                    }
-                    return allRatings.length ? allRatings.reduce((a, b) => a + b, 0) / allRatings.length : null;
-                  })();
-                  const achieved = minR != null && avgRating != null && avgRating >= minR;
-                  return (
-                    <div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-                        <span style={{ fontSize: 11, color: "var(--muted)", flex: 1 }}>Note moy. min :</span>
-                        <input type="number" min={1} max={10} step={0.1}
-                          value={advMinRatingInput !== "" ? advMinRatingInput : (minR ?? "")}
-                          placeholder="—"
-                          onChange={(e) => setAdvMinRatingInput(e.target.value)}
-                          onBlur={() => {
-                            const v = parseFloat(advMinRatingInput);
-                            setActiveSessionAdvancedGoals({ ...activeSession.advancedGoals, minRating: isNaN(v) ? undefined : v });
-                            setAdvMinRatingInput("");
-                          }}
-                          style={{ width: 40, background: "var(--card)", border: "1px solid var(--border)",
-                            color: "var(--text)", padding: "2px 5px", borderRadius: 4, fontSize: 11,
-                            outline: "none", textAlign: "center" }}
-                        />
-                        {minR != null && avgRating != null && (
-                          <span style={{ fontSize: 10, color: achieved ? "var(--green)" : "var(--red)", fontWeight: 700 }}>
-                            {avgRating.toFixed(2)} {achieved ? "✓" : "✗"}
-                          </span>
-                        )}
-                      </div>
-                      {minR != null && avgRating != null && (
-                        <div style={{ height: 4, background: "var(--border)", borderRadius: 2, overflow: "hidden" }}>
-                          <div style={{ height: "100%", borderRadius: 2,
-                            width: `${Math.min(100, (avgRating / 10) * 100)}%`,
-                            background: achieved ? "var(--green)" : "#eab308", transition: "width 0.4s ease" }} />
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
-              </div>
-            )}
-          </div>
-
-          {/* ── Sauvegarder comme template ── */}
-          {(activeSession.goal != null || (activeSession.tags ?? []).length > 0 || activeSession.advancedGoals) && (
-            <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 6 }}>
-              {showTemplates ? (
-                <>
-                  <input value={tplNameInput} onChange={(e) => setTplNameInput(e.target.value)}
-                    placeholder="Nom du template"
-                    style={{ flex: 1, background: "var(--bg)", border: "1px solid var(--border)",
-                      color: "var(--text)", padding: "4px 8px", borderRadius: 4, fontSize: 11, outline: "none" }} />
-                  <button onClick={() => {
-                    if (!tplNameInput.trim()) return;
-                    saveSessionTemplate({
-                      id: Date.now().toString(),
-                      name: tplNameInput.trim(),
-                      tags: activeSession.tags,
-                      notes: activeSession.notes,
-                      goal: activeSession.goal,
-                      advancedGoals: activeSession.advancedGoals,
-                    });
-                    persistSettings();
-                    setTplNameInput("");
-                    setShowTemplates(false);
-                    addToast("Template sauvegardé", "success");
-                  }} style={{ ...BTN, color: "var(--accent)", border: "1px solid var(--accent)" }}>
-                    ✓
-                  </button>
-                  <button onClick={() => setShowTemplates(false)} style={{ ...BTN }}>
-                    <X size={11} />
-                  </button>
-                </>
-              ) : (
-                <button onClick={() => setShowTemplates(true)}
-                  style={{ ...BTN, fontSize: 10, color: "var(--muted)" }}>
-                  <Copy size={11} /> Sauvegarder comme template
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* ── Alertes en session ── */}
-          {sessionAlerts.length > 0 && (
-            <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 4 }}>
-              {sessionAlerts.map((alert, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px",
-                  background: "rgba(234,179,8,0.1)", border: "1px solid rgba(234,179,8,0.3)",
-                  borderRadius: 6, fontSize: 11, color: "#eab308" }}>
-                  <AlertTriangle size={13} style={{ flexShrink: 0 }} />
-                  {alert}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {kpis && <KpiGrid kpis={kpis} t={t} />}
-
-          {mvps && (mvps.topScorer || mvps.topAssister || mvps.topMotm) && (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginTop: 8 }}>
-              {[
-                { icon: <Target size={13} />, label: t("session.topScorer"), player: mvps.topScorer, stat: mvps.topScorer ? `${mvps.topScorer.goals} ${t("session.goalCount")}` : "" },
-                { icon: <Handshake size={13} />, label: t("session.topAssist"), player: mvps.topAssister, stat: mvps.topAssister ? `${mvps.topAssister.assists} ${t("players.assists")}` : "" },
-                { icon: <Crown size={13} />, label: t("session.motm"), player: mvps.topMotm, stat: mvps.topMotm ? `${mvps.topMotm.motm}x` : "" },
-              ].map(({ icon, label, player, stat }) => player && (player.goals > 0 || player.assists > 0 || player.motm > 0) ? (
-                <div key={label} style={{ background: "var(--bg)", borderRadius: 8, padding: "8px 10px",
-                  border: "1px solid var(--border)", textAlign: "center" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4, marginBottom: 4 }}>
-                    <span style={{ color: "var(--gold)" }}>{icon}</span>
-                    <span style={{ fontSize: 9, color: "var(--muted)", letterSpacing: "0.06em", fontWeight: 600 }}>{label}</span>
-                  </div>
-                  <div style={{ fontSize: 13, color: "var(--text)", fontWeight: 600 }}>{player.name}</div>
-                  <div style={{ fontSize: 11, color: "var(--accent)", marginTop: 2 }}>{stat}</div>
-                </div>
-              ) : null)}
-            </div>
-          )}
-
-          {activeSession.matches.length > 0 && (
-            <div style={{ marginTop: 10 }}>
-              <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: "0.12em",
-                fontFamily: "'Bebas Neue', sans-serif", marginBottom: 6 }}>{t("session.matchesPlayed")}</div>
-              {[...activeSession.matches].reverse().map((m) => {
-                const clubData = currentClub ? (m.clubs[currentClub.id] as Record<string, unknown>) : null;
-                const goals    = clubData?.["goals"] ?? "?";
-                const r        = currentClub ? matchResult(m, currentClub.id) : "D";
-                return (
-                  <div key={m.matchId} style={{ display: "flex", alignItems: "center", gap: 8,
-                    padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
-                    <Badge result={r} />
-                    <span style={{ fontSize: 12, color: "var(--text)" }}>{String(goals)} {t("session.goalCount")}</span>
-                    <span style={{ fontSize: 11, color: "var(--muted)", marginLeft: "auto" }}>{m.matchType}</span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      ) : currentClub ? (
-        <div className="relative overflow-hidden rounded-lg p-6" style={{ border: "1px solid var(--border)", background: "var(--surface)" }}>
-          <div className="relative flex flex-col items-center gap-4 text-center" style={{ marginBottom: sessionTemplates.length > 0 ? 20 : 0 }}>
-            <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ border: "1px solid var(--border)", background: "var(--active)" }}>
-              <Trophy size={26} style={{ color: "var(--accent)" }} />
-            </div>
-            <div>
-              <p className="font-semibold text-sm" style={{ color: "var(--text)" }}>{t("session.noActive")}</p>
-              <p className="text-xs mt-1" style={{ color: "var(--muted)" }}>Lance une session pour tracker tes stats en temps réel</p>
-            </div>
-            <button
-              onClick={() => startSession(currentClub)}
-              className="relative flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold transition-colors cursor-pointer"
-              style={{ background: "var(--active)", border: "1px solid var(--accent)", color: "var(--accent)" }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "var(--accent)22"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = "var(--active)"; }}
-            >
-              <Play size={14} /> <span>{t("session.startBtn")}</span>
-            </button>
-          </div>
-
-          {/* ── Templates de session ── */}
-          {sessionTemplates.length > 0 && (
-            <div style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
-              <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: "0.12em",
-                fontFamily: "'Bebas Neue', sans-serif", marginBottom: 8, display: "flex", alignItems: "center", gap: 5 }}>
-                <Layers size={11} /> TEMPLATES
-              </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                {sessionTemplates.map((tpl) => (
-                  <div key={tpl.id} style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                    <button
-                      onClick={() => {
-                        startSession(currentClub);
-                        // Apply template after start via setTimeout to let state settle
-                        setTimeout(() => {
-                          const s = useAppStore.getState();
-                          if (s.activeSession) {
-                            if (tpl.goal != null) s.setActiveSessionGoal(tpl.goal);
-                            if (tpl.advancedGoals) s.setActiveSessionAdvancedGoals(tpl.advancedGoals);
-                            if (tpl.tags || tpl.notes) {
-                              const patch: Partial<SessionType> = {};
-                              if (tpl.tags) patch.tags = tpl.tags;
-                              if (tpl.notes) patch.notes = tpl.notes;
-                              // We update via set since it's the active session
-                              useAppStore.setState((prev) => ({
-                                activeSession: prev.activeSession ? { ...prev.activeSession, ...patch } : null,
-                              }));
-                            }
-                          }
-                        }, 50);
-                      }}
-                      style={{ padding: "5px 12px", borderRadius: 6, fontSize: 11, cursor: "pointer",
-                        background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.25)",
-                        color: "var(--accent)", display: "flex", alignItems: "center", gap: 4 }}>
-                      <Play size={10} /> {tpl.name}
-                    </button>
-                    <button onClick={() => { deleteSessionTemplate(tpl.id); persistSettings(); }}
-                      title="Supprimer template"
-                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", padding: 2, fontSize: 11 }}
-                      onMouseEnter={(e) => (e.currentTarget.style.color = "#ef4444")}
-                      onMouseLeave={(e) => (e.currentTarget.style.color = "var(--muted)")}>
-                      <X size={11} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      ) : (
+      {/* ── No club ── */}
+      {!currentClub && (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1,
           color: "var(--muted)", fontSize: 13 }}>
           {t("session.loadClubFirst")}
+        </div>
+      )}
+
+      {/* ── Active session: match list ──────────────────────────────────── */}
+      {activeSession && activeSession.matches.length > 0 && (
+        <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, padding: 14 }}>
+          <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: "0.12em",
+            fontFamily: "'Bebas Neue', sans-serif", marginBottom: 8 }}>{t("session.matchesPlayed")}</div>
+          {[...activeSession.matches].reverse().map((m) => {
+            const clubData = currentClub ? (m.clubs[currentClub.id] as Record<string, unknown>) : null;
+            const goals    = clubData?.["goals"] ?? "?";
+            const r        = currentClub ? matchResult(m, currentClub.id) : "D";
+            return (
+              <div key={m.matchId} style={{ display: "flex", alignItems: "center", gap: 8,
+                padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                <Badge result={r} />
+                <span style={{ fontSize: 12, color: "var(--text)" }}>{String(goals)} {t("session.goalCount")}</span>
+                <span style={{ fontSize: 11, color: "var(--muted)", marginLeft: "auto" }}>{m.matchType}</span>
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -1673,9 +1304,179 @@ export function SessionTab() {
 
       </div>{/* end session-left-col */}
 
-      {/* ── Colonne droite : Analytics ─────────────────────────────────── */}
+      {/* ── Colonne droite ─────────────────────────────────────────────── */}
       <div className="session-right-col">
-        {/* Tile : Session active */}
+
+        {/* ── Objectifs en cours ────────────────────────────────────────── */}
+        {currentClub && (
+          <div style={{ background: "var(--tile-bg)", border: "1px solid var(--border-glass)", backdropFilter: "blur(8px)", borderRadius: 10, overflow: "hidden" }}>
+            {/* Header */}
+            <div style={{ padding: "10px 14px", borderBottom: "1px solid var(--border-glass)", display: "flex", alignItems: "center", gap: 6 }}>
+              <Flag size={12} style={{ color: "var(--gold)" }} />
+              <span style={{ fontSize: 9, color: "var(--muted)", letterSpacing: "0.12em", fontFamily: "'Bebas Neue', sans-serif", flex: 1 }}>OBJECTIFS EN COURS</span>
+              {activeSession && (
+                <span style={{ fontSize: 9, color: "var(--accent)" }}>{activeSession.clubName}</span>
+              )}
+            </div>
+
+            {activeSession ? (
+              <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
+                {/* Victoires */}
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 11, color: "var(--muted)", whiteSpace: "nowrap", width: 80 }}>Victoires :</span>
+                  <input
+                    type="number" min={1}
+                    value={goalInput !== "" ? goalInput : (activeSession.goal ?? "")}
+                    placeholder="—"
+                    onChange={(e) => setGoalInput(e.target.value)}
+                    onBlur={() => {
+                      const v = parseInt(goalInput);
+                      setActiveSessionGoal(isNaN(v) ? undefined : v);
+                      setGoalInput("");
+                    }}
+                    style={{ width: 48, background: "var(--bg)", border: "1px solid var(--border)",
+                      color: "var(--text)", padding: "3px 6px", borderRadius: 4, fontSize: 12,
+                      outline: "none", textAlign: "center" }}
+                  />
+                  {activeSession.goal != null && activeWLD && (
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                        <span style={{ fontSize: 10, color: "var(--muted)" }}>{activeWLD.w}/{activeSession.goal}</span>
+                        <span style={{ fontSize: 10, color: activeWLD.w >= activeSession.goal ? "var(--green)" : "var(--accent)" }}>
+                          {Math.min(100, Math.round((activeWLD.w / activeSession.goal) * 100))}%
+                        </span>
+                      </div>
+                      <div style={{ height: 4, background: "var(--border)", borderRadius: 2, overflow: "hidden" }}>
+                        <div style={{ height: "100%", borderRadius: 2,
+                          width: `${Math.min(100, (activeWLD.w / activeSession.goal) * 100)}%`,
+                          background: activeWLD.w >= activeSession.goal ? "var(--green)" : "var(--accent)",
+                          transition: "width 0.4s ease" }} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Buts */}
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 11, color: "var(--muted)", whiteSpace: "nowrap", width: 80 }}>Buts :</span>
+                  <input
+                    type="number" min={0}
+                    value={advGoalsInput !== "" ? advGoalsInput : (activeSession.advancedGoals?.goalGoals ?? "")}
+                    placeholder="—"
+                    onChange={(e) => setAdvGoalsInput(e.target.value)}
+                    onBlur={() => {
+                      const v = parseInt(advGoalsInput);
+                      setActiveSessionAdvancedGoals({ ...activeSession.advancedGoals, goalGoals: isNaN(v) ? undefined : v });
+                      setAdvGoalsInput("");
+                    }}
+                    style={{ width: 48, background: "var(--bg)", border: "1px solid var(--border)",
+                      color: "var(--text)", padding: "3px 6px", borderRadius: 4, fontSize: 12,
+                      outline: "none", textAlign: "center" }}
+                  />
+                  {activeSession.advancedGoals?.goalGoals != null && kpis && (
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                        <span style={{ fontSize: 10, color: "var(--muted)" }}>{kpis.goals}/{activeSession.advancedGoals.goalGoals}</span>
+                        <span style={{ fontSize: 10, color: kpis.goals >= activeSession.advancedGoals.goalGoals ? "var(--green)" : "var(--accent)" }}>
+                          {Math.min(100, Math.round((kpis.goals / activeSession.advancedGoals.goalGoals) * 100))}%
+                        </span>
+                      </div>
+                      <div style={{ height: 4, background: "var(--border)", borderRadius: 2, overflow: "hidden" }}>
+                        <div style={{ height: "100%", borderRadius: 2,
+                          width: `${Math.min(100, (kpis.goals / activeSession.advancedGoals.goalGoals) * 100)}%`,
+                          background: kpis.goals >= activeSession.advancedGoals.goalGoals ? "var(--green)" : "var(--accent)",
+                          transition: "width 0.4s ease" }} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Passes décisives */}
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 11, color: "var(--muted)", whiteSpace: "nowrap", width: 80 }}>Passes D. :</span>
+                  <input
+                    type="number" min={0}
+                    value={advAssistsInput !== "" ? advAssistsInput : (activeSession.advancedGoals?.goalAssists ?? "")}
+                    placeholder="—"
+                    onChange={(e) => setAdvAssistsInput(e.target.value)}
+                    onBlur={() => {
+                      const v = parseInt(advAssistsInput);
+                      setActiveSessionAdvancedGoals({ ...activeSession.advancedGoals, goalAssists: isNaN(v) ? undefined : v });
+                      setAdvAssistsInput("");
+                    }}
+                    style={{ width: 48, background: "var(--bg)", border: "1px solid var(--border)",
+                      color: "var(--text)", padding: "3px 6px", borderRadius: 4, fontSize: 12,
+                      outline: "none", textAlign: "center" }}
+                  />
+                  {activeSession.advancedGoals?.goalAssists != null && kpis && (
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                        <span style={{ fontSize: 10, color: "var(--muted)" }}>{kpis.assists}/{activeSession.advancedGoals.goalAssists}</span>
+                        <span style={{ fontSize: 10, color: kpis.assists >= activeSession.advancedGoals.goalAssists ? "var(--green)" : "#c4b5fd" }}>
+                          {Math.min(100, Math.round((kpis.assists / activeSession.advancedGoals.goalAssists) * 100))}%
+                        </span>
+                      </div>
+                      <div style={{ height: 4, background: "var(--border)", borderRadius: 2, overflow: "hidden" }}>
+                        <div style={{ height: "100%", borderRadius: 2,
+                          width: `${Math.min(100, (kpis.assists / activeSession.advancedGoals.goalAssists) * 100)}%`,
+                          background: kpis.assists >= activeSession.advancedGoals.goalAssists ? "var(--green)" : "#8b5cf6",
+                          transition: "width 0.4s ease" }} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Alertes */}
+                {sessionAlerts.length > 0 && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    {sessionAlerts.map((alert, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 8px",
+                        background: "rgba(234,179,8,0.1)", border: "1px solid rgba(234,179,8,0.3)",
+                        borderRadius: 6, fontSize: 10, color: "#eab308" }}>
+                        <AlertTriangle size={11} style={{ flexShrink: 0 }} />
+                        {alert}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{ padding: "12px 14px" }}>
+                <p style={{ fontSize: 11, color: "var(--muted)", textAlign: "center" }}>Lance une session pour suivre tes objectifs</p>
+              </div>
+            )}
+
+            {/* Footer Discord */}
+            {activeSession && discordWebhook && (
+              <div style={{ padding: "8px 14px", borderTop: "1px solid var(--border-glass)", display: "flex", gap: 6 }}>
+                <button
+                  onClick={() => { setAutoPostSession(!autoPostSession); persistSettings(); }}
+                  title={autoPostSession ? "Post auto Discord activé" : "Activer le post Discord automatique"}
+                  style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 8px",
+                    background: autoPostSession ? "rgba(88,101,242,0.2)" : "var(--card)",
+                    border: `1px solid ${autoPostSession ? "rgba(88,101,242,0.5)" : "var(--border)"}`,
+                    borderRadius: 6, color: autoPostSession ? "#8b9cf4" : "var(--muted)",
+                    fontSize: 10, cursor: "pointer", transition: "all 0.15s", flex: 1, justifyContent: "center" }}
+                >
+                  <Send size={10} />
+                  <span style={{ fontSize: 9, letterSpacing: "0.04em" }}>AUTO</span>
+                </button>
+                {activeSession.matches.length > 0 && (
+                  <button onClick={shareLiveToDiscord}
+                    disabled={sharingId === activeSession.id}
+                    style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 12px", flex: 1, justifyContent: "center",
+                      background: "rgba(88,101,242,0.15)", border: "1px solid rgba(88,101,242,0.35)",
+                      borderRadius: 6, color: "#8b9cf4", fontSize: 11, cursor: "pointer",
+                      opacity: sharingId === activeSession.id ? 0.5 : 1 }}>
+                    <Send size={11} /> Live
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Session active : stats + stop ─────────────────────────────── */}
         {activeSession && activeStats && (
           <div style={{ background: "rgba(0,212,255,0.06)", border: "1px solid rgba(0,212,255,0.22)", borderRadius: 10, padding: 14 }}>
             <div style={{ fontSize: 9, color: "var(--accent)", letterSpacing: "0.12em", fontFamily: "'Bebas Neue', sans-serif", marginBottom: 8 }}>
@@ -1693,10 +1494,11 @@ export function SessionTab() {
                 </div>
               ))}
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 6, marginBottom: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginBottom: 12 }}>
               {[
-                { label: "Buts", value: activeStats.kpis.goals },
-                { label: "PD",   value: activeStats.kpis.assists },
+                { label: "Buts",  value: activeStats.kpis.goals   },
+                { label: "PD",    value: activeStats.kpis.assists  },
+                { label: "MOTM",  value: activeStats.kpis.motm     },
               ].map(({ label, value }) => (
                 <div key={label} style={{ textAlign: "center", background: "var(--tile-bg)", border: "1px solid var(--border-glass)", borderRadius: 8, padding: "6px 4px" }}>
                   <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 22, color: "var(--accent)", lineHeight: 1 }}>{value}</div>
@@ -1713,7 +1515,66 @@ export function SessionTab() {
           </div>
         )}
 
-        {/* Tile : Dernière session */}
+        {/* ── Pas de session active : bouton lancer + dernière session ── */}
+        {!activeSession && currentClub && (
+          <div style={{ background: "var(--tile-bg)", border: "1px solid var(--border-glass)", backdropFilter: "blur(8px)", borderRadius: 10, padding: 14, textAlign: "center" }}>
+            <button
+              onClick={() => startSession(currentClub)}
+              style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 20px",
+                background: "var(--active)", border: "1px solid var(--accent)", borderRadius: 8,
+                color: "var(--accent)", fontSize: 13, fontFamily: "'Bebas Neue', sans-serif",
+                letterSpacing: "0.06em", cursor: "pointer" }}>
+              <Play size={14} /> {t("session.startBtn")}
+            </button>
+            {sessionTemplates.length > 0 && (
+              <div style={{ marginTop: 12, borderTop: "1px solid var(--border-glass)", paddingTop: 12 }}>
+                <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: "0.12em",
+                  fontFamily: "'Bebas Neue', sans-serif", marginBottom: 8, display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
+                  <Layers size={11} /> TEMPLATES
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center" }}>
+                  {sessionTemplates.map((tpl) => (
+                    <div key={tpl.id} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <button
+                        onClick={() => {
+                          startSession(currentClub);
+                          setTimeout(() => {
+                            const s = useAppStore.getState();
+                            if (s.activeSession) {
+                              if (tpl.goal != null) s.setActiveSessionGoal(tpl.goal);
+                              if (tpl.advancedGoals) s.setActiveSessionAdvancedGoals(tpl.advancedGoals);
+                              if (tpl.tags || tpl.notes) {
+                                const patch: Partial<SessionType> = {};
+                                if (tpl.tags) patch.tags = tpl.tags;
+                                if (tpl.notes) patch.notes = tpl.notes;
+                                useAppStore.setState((prev) => ({
+                                  activeSession: prev.activeSession ? { ...prev.activeSession, ...patch } : null,
+                                }));
+                              }
+                            }
+                          }, 50);
+                        }}
+                        style={{ padding: "5px 12px", borderRadius: 6, fontSize: 11, cursor: "pointer",
+                          background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.25)",
+                          color: "var(--accent)", display: "flex", alignItems: "center", gap: 4 }}>
+                        <Play size={10} /> {tpl.name}
+                      </button>
+                      <button onClick={() => { deleteSessionTemplate(tpl.id); persistSettings(); }}
+                        title="Supprimer template"
+                        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", padding: 2, fontSize: 11 }}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = "#ef4444")}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = "var(--muted)")}>
+                        <X size={11} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Dernière session ──────────────────────────────────────────── */}
         {!activeSession && lastSession && lastSessionStats && (
           <div style={{ background: "var(--tile-bg)", border: "1px solid var(--border-glass)", backdropFilter: "blur(8px)", borderRadius: 10, padding: 14 }}>
             <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: "0.12em", fontFamily: "'Bebas Neue', sans-serif", marginBottom: 6 }}>
@@ -1722,7 +1583,6 @@ export function SessionTab() {
             <div style={{ fontSize: 12, color: "var(--text)", fontWeight: 600, marginBottom: 10 }}>
               {lastSession.clubName} · {new Date(lastSession.date).toLocaleDateString()}
             </div>
-            {/* V/N/D */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginBottom: 10 }}>
               {[
                 { label: "VICTOIRES", value: lastSessionStats.wld.w, color: "var(--green)" },
@@ -1735,7 +1595,6 @@ export function SessionTab() {
                 </div>
               ))}
             </div>
-            {/* KPIs */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginBottom: 10 }}>
               {[
                 { label: "Buts",  value: lastSessionStats.kpis.goals   },
@@ -1748,7 +1607,6 @@ export function SessionTab() {
                 </div>
               ))}
             </div>
-            {/* Forme chart */}
             {lastSessionStats.formData.length > 1 && (
               <>
                 <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: "0.12em", fontFamily: "'Bebas Neue', sans-serif", marginBottom: 6 }}>FORME</div>
@@ -1771,7 +1629,6 @@ export function SessionTab() {
                 </ResponsiveContainer>
               </>
             )}
-            {/* Top buteur */}
             {lastSessionStats.mvps.topScorer && lastSessionStats.mvps.topScorer.goals > 0 && (
               <div style={{ marginTop: 10, padding: "8px 10px", background: "var(--tile-bg)", border: "1px solid var(--border-glass)", borderRadius: 8 }}>
                 <div style={{ fontSize: 9, color: "var(--gold)", letterSpacing: "0.1em", fontFamily: "'Bebas Neue', sans-serif", marginBottom: 4 }}>TOP BUTEUR</div>
@@ -1782,20 +1639,6 @@ export function SessionTab() {
           </div>
         )}
 
-        {/* Tile : Lancer une session */}
-        {!activeSession && !lastSession && currentClub && (
-          <div style={{ background: "var(--tile-bg)", border: "1px solid var(--border-glass)", borderRadius: 10, padding: 18, textAlign: "center" }}>
-            <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: "0.12em", fontFamily: "'Bebas Neue', sans-serif", marginBottom: 12 }}>PRÊT À JOUER</div>
-            <button
-              onClick={() => startSession(currentClub)}
-              style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 20px",
-                background: "var(--active)", border: "1px solid var(--accent)", borderRadius: 8,
-                color: "var(--accent)", fontSize: 13, fontFamily: "'Bebas Neue', sans-serif",
-                letterSpacing: "0.06em", cursor: "pointer" }}>
-              <Play size={14} /> LANCER
-            </button>
-          </div>
-        )}
       </div>{/* end session-right-col */}
 
       {/* ── PDF save modal (detail) ────────────────────────────────────── */}

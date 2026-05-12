@@ -136,7 +136,7 @@ export interface Session {
   notes?: string;
   tags?: string[];
   goal?: number;
-  advancedGoals?: { maxLosses?: number; minRating?: number };
+  advancedGoals?: { maxLosses?: number; minRating?: number; goalGoals?: number; goalAssists?: number };
   mergedFrom?: string[];
 }
 
@@ -146,7 +146,7 @@ export interface SessionTemplate {
   tags?: string[];
   notes?: string;
   goal?: number;
-  advancedGoals?: { maxLosses?: number; minRating?: number };
+  advancedGoals?: { maxLosses?: number; minRating?: number; goalGoals?: number; goalAssists?: number };
 }
 
 export interface CompareEntry {

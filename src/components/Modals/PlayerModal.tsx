@@ -4,14 +4,13 @@ import {
   ResponsiveContainer, ReferenceLine,
 } from "recharts";
 import {
-  Send, FileText, CreditCard, BrainCircuit,
-  Target, Shield, Star, Swords, TrendingUp, Activity,
+  Send, FileText, CreditCard,
+  Target, Shield, Star, Swords, Activity,
 } from "lucide-react";
 import { useAppStore } from "../../store/useAppStore";
 import { useT } from "../../i18n";
 import { sendDiscordWebhook, sendDiscordFile } from "../../api/discord";
 import { generatePlayerPdf, getPlayerPdfFilename } from "../../utils/pdfExport";
-import { suggestPosition, detectPerformanceAnomaly } from "../../utils/aiEngine";
 import { PdfSaveModal } from "./PdfSaveModal";
 import type { Player, Match } from "../../types";
 
@@ -221,27 +220,6 @@ function PlayerCardModal({ player, posLabel, clubName, onClose }: {
   );
 }
 
-// ─── StatCard ─────────────────────────────────────────────────────────────────
-
-function StatCard({ label, value, color, icon, large = false }: {
-  label: string; value: string | number; color: string; icon?: React.ReactNode; large?: boolean;
-}) {
-  return (
-    <div className={`relative flex flex-col items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--bg)] text-center transition-all hover:border-[var(--accent)]/40 ${large ? "py-4 px-3" : "py-3 px-2"}`}>
-      {icon && <div className="absolute top-2 right-2 opacity-30">{icon}</div>}
-      <div
-        className={`font-['Bebas_Neue'] leading-none ${large ? "text-4xl" : "text-2xl"}`}
-        style={{ color }}
-      >
-        {String(value)}
-      </div>
-      <div className="text-[9px] text-[var(--muted)] tracking-widest mt-1.5 font-['Bebas_Neue'] uppercase">
-        {label}
-      </div>
-    </div>
-  );
-}
-
 // ─── PlayerModal ──────────────────────────────────────────────────────────────
 
 export function PlayerModal({ player, onClose }: { player: Player; onClose: () => void }) {
@@ -253,9 +231,6 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
   const [sharing, setSharing]       = useState(false);
   const [exporting, setExporting]   = useState(false);
   const [showPdfModal, setShowPdfModal]   = useState(false);
-  const [showPeriods, setShowPeriods]     = useState(false);
-  const [periodA, setPeriodA] = useState({ start: "", end: "" });
-  const [periodB, setPeriodB] = useState({ start: "", end: "" });
   const [showCardModal, setShowCardModal] = useState(false);
   const posLabel = POS_LABELS[player.position] ?? player.position ?? "—";
 
@@ -426,15 +401,6 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
   };
 
   // ── Derived data ───────────────────────────────────────────────────────────
-  const aiPosition  = suggestPosition(player)[0].pos;
-  const aiAnomaly   = allEvoData.rating.length >= 5
-    ? detectPerformanceAnomaly(allEvoData.rating.map(r => ({ rating: r })))
-    : null;
-
-  const anomalyLabel = aiAnomaly === "peak"  ? { text: "🔥 Exceptionnelle", cls: "text-green-400" }
-    : aiAnomaly === "slump" ? { text: "⚠️ En baisse",      cls: "text-red-400"   }
-    : { text: "Standard", cls: "" };
-
   const advStats: { label: string; value: number; color: string; icon: React.ReactNode }[] = [
     ...(player.shotsOnTarget  ? [{ label: t("players.shotsOnTarget"), value: player.shotsOnTarget, color: "var(--accent)", icon: <Target size={12} /> }] : []),
     ...(player.interceptions  ? [{ label: t("players.interceptions"), value: player.interceptions, color: "var(--text)",   icon: <Shield size={12} /> }] : []),
@@ -445,31 +411,6 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
     ...(player.saveAttempts   ? [{ label: t("players.saves"),          value: player.saveAttempts,  color: "var(--text)",   icon: <Activity size={12} /> }] : []),
   ];
 
-  const computePeriodStats = (start: string, end: string) => {
-    if (!currentClub || !start || !end) return null;
-    const allMatches = getMatchesFromCache(matchCache, currentClub.id, currentClub.platform);
-    const startTs = new Date(start).getTime(), endTs = new Date(end).getTime() + 86399999;
-    let games = 0, goals = 0, assists = 0, motm = 0;
-    const ratings: number[] = [];
-    for (const m of allMatches) {
-      const ts = Number(m.timestamp);
-      const mTs = ts > 1e12 ? ts : ts * 1000;
-      if (mTs < startTs || mTs > endTs) continue;
-      const clubPlayers = m.players[currentClub.id] as Record<string, Record<string, unknown>> | undefined;
-      if (!clubPlayers) continue;
-      for (const p of Object.values(clubPlayers)) {
-        const name = String(p["name"] ?? p["playername"] ?? p["playerName"] ?? "");
-        if (name.toLowerCase() !== player.name.toLowerCase()) continue;
-        games++; goals += Number(p["goals"] ?? 0); assists += Number(p["assists"] ?? 0);
-        if (Number(p["manofthematch"] ?? p["manOfTheMatch"] ?? 0) > 0) motm++;
-        const r = Number(p["rating"] ?? p["ratingAve"] ?? 0);
-        if (r > 0) ratings.push(r);
-      }
-    }
-    const avgRating = ratings.length > 0 ? Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 10) / 10 : 0;
-    return { games, goals, assists, motm, avgRating };
-  };
-
   return (
     <>
       {/* ── Backdrop ── */}
@@ -479,8 +420,8 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
         onClick={onClose}
       >
         <div
-          className="relative w-full max-w-[540px] max-h-[92vh] overflow-y-auto rounded-lg shadow-2xl"
-          style={{ background: "var(--main-bg)", border: "1px solid var(--border)", animation: "fadeSlideIn 0.15s ease-out" }}
+          className="relative w-full max-w-[820px] max-h-[92vh] overflow-y-auto rounded-lg shadow-2xl"
+          style={{ background: "var(--main-bg)", border: "1px solid var(--border-glass)", backdropFilter: "blur(12px)", animation: "fadeSlideIn 0.15s ease-out" }}
           onClick={(e) => e.stopPropagation()}
         >
 
@@ -533,109 +474,71 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
             </div>
           </div>
 
-          <div className="px-5 py-4 space-y-4">
+          <div className="px-5 py-4">
+            {/* ══ BENTO 2 COLONNES ════════════════════════════════════════ */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, alignItems: "start" }}>
 
-            {/* ══ IA INSIGHT ══════════════════════════════════════════════ */}
-            <div className="rounded-lg p-3.5" style={{ border: "1px solid var(--accent)33", background: "var(--active)" }}>
-              <div className="flex items-center gap-2 mb-3">
-                <BrainCircuit size={14} style={{ color: "var(--accent)" }} />
-                <span className="font-['Bebas_Neue'] text-[11px] tracking-widest" style={{ color: "var(--accent)" }}>CONSEILS IA</span>
-                <span className="ml-auto text-[9px] italic" style={{ color: "var(--muted)" }}>analyse heuristique</span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span style={{ color: "var(--muted)" }}>Position recommandée</span>
-                <span className="font-bold px-2 py-0.5 rounded" style={{ color: "var(--green)", background: "var(--green)18" }}>{aiPosition}</span>
-              </div>
-              {aiAnomaly && (
-                <div className="flex items-center justify-between text-xs mt-2">
-                  <span style={{ color: "var(--muted)" }}>Analyse de forme</span>
-                  <span className={`font-bold ${anomalyLabel.cls}`}>{anomalyLabel.text}</span>
-                </div>
-              )}
-            </div>
+              {/* ── COL GAUCHE : Note + Graphique ───────────────────────── */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
 
-            {/* ══ NOTE DOMINANTE + STATS CLÉS ══════════════════════════════ */}
-            <div>
-              <p className="category-header mb-2">STATISTIQUES CLÉS</p>
-              {/* Note en vedette */}
-              {player.rating > 0 && (
-                <div className="flex flex-col items-center justify-center mb-3 py-4 rounded-xl"
-                  style={{ background: "var(--tile-bg)", border: "1px solid var(--border-glass)", backdropFilter: "blur(8px)" }}>
-                  <span
-                    className="font-['Bebas_Neue'] leading-none"
-                    style={{ fontSize: 80, color: ratingColor(player.rating), textShadow: `0 0 32px ${ratingColor(player.rating)}88` }}
-                  >
-                    {player.rating.toFixed(1)}
-                  </span>
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <Star size={12} className="text-yellow-400" />
-                    <span className="text-[10px] tracking-widest font-['Bebas_Neue']" style={{ color: "var(--muted)" }}>NOTE MOYENNE</span>
-                  </div>
-                </div>
-              )}
-              {/* Grille stats */}
-              <div className="grid grid-cols-3 gap-2">
-                <StatCard label={t("players.gp")}      value={player.gamesPlayed} color="var(--text)"   icon={<Activity size={12}/>} />
-                <StatCard label={t("players.goals")}   value={player.goals}       color="var(--accent)" icon={<span className="text-xs">⚽</span>} />
-                <StatCard label={t("players.assists")} value={player.assists}     color="#8b5cf6"       icon={<span className="text-xs">🅰️</span>} />
-                <StatCard label={t("players.passes")}  value={player.passesMade}  color="#6b7280"       icon={<TrendingUp size={12}/>} />
-                <StatCard label={t("players.tackles")} value={player.tacklesMade} color="#6b7280"       icon={<Shield size={12}/>} />
-                <StatCard label={t("session.motm")}    value={player.motm}        color="#ffd700"       icon={<Star size={12}/>} />
-              </div>
-            </div>
-
-            {/* ══ STATS AVANCÉES ═══════════════════════════════════════════ */}
-            {advStats.length > 0 && (
-              <div>
-                <p className="category-header mb-2">{t("players.advancedStats")}</p>
-                <div className="grid grid-cols-4 gap-2">
-                  {advStats.map(({ label, value, color, icon }) => (
-                    <StatCard key={label} label={label} value={value} color={color} icon={icon} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* ══ GRAPHIQUE D'ÉVOLUTION ════════════════════════════════════ */}
-            {(evoData.length > 1 || monthlyData.length > 1) && (
-              <div className="rounded-lg p-4" style={{ border: "1px solid var(--border)", background: "var(--surface)" }}>
-                <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-                  <p className="category-header">{t("players.evolution")}</p>
-                  <div className="flex gap-1 rounded p-0.5" style={{ background: "var(--bg)" }}>
-                    {(["match", "monthly"] as const).map((v) => (
-                      <button key={v} onClick={() => setChartView(v)}
-                        className="px-2.5 py-1 rounded text-[10px] font-semibold transition-all cursor-pointer"
-                        style={chartView === v
-                          ? { background: "var(--accent)", color: "#fff" }
-                          : { color: "var(--muted)", background: "transparent" }}>
-                        {v === "match" ? "Par match" : "Par mois"}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {chartView === "match" && (
-                  <div className="flex items-center gap-1.5 mb-3 flex-wrap">
-                    {(["rating", "goals", "assists"] as const).map((s) => (
-                      <button key={s} onClick={() => setEvoStat(s)}
-                        className="px-2.5 py-1 rounded text-[10px] font-semibold transition-all cursor-pointer"
-                        style={evoStat === s
-                          ? { background: "var(--accent)", border: "1px solid var(--accent)", color: "#fff" }
-                          : { background: "var(--bg)", border: "1px solid var(--border)", color: "var(--muted)" }}>
-                        {s === "rating" ? t("players.rating") : s === "goals" ? t("players.goals") : t("players.assistsShort")}
-                      </button>
-                    ))}
-                    {evoStat === "rating" && evoData.length >= 3 && (
-                      <button onClick={() => setShowTrend(v => !v)}
-                        className="px-2.5 py-1 rounded text-[10px] font-semibold transition-all cursor-pointer"
-                        style={showTrend
-                          ? { background: "#8b5cf618", border: "1px solid #8b5cf655", color: "#c4b5fd" }
-                          : { background: "var(--bg)", border: "1px solid var(--border)", color: "var(--muted)" }}>
-                        📈 Tendance
-                      </button>
+                {/* Note massive */}
+                {player.rating > 0 && (
+                  <div className="flex flex-col items-center justify-center py-5 rounded-xl"
+                    style={{ background: "var(--tile-bg)", border: "1px solid var(--border-glass)", backdropFilter: "blur(8px)" }}>
+                    <span className="font-['Bebas_Neue'] leading-none"
+                      style={{ fontSize: 88, color: ratingColor(player.rating), textShadow: `0 0 40px ${ratingColor(player.rating)}66` }}>
+                      {player.rating.toFixed(1)}
+                    </span>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <Star size={12} className="text-yellow-400" />
+                      <span className="text-[10px] tracking-widest font-['Bebas_Neue']" style={{ color: "var(--muted)" }}>NOTE MOYENNE</span>
+                    </div>
+                    {trendSummary && (
+                      <span className="text-xs font-bold mt-1" style={{ color: trendSummary.dirColor }}>{trendSummary.direction}</span>
                     )}
                   </div>
                 )}
+
+                {/* Graphique d'évolution */}
+                {(evoData.length > 1 || monthlyData.length > 1) && (
+                  <div className="rounded-xl p-3" style={{ background: "var(--tile-bg)", border: "1px solid var(--border-glass)", backdropFilter: "blur(8px)" }}>
+                    <div className="flex items-center justify-between mb-2 gap-2">
+                      <p className="category-header">{t("players.evolution")}</p>
+                      <div className="flex gap-1 rounded p-0.5" style={{ background: "var(--bg)" }}>
+                        {(["match", "monthly"] as const).map((v) => (
+                          <button key={v} onClick={() => setChartView(v)}
+                            className="px-3 py-1.5 rounded text-[10px] font-semibold transition-all cursor-pointer"
+                            style={chartView === v
+                              ? { background: "var(--accent)", color: "#fff", border: "1px solid var(--accent)" }
+                              : { color: "var(--muted)", background: "transparent", border: "1px solid transparent" }}>
+                            {v === "match" ? "Matchs" : "Mois"}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {chartView === "match" && (
+                      <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+                        {(["rating", "goals", "assists"] as const).map((s) => (
+                          <button key={s} onClick={() => setEvoStat(s)}
+                            className="px-3 py-1.5 rounded text-[10px] font-semibold transition-all cursor-pointer"
+                            style={evoStat === s
+                              ? { background: "var(--accent)", border: "1px solid var(--accent)", color: "#fff" }
+                              : { background: "transparent", border: "1px solid var(--border-glass)", color: "var(--muted)" }}>
+                            {s === "rating" ? t("players.rating") : s === "goals" ? t("players.goals") : t("players.assistsShort")}
+                          </button>
+                        ))}
+                        {evoStat === "rating" && evoData.length >= 3 && (
+                          <button onClick={() => setShowTrend(v => !v)}
+                            className="px-3 py-1.5 rounded text-[10px] font-semibold transition-all cursor-pointer"
+                            style={showTrend
+                              ? { background: "#8b5cf618", border: "1px solid #8b5cf655", color: "#c4b5fd" }
+                              : { background: "transparent", border: "1px solid var(--border-glass)", color: "var(--muted)" }}>
+                            📈 Tendance
+                          </button>
+                        )}
+                      </div>
+                    )}
 
                 {chartView === "match" && evoData.length > 1 && (
                   <>
@@ -718,109 +621,79 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
               </div>
             )}
 
-            {/* ══ COMPARAISON DE PÉRIODES ══════════════════════════════════ */}
-            <div>
-              <button
-                onClick={() => setShowPeriods(v => !v)}
-                className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-[11px] font-['Bebas_Neue'] tracking-widest transition-all cursor-pointer"
-                style={showPeriods
-                  ? { background: "var(--active)", border: "1px solid var(--accent)", color: "var(--accent)" }
-                  : { background: "var(--surface)", border: "1px solid var(--border)", color: "var(--muted)" }}>
-                <span>COMPARER 2 PÉRIODES</span>
-                <span className="text-xs">{showPeriods ? "▲" : "▼"}</span>
-              </button>
+              </div>{/* end left col */}
 
-              {showPeriods && (() => {
-                const statsA = computePeriodStats(periodA.start, periodA.end);
-                const statsB = computePeriodStats(periodB.start, periodB.end);
-                const arrow = (a: number, b: number) =>
-                  a === 0 && b === 0 ? { icon: "→", cls: "" }
-                  : a > b            ? { icon: "↑", cls: "text-green-400" }
-                  : a < b            ? { icon: "↓", cls: "text-red-400" }
-                  :                    { icon: "=", cls: "text-yellow-400" };
+              {/* ── COL DROITE : Stats ──────────────────────────────────── */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
 
-                const ROWS: { label: string; key: keyof NonNullable<typeof statsA> }[] = [
-                  { label: "Matchs joués", key: "games" },
-                  { label: "Buts",         key: "goals" },
-                  { label: "Passes D.",    key: "assists" },
-                  { label: "MOTM",         key: "motm" },
-                  { label: "Note moy.",    key: "avgRating" },
-                ];
-
-                const DateInput = ({ label, field, period, setter }: {
-                  label: string; field: "start" | "end";
-                  period: typeof periodA; setter: typeof setPeriodA;
-                }) => (
-                  <div className="flex-1">
-                    <p className="text-[9px] mb-1" style={{ color: "var(--muted)" }}>{label}</p>
-                    <input type="date" value={period[field]}
-                      onChange={e => setter(p => ({ ...p, [field]: e.target.value }))}
-                      className="w-full rounded px-2 py-1.5 text-[11px] outline-none"
-                      style={{ background: "var(--bg)", border: "1px solid var(--border)", color: "var(--text)", colorScheme: "dark" }}
-                      onFocus={e => { e.target.style.borderColor = "var(--accent)"; }}
-                      onBlur={e => { e.target.style.borderColor = "var(--border)"; }} />
-                  </div>
-                );
-
-                return (
-                  <div className="mt-2 space-y-3">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="rounded-lg p-3" style={{ background: "var(--surface)", border: "1px solid var(--accent)33" }}>
-                        <p className="font-['Bebas_Neue'] text-[10px] tracking-widest mb-2" style={{ color: "var(--accent)" }}>PÉRIODE A</p>
-                        <div className="flex gap-2">
-                          <DateInput label="Début" field="start" period={periodA} setter={setPeriodA} />
-                          <DateInput label="Fin"   field="end"   period={periodA} setter={setPeriodA} />
-                        </div>
+                {/* Stats Clés */}
+                <div className="rounded-xl p-3" style={{ background: "var(--tile-bg)", border: "1px solid var(--border-glass)", backdropFilter: "blur(8px)" }}>
+                  <p className="category-header mb-3">STATS CLÉS</p>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+                    {[
+                      { label: t("players.gp"),      value: player.gamesPlayed, color: "var(--text)" },
+                      { label: t("players.goals"),    value: player.goals,       color: "var(--accent)" },
+                      { label: t("players.assists"),  value: player.assists,     color: "#c4b5fd" },
+                      { label: t("players.passes"),   value: player.passesMade,  color: "var(--text)" },
+                      { label: t("players.tackles"),  value: player.tacklesMade, color: "var(--text)" },
+                      { label: "MOTM",                value: player.motm,        color: "#fcd34d" },
+                    ].map(({ label, value, color }) => (
+                      <div key={label} className="flex flex-col items-center justify-center rounded-lg py-2.5 px-2"
+                        style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+                        <span className="font-['Bebas_Neue'] text-2xl leading-none" style={{ color }}>{value}</span>
+                        <span className="text-[8px] tracking-widest mt-1 font-['Bebas_Neue'] uppercase" style={{ color: "var(--muted)" }}>{label}</span>
                       </div>
-                      <div className="rounded-lg p-3" style={{ background: "var(--surface)", border: "1px solid #8b5cf633" }}>
-                        <p className="font-['Bebas_Neue'] text-[10px] tracking-widest mb-2" style={{ color: "#c4b5fd" }}>PÉRIODE B</p>
-                        <div className="flex gap-2">
-                          <DateInput label="Début" field="start" period={periodB} setter={setPeriodB} />
-                          <DateInput label="Fin"   field="end"   period={periodB} setter={setPeriodB} />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Stats Avancées */}
+                {advStats.length > 0 && (
+                  <div className="rounded-xl p-3" style={{ background: "var(--tile-bg)", border: "1px solid var(--border-glass)", backdropFilter: "blur(8px)" }}>
+                    <p className="category-header mb-3">STATS AVANCÉES</p>
+                    <div className="space-y-1.5">
+                      {advStats.map(({ label, value, color, icon }) => (
+                        <div key={label} className="flex items-center justify-between px-3 py-2 rounded-lg"
+                          style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+                          <div className="flex items-center gap-2">
+                            <span style={{ color: "var(--muted)" }}>{icon}</span>
+                            <span className="text-xs" style={{ color: "var(--muted)" }}>{label}</span>
+                          </div>
+                          <span className="font-['Bebas_Neue'] text-lg leading-none" style={{ color }}>{value}</span>
                         </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Trend summary */}
+                {trendSummary && (
+                  <div className="rounded-xl p-3" style={{ background: "var(--tile-bg)", border: "1px solid var(--border-glass)", backdropFilter: "blur(8px)" }}>
+                    <p className="category-header mb-3">TENDANCE</p>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs" style={{ color: "var(--muted)" }}>Direction</span>
+                        <span className="text-xs font-bold" style={{ color: trendSummary.dirColor }}>{trendSummary.direction}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs" style={{ color: "var(--muted)" }}>Moy. 5 derniers</span>
+                        <span className="font-['Bebas_Neue'] text-base" style={{ color: "var(--text)" }}>{trendSummary.avg5}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs" style={{ color: "var(--muted)" }}>Projection</span>
+                        <span className="font-['Bebas_Neue'] text-base" style={{ color: "#c4b5fd" }}>{trendSummary.projectedAvg}</span>
                       </div>
                     </div>
-
-                    {(statsA || statsB) && (
-                      <div className="rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
-                        <div className="grid grid-cols-[1fr_auto_auto_auto] text-[9px] font-['Bebas_Neue'] tracking-widest"
-                          style={{ background: "var(--card)" }}>
-                          <div className="px-3 py-2" style={{ color: "var(--muted)" }}>STAT</div>
-                          <div className="px-4 py-2 text-center" style={{ color: "var(--accent)" }}>A</div>
-                          <div className="px-3 py-2 text-center" style={{ color: "var(--muted)" }}></div>
-                          <div className="px-4 py-2 text-center" style={{ color: "#c4b5fd" }}>B</div>
-                        </div>
-                        {ROWS.map(({ label, key }) => {
-                          const a = statsA?.[key] ?? 0, b = statsB?.[key] ?? 0;
-                          const { icon, cls } = arrow(Number(a), Number(b));
-                          return (
-                            <div key={key} className="grid grid-cols-[1fr_auto_auto_auto] items-center"
-                              style={{ borderTop: "1px solid var(--border)" }}>
-                              <div className="px-3 py-2 text-xs" style={{ color: "var(--text)" }}>{label}</div>
-                              <div className="px-4 py-2 font-['Bebas_Neue'] text-sm text-cyan-400 text-center min-w-[48px]">
-                                {statsA ? String(key === "avgRating" ? Number(a).toFixed(1) : a) : "—"}
-                              </div>
-                              <div className={`px-2 py-2 text-sm font-bold text-center ${cls}`}>{icon}</div>
-                              <div className="px-4 py-2 font-['Bebas_Neue'] text-sm text-violet-400 text-center min-w-[48px]">
-                                {statsB ? String(key === "avgRating" ? Number(b).toFixed(1) : b) : "—"}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                    {!statsA && !statsB && (periodA.start || periodB.start) && (
-                      <p className="text-xs text-center py-2" style={{ color: "var(--muted)" }}>
-                        Aucune donnée trouvée pour {player.name} dans ces plages.
-                      </p>
-                    )}
                   </div>
-                );
-              })()}
-            </div>
-          </div>
-        </div>
-      </div>
+                )}
+
+              </div>{/* end right col */}
+
+            </div>{/* end bento grid */}
+          </div>{/* end px-5 py-4 */}
+
+        </div>{/* end modal container */}
+      </div>{/* end backdrop */}
 
       {showPdfModal && (
         <PdfSaveModal
