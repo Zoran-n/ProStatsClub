@@ -871,7 +871,7 @@ export function SessionTab() {
           )}
 
           {/* ── Bento grid of session cards ─────────────────────────── */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
             {visible.map((s) => {
               const k = sessionKpis(s.matches, s.clubId);
               const wld = sessionWLD(s.matches, s.clubId);
@@ -894,7 +894,7 @@ export function SessionTab() {
                   onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; }}
                 >
                   {/* ── Card header ── */}
-                  <div className="px-4 pt-4 pb-3" style={{ borderBottom: "1px solid var(--border)" }}>
+                  <div className="px-6 pt-6 pb-4" style={{ borderBottom: "1px solid var(--border)" }}>
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div className="min-w-0">
                         <div className="font-['Bebas_Neue'] text-base tracking-wide truncate" style={{ color: "var(--text)" }}>{s.clubName}</div>
@@ -924,7 +924,7 @@ export function SessionTab() {
                   </div>
 
                   {/* ── KPI grid ── */}
-                  <div className="px-4 py-3 grid grid-cols-2 gap-2">
+                  <div className="px-6 py-4 grid grid-cols-2 gap-2">
                     {/* MJ — large */}
                     <div className="col-span-2 flex items-center gap-3 rounded-lg px-3 py-2" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
                       <div>

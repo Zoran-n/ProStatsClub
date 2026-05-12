@@ -415,19 +415,17 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
     <>
       {/* ── Backdrop ── */}
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center p-4"
-        style={{ background: "rgba(0,0,0,0.8)" }}
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       >
         <div
-          className="relative w-full max-w-[820px] max-h-[92vh] overflow-y-auto rounded-lg shadow-2xl"
-          style={{ background: "var(--main-bg)", border: "1px solid var(--border-glass)", backdropFilter: "blur(12px)", animation: "fadeSlideIn 0.15s ease-out" }}
+          className="relative w-full max-w-[820px] max-h-[92vh] overflow-y-auto rounded-2xl shadow-2xl shadow-black/50 bg-[#13151A]/80 backdrop-blur-2xl border border-white/5"
+          style={{ animation: "fadeSlideIn 0.15s ease-out" }}
           onClick={(e) => e.stopPropagation()}
         >
 
           {/* ══ HEADER ══════════════════════════════════════════════════════ */}
-          <div className="sticky top-0 z-10 px-5 py-4 rounded-t-lg"
-            style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
+          <div className="sticky top-0 z-10 px-5 py-4 rounded-t-2xl bg-[#13151A]/90 backdrop-blur-xl border-b border-white/5">
             <div className="flex items-start justify-between gap-3">
               {/* Avatar + name + badges */}
               <div className="flex items-center gap-3">
@@ -437,8 +435,7 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
                     {player.name.toUpperCase()}
                   </h3>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-['Bebas_Neue'] tracking-widest"
-                      style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--muted)" }}>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-['Bebas_Neue'] tracking-widest bg-white/5 border border-white/10 text-slate-400">
                       {posLabel}
                     </span>
                     {trendSummary && (
@@ -483,15 +480,14 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
 
                 {/* Note massive */}
                 {player.rating > 0 && (
-                  <div className="flex flex-col items-center justify-center py-5 rounded-xl"
-                    style={{ background: "var(--tile-bg)", border: "1px solid var(--border-glass)", backdropFilter: "blur(8px)" }}>
-                    <span className="font-['Bebas_Neue'] leading-none"
-                      style={{ fontSize: 88, color: ratingColor(player.rating), textShadow: `0 0 40px ${ratingColor(player.rating)}66` }}>
+                  <div className="flex flex-col items-center justify-center py-5 rounded-xl bg-[#13151A]/80 backdrop-blur-2xl border border-white/5">
+                    <span className="font-['Bebas_Neue'] text-8xl leading-none"
+                      style={{ color: ratingColor(player.rating), textShadow: `0 0 40px ${ratingColor(player.rating)}66` }}>
                       {player.rating.toFixed(1)}
                     </span>
                     <div className="flex items-center gap-1.5 mt-1">
                       <Star size={12} className="text-yellow-400" />
-                      <span className="text-[10px] tracking-widest font-['Bebas_Neue']" style={{ color: "var(--muted)" }}>NOTE MOYENNE</span>
+                      <span className="text-[10px] tracking-widest font-['Bebas_Neue'] text-slate-400">NOTE MOYENNE</span>
                     </div>
                     {trendSummary && (
                       <span className="text-xs font-bold mt-1" style={{ color: trendSummary.dirColor }}>{trendSummary.direction}</span>
@@ -501,7 +497,7 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
 
                 {/* Graphique d'évolution */}
                 {(evoData.length > 1 || monthlyData.length > 1) && (
-                  <div className="rounded-xl p-3" style={{ background: "var(--tile-bg)", border: "1px solid var(--border-glass)", backdropFilter: "blur(8px)" }}>
+                  <div className="rounded-xl p-3 bg-[#13151A]/80 backdrop-blur-2xl border border-white/5">
                     <div className="flex items-center justify-between mb-2 gap-2">
                       <p className="category-header">{t("players.evolution")}</p>
                       <div className="flex gap-1 rounded p-0.5" style={{ background: "var(--bg)" }}>
@@ -638,10 +634,9 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
                       { label: t("players.tackles"),  value: player.tacklesMade, color: "var(--text)" },
                       { label: "MOTM",                value: player.motm,        color: "#fcd34d" },
                     ].map(({ label, value, color }) => (
-                      <div key={label} className="flex flex-col items-center justify-center rounded-lg py-2.5 px-2"
-                        style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
-                        <span className="font-['Bebas_Neue'] text-2xl leading-none" style={{ color }}>{value}</span>
-                        <span className="text-[8px] tracking-widest mt-1 font-['Bebas_Neue'] uppercase" style={{ color: "var(--muted)" }}>{label}</span>
+                      <div key={label} className="flex flex-col items-center justify-center rounded-lg py-3 px-2 bg-white/[0.03] border border-white/5">
+                        <span className="font-['Bebas_Neue'] text-3xl leading-none" style={{ color }}>{value}</span>
+                        <span className="text-[9px] tracking-widest mt-1 font-['Bebas_Neue'] uppercase text-slate-500">{label}</span>
                       </div>
                     ))}
                   </div>
@@ -649,12 +644,11 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
 
                 {/* Stats Avancées */}
                 {advStats.length > 0 && (
-                  <div className="rounded-xl p-3" style={{ background: "var(--tile-bg)", border: "1px solid var(--border-glass)", backdropFilter: "blur(8px)" }}>
+                  <div className="rounded-xl p-3 bg-[#13151A]/80 backdrop-blur-2xl border border-white/5">
                     <p className="category-header mb-3">STATS AVANCÉES</p>
                     <div className="space-y-1.5">
                       {advStats.map(({ label, value, color, icon }) => (
-                        <div key={label} className="flex items-center justify-between px-3 py-2 rounded-lg"
-                          style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+                        <div key={label} className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/[0.03] border border-white/5">
                           <div className="flex items-center gap-2">
                             <span style={{ color: "var(--muted)" }}>{icon}</span>
                             <span className="text-xs" style={{ color: "var(--muted)" }}>{label}</span>
@@ -668,7 +662,7 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
 
                 {/* Trend summary */}
                 {trendSummary && (
-                  <div className="rounded-xl p-3" style={{ background: "var(--tile-bg)", border: "1px solid var(--border-glass)", backdropFilter: "blur(8px)" }}>
+                  <div className="rounded-xl p-3 bg-[#13151A]/80 backdrop-blur-2xl border border-white/5">
                     <p className="category-header mb-3">TENDANCE</p>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
