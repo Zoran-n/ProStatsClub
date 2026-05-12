@@ -111,7 +111,7 @@ interface AppState {
   archiveSession: (id: string) => void;
   updateSession: (id: string, patch: Partial<Session>) => void;
   setActiveSessionGoal: (goal: number | undefined) => void;
-  setActiveSessionAdvancedGoals: (ag: { maxLosses?: number; minRating?: number }) => void;
+  setActiveSessionAdvancedGoals: (ag: { maxLosses?: number; minRating?: number; goalGoals?: number; goalAssists?: number }) => void;
   saveSessionTemplate: (tpl: SessionTemplate) => void;
   deleteSessionTemplate: (id: string) => void;
   mergeSessions: (ids: string[], label: string) => void;
