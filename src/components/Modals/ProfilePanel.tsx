@@ -19,10 +19,11 @@ const labelStyle: React.CSSProperties = {
 };
 
 const TILE: React.CSSProperties = {
-  background: "var(--card)",
-  border: "1px solid var(--border)",
+  background: "var(--tile-bg)",
+  border: "1px solid var(--border-glass)",
   borderRadius: 8,
   padding: "16px",
+  backdropFilter: "blur(8px)",
 };
 
 const TILE_TITLE: React.CSSProperties = {

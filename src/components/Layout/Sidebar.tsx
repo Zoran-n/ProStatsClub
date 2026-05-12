@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Users, Swords, BarChart3, Timer, GitCompare, Star, ChevronDown, Search, Send } from "lucide-react";
+import { Users, Swords, BarChart3, Timer, GitCompare, Star, ChevronDown, Search, Send, ShieldCheck } from "lucide-react";
 import { useAutoRefresh } from "../../hooks/useAutoRefresh";
 import { useAppStore, type ActiveTab } from "../../store/useAppStore";
 import { SearchTab } from "../Sidebar/SearchTab";
@@ -34,6 +34,7 @@ function ClubLogo({ club, size = 28 }: { club: Club; size?: number }) {
 function useNavItems(): { id: ActiveTab; icon: ReactNode; label: string }[] {
   const t = useT();
   return [
+    { id: "club",     icon: <ShieldCheck size={18} />, label: "Vue Club" },
     { id: "players",  icon: <Users size={18} />,       label: t("nav.players") },
     { id: "matches",  icon: <Swords size={18} />,      label: t("nav.matches") },
     { id: "charts",   icon: <BarChart3 size={18} />,   label: t("nav.charts") },
