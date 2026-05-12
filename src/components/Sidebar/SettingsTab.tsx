@@ -106,7 +106,7 @@ export function SettingsTab() {
   const settingsImportRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { getVersion().then(setAppVersion).catch(() => {}); }, []);
-  useEffect(() => { if (autoUpdate) handleCheckUpdate(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (autoUpdate) handleCheckUpdate(); }, []);
 
   const apply = (fn: () => void) => { fn(); persistSettings(); };
 

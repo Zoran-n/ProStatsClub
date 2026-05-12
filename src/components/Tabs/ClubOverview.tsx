@@ -93,7 +93,6 @@ export function ClubOverview() {
       const res = getResult(m);
       return { n: i + 1, v: res === "W" ? 3 : res === "D" ? 1 : 0, r: res, label: `M${i + 1}` };
     }),
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   [sortedMatches]);
 
   // Overall stats (all matches loaded, all types)
@@ -116,7 +115,6 @@ export function ClubOverview() {
     }
     if (count < 2) return null;
     return { result: first, count };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leagueMatches]);
 
   // Records (from league matches)
@@ -149,7 +147,6 @@ export function ClubOverview() {
     const totalGoalsScored = leagueMatches.reduce((acc, m) => acc + getScore(m).my, 0);
 
     return { biggestWin, longestWinStreak, mostGoals, totalGoalsScored };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leagueMatches, currentClub?.id]);
 
   // Top 3 players
