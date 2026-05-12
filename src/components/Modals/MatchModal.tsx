@@ -264,55 +264,49 @@ export function MatchModal({ match, clubId, onClose }: { match: Match; clubId: s
     >
       <div
         className="relative w-[680px] max-h-[90vh] overflow-y-auto rounded-lg shadow-2xl"
-        style={{ background: "var(--main-bg)", border: "1px solid var(--border)" }}
+        style={{ background: "var(--main-bg)", border: "1px solid var(--border-glass)", backdropFilter: "blur(12px)" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* ── Hero Scoreboard ─────────────────────────────────── */}
-        <div className="relative overflow-hidden px-6 pt-6 pb-5"
-          style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
+        <div className="relative overflow-hidden px-6 pt-6 pb-6 text-center"
+          style={{ background: "var(--tile-bg)", borderBottom: "1px solid var(--border-glass)" }}>
 
-          <div className="relative flex items-start justify-between">
-            {/* Score block */}
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold tracking-widest"
-                  style={{ background: resultBadge.color + "22", color: resultBadge.color, border: `1px solid ${resultBadge.color}55` }}>
-                  {resultBadge.label}
-                </span>
-              </div>
-              <div className="font-['Bebas_Neue'] text-6xl leading-none tracking-wider mb-2" style={{ color: "var(--text)" }}>
-                {myGoals}
-                <span className="mx-2" style={{ color: "var(--muted)" }}>—</span>
-                {oppGoals}
-              </div>
-              <div className="text-base font-semibold mb-0.5" style={{ color: "var(--text)" }}>
-                vs <span>{oppName}</span>
-              </div>
-              <div style={{ fontSize: 11, color: "var(--muted)" }}>
-                {formatDate(match.timestamp, locale)}
-                {match.matchDuration ? ` · ${formatDuration(match.matchDuration)}` : ""}
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center gap-2 flex-shrink-0">
-              {discordWebhook && (
-                <button
-                  onClick={shareToDiscord}
-                  disabled={sharing}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-colors disabled:opacity-40"
-                  style={{ border: "1px solid var(--border)", background: "var(--active)", color: "var(--accent)" }}
-                >
-                  <Send size={11} /> Discord
-                </button>
-              )}
+          {/* Actions (top-right absolute) */}
+          <div className="absolute top-4 right-4 flex items-center gap-2">
+            {discordWebhook && (
               <button
-                onClick={onClose}
-                className="win-btn"
+                onClick={shareToDiscord}
+                disabled={sharing}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-colors disabled:opacity-40"
+                style={{ border: "1px solid var(--border-glass)", background: "var(--active)", color: "var(--accent)" }}
               >
-                ✕
+                <Send size={11} /> Discord
               </button>
-            </div>
+            )}
+            <button onClick={onClose} className="win-btn">✕</button>
+          </div>
+
+          {/* Result badge */}
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold tracking-widest mb-3"
+            style={{ background: resultBadge.color + "22", color: resultBadge.color, border: `1px solid ${resultBadge.color}55` }}>
+            {resultBadge.label}
+          </span>
+
+          {/* Score centré — pièce maîtresse */}
+          <div className="font-['Bebas_Neue'] leading-none tracking-widest"
+            style={{ fontSize: 88, color: "var(--text)", textShadow: `0 0 40px ${resultBadge.color}55` }}>
+            <span style={{ color: resultBadge.color }}>{myGoals}</span>
+            <span className="mx-3" style={{ color: "var(--muted)", fontSize: 60 }}>—</span>
+            <span style={{ color: "var(--muted)" }}>{oppGoals}</span>
+          </div>
+
+          {/* Adversaire + date */}
+          <div className="mt-2 text-base font-semibold" style={{ color: "var(--text)" }}>
+            vs <span>{oppName}</span>
+          </div>
+          <div className="mt-0.5" style={{ fontSize: 11, color: "var(--muted)" }}>
+            {formatDate(match.timestamp, locale)}
+            {match.matchDuration ? ` · ${formatDuration(match.matchDuration)}` : ""}
           </div>
         </div>
 
@@ -385,8 +379,9 @@ export function MatchModal({ match, clubId, onClose }: { match: Match; clubId: s
                     key={i}
                     className="grid items-center gap-2 px-3 py-2.5 rounded-lg transition-colors"
                     style={{
-                      border: p.motm && isVictory ? "1px solid #f59e0b33" : "1px solid var(--border)",
-                      background: p.motm && isVictory ? "#f59e0b08" : "var(--surface)",
+                      border: p.motm && isVictory ? "1px solid #f59e0b44" : "1px solid var(--border-glass)",
+                      background: p.motm && isVictory ? "#f59e0b0a" : "var(--tile-bg)",
+                      backdropFilter: "blur(4px)",
                       gridTemplateColumns: "2.25rem 1fr 2.5rem 2.5rem 2.5rem 3rem 2.5rem" + (hasTackles ? " 2.5rem" : "") + (hasCards ? " 2.5rem" : "") + (isVictory ? " 2rem" : ""),
                     }}
                   >

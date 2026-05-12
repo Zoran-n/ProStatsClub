@@ -20,6 +20,8 @@
         { "url": "https://discordapp.com/api/webhooks/**" }
       ]
     },
+    "http:allow-fetch-send",
+    "http:allow-fetch-read-body",
     "updater:default",
     "process:default",
     "notification:default",

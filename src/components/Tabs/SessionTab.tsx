@@ -5,7 +5,7 @@ import {
   Copy, Merge, AlertTriangle, Layers,
 } from "lucide-react";
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
 } from "recharts";
 import { useAppStore } from "../../store/useAppStore";
@@ -463,9 +463,37 @@ export function SessionTab() {
     return alerts;
   }, [activeSession]);
 
+  const lastSession = useMemo(() => {
+    const completed = sessions.filter((s) => !s.archived && s.matches.length > 0 && s.id !== activeSession?.id);
+    if (completed.length === 0) return null;
+    return completed.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+  }, [sessions, activeSession]);
+
+  const lastSessionStats = useMemo(() => {
+    if (!lastSession) return null;
+    const wld = sessionWLD(lastSession.matches, lastSession.clubId);
+    const kpis = sessionKpis(lastSession.matches, lastSession.clubId);
+    const mvps = sessionMvpStats(lastSession.matches, lastSession.clubId);
+    const sorted = [...lastSession.matches].sort((a, b) => Number(a.timestamp) - Number(b.timestamp));
+    const formData = sorted.map((m, i) => {
+      const r = matchResult(m, lastSession.clubId);
+      return { n: i + 1, pts: r === "W" ? 3 : r === "D" ? 1 : 0, r };
+    });
+    return { wld, kpis, mvps, formData };
+  }, [lastSession]);
+
+  const activeStats = useMemo(() => {
+    if (!activeSession || !currentClub) return null;
+    return {
+      wld: sessionWLD(activeSession.matches, activeSession.clubId),
+      kpis: sessionKpis(activeSession.matches, activeSession.clubId),
+      duration: Math.round((Date.now() - new Date(activeSession.date).getTime()) / 60000),
+    };
+  }, [activeSession, currentClub]);
+
   return (
-    <div ref={contentRef} style={{ display: "flex", flexDirection: "column", height: "100%",
-      overflowY: "auto", padding: 16, gap: 12 }}>
+    <div ref={contentRef} className="session-dashboard">
+      <div className="session-left-col">
 
       {/* ── Active session ─────────────────────────────────────────────── */}
       {activeSession ? (
@@ -1642,6 +1670,133 @@ export function SessionTab() {
           </div>
         );
       })()}
+
+      </div>{/* end session-left-col */}
+
+      {/* ── Colonne droite : Analytics ─────────────────────────────────── */}
+      <div className="session-right-col">
+        {/* Tile : Session active */}
+        {activeSession && activeStats && (
+          <div style={{ background: "rgba(0,212,255,0.06)", border: "1px solid rgba(0,212,255,0.22)", borderRadius: 10, padding: 14 }}>
+            <div style={{ fontSize: 9, color: "var(--accent)", letterSpacing: "0.12em", fontFamily: "'Bebas Neue', sans-serif", marginBottom: 8 }}>
+              SESSION EN COURS · {activeStats.duration}min
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginBottom: 10 }}>
+              {[
+                { label: "V", value: activeStats.wld.w, color: "var(--green)" },
+                { label: "N", value: activeStats.wld.d, color: "var(--gold)" },
+                { label: "D", value: activeStats.wld.l, color: "var(--red)" },
+              ].map(({ label, value, color }) => (
+                <div key={label} style={{ textAlign: "center", background: "var(--tile-bg)", border: "1px solid var(--border-glass)", borderRadius: 8, padding: "8px 4px" }}>
+                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 28, color, lineHeight: 1 }}>{value}</div>
+                  <div style={{ fontSize: 9, color: "var(--muted)", marginTop: 2 }}>{label}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 6, marginBottom: 12 }}>
+              {[
+                { label: "Buts", value: activeStats.kpis.goals },
+                { label: "PD",   value: activeStats.kpis.assists },
+              ].map(({ label, value }) => (
+                <div key={label} style={{ textAlign: "center", background: "var(--tile-bg)", border: "1px solid var(--border-glass)", borderRadius: 8, padding: "6px 4px" }}>
+                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 22, color: "var(--accent)", lineHeight: 1 }}>{value}</div>
+                  <div style={{ fontSize: 9, color: "var(--muted)", marginTop: 2 }}>{label}</div>
+                </div>
+              ))}
+            </div>
+            <button onClick={handleStop} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              padding: "10px 0", background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.35)",
+              borderRadius: 8, color: "#ef4444", fontSize: 13, fontFamily: "'Bebas Neue', sans-serif",
+              letterSpacing: "0.08em", cursor: "pointer" }}>
+              <Square size={13} /> TERMINER LA SESSION
+            </button>
+          </div>
+        )}
+
+        {/* Tile : Dernière session */}
+        {!activeSession && lastSession && lastSessionStats && (
+          <div style={{ background: "var(--tile-bg)", border: "1px solid var(--border-glass)", backdropFilter: "blur(8px)", borderRadius: 10, padding: 14 }}>
+            <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: "0.12em", fontFamily: "'Bebas Neue', sans-serif", marginBottom: 6 }}>
+              DERNIÈRE SESSION
+            </div>
+            <div style={{ fontSize: 12, color: "var(--text)", fontWeight: 600, marginBottom: 10 }}>
+              {lastSession.clubName} · {new Date(lastSession.date).toLocaleDateString()}
+            </div>
+            {/* V/N/D */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginBottom: 10 }}>
+              {[
+                { label: "VICTOIRES", value: lastSessionStats.wld.w, color: "var(--green)" },
+                { label: "NULS",      value: lastSessionStats.wld.d, color: "var(--gold)" },
+                { label: "DÉFAITES",  value: lastSessionStats.wld.l, color: "var(--red)" },
+              ].map(({ label, value, color }) => (
+                <div key={label} style={{ textAlign: "center", background: "var(--tile-bg)", border: "1px solid var(--border-glass)", borderRadius: 8, padding: "8px 4px" }}>
+                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 26, color, lineHeight: 1 }}>{value}</div>
+                  <div style={{ fontSize: 8, color: "var(--muted)", marginTop: 2, letterSpacing: "0.06em" }}>{label}</div>
+                </div>
+              ))}
+            </div>
+            {/* KPIs */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginBottom: 10 }}>
+              {[
+                { label: "Buts",  value: lastSessionStats.kpis.goals   },
+                { label: "PD",    value: lastSessionStats.kpis.assists  },
+                { label: "MOTM",  value: lastSessionStats.kpis.motm     },
+              ].map(({ label, value }) => (
+                <div key={label} style={{ textAlign: "center", background: "var(--tile-bg)", border: "1px solid var(--border-glass)", borderRadius: 8, padding: "6px 4px" }}>
+                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, color: "var(--accent)", lineHeight: 1 }}>{value}</div>
+                  <div style={{ fontSize: 9, color: "var(--muted)", marginTop: 2 }}>{label}</div>
+                </div>
+              ))}
+            </div>
+            {/* Forme chart */}
+            {lastSessionStats.formData.length > 1 && (
+              <>
+                <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: "0.12em", fontFamily: "'Bebas Neue', sans-serif", marginBottom: 6 }}>FORME</div>
+                <ResponsiveContainer width="100%" height={80}>
+                  <AreaChart data={lastSessionStats.formData} margin={{ top: 4, right: 4, left: -30, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="sess-form-fill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.35} />
+                        <stop offset="100%" stopColor="var(--accent)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="n" tick={{ fill: "var(--muted)", fontSize: 8 }} />
+                    <YAxis domain={[0, 3]} hide />
+                    <Tooltip
+                      contentStyle={{ background: "var(--tile-bg)", border: "1px solid var(--border-glass)", borderRadius: 6, fontSize: 10 }}
+                      formatter={(v: unknown) => [v === 3 ? "V" : v === 1 ? "N" : "D", "Résultat"]}
+                    />
+                    <Area type="monotone" dataKey="pts" stroke="var(--accent)" strokeWidth={2.5} fill="url(#sess-form-fill)" dot={{ r: 2, fill: "var(--accent)", strokeWidth: 0 }} activeDot={{ r: 4 }} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </>
+            )}
+            {/* Top buteur */}
+            {lastSessionStats.mvps.topScorer && lastSessionStats.mvps.topScorer.goals > 0 && (
+              <div style={{ marginTop: 10, padding: "8px 10px", background: "var(--tile-bg)", border: "1px solid var(--border-glass)", borderRadius: 8 }}>
+                <div style={{ fontSize: 9, color: "var(--gold)", letterSpacing: "0.1em", fontFamily: "'Bebas Neue', sans-serif", marginBottom: 4 }}>TOP BUTEUR</div>
+                <div style={{ fontSize: 13, color: "var(--text)", fontWeight: 600 }}>{lastSessionStats.mvps.topScorer.name}</div>
+                <div style={{ fontSize: 11, color: "var(--accent)" }}>{lastSessionStats.mvps.topScorer.goals} ⚽</div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tile : Lancer une session */}
+        {!activeSession && !lastSession && currentClub && (
+          <div style={{ background: "var(--tile-bg)", border: "1px solid var(--border-glass)", borderRadius: 10, padding: 18, textAlign: "center" }}>
+            <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: "0.12em", fontFamily: "'Bebas Neue', sans-serif", marginBottom: 12 }}>PRÊT À JOUER</div>
+            <button
+              onClick={() => startSession(currentClub)}
+              style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 20px",
+                background: "var(--active)", border: "1px solid var(--accent)", borderRadius: 8,
+                color: "var(--accent)", fontSize: 13, fontFamily: "'Bebas Neue', sans-serif",
+                letterSpacing: "0.06em", cursor: "pointer" }}>
+              <Play size={14} /> LANCER
+            </button>
+          </div>
+        )}
+      </div>{/* end session-right-col */}
 
       {/* ── PDF save modal (detail) ────────────────────────────────────── */}
       {pdfModal && (

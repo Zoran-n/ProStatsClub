@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import {
-  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  AreaChart, Area, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceLine,
 } from "recharts";
 import {
@@ -559,18 +559,18 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
               <p className="category-header mb-2">STATISTIQUES CLÉS</p>
               {/* Note en vedette */}
               {player.rating > 0 && (
-                <div className="flex items-center justify-between mb-3 px-4 py-3 rounded-lg"
-                  style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
-                  <div className="flex items-center gap-2">
-                    <Star size={16} className="text-yellow-400" />
-                    <span className="text-sm font-medium" style={{ color: "var(--muted)" }}>{t("players.rating")}</span>
-                  </div>
+                <div className="flex flex-col items-center justify-center mb-3 py-4 rounded-xl"
+                  style={{ background: "var(--tile-bg)", border: "1px solid var(--border-glass)", backdropFilter: "blur(8px)" }}>
                   <span
-                    className="font-['Bebas_Neue'] text-5xl leading-none"
-                    style={{ color: ratingColor(player.rating) }}
+                    className="font-['Bebas_Neue'] leading-none"
+                    style={{ fontSize: 80, color: ratingColor(player.rating), textShadow: `0 0 32px ${ratingColor(player.rating)}88` }}
                   >
                     {player.rating.toFixed(1)}
                   </span>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <Star size={12} className="text-yellow-400" />
+                    <span className="text-[10px] tracking-widest font-['Bebas_Neue']" style={{ color: "var(--muted)" }}>NOTE MOYENNE</span>
+                  </div>
                 </div>
               )}
               {/* Grille stats */}
@@ -640,12 +640,18 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
                 {chartView === "match" && evoData.length > 1 && (
                   <>
                     <ResponsiveContainer width="100%" height={150}>
-                      <LineChart data={trendChartData}>
+                      <AreaChart data={trendChartData}>
+                        <defs>
+                          <linearGradient id="pm-evo-fill" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.35} />
+                            <stop offset="100%" stopColor="var(--accent)" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                         <XAxis dataKey="match" tick={{ fill: "var(--muted)", fontSize: 9 }} />
                         <YAxis tick={{ fill: "var(--muted)", fontSize: 9 }} domain={evoStat === "rating" ? [0, 10] : [0, "auto"]} />
                         <Tooltip
-                          contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 4, fontSize: 11 }}
+                          contentStyle={{ background: "var(--tile-bg)", border: "1px solid var(--border-glass)", borderRadius: 6, fontSize: 11, backdropFilter: "blur(8px)" }}
                           labelStyle={{ color: "var(--muted)" }}
                           formatter={(v: unknown, name: unknown) => {
                             const n = Number(v); if (isNaN(n)) return [null, String(name)];
@@ -659,7 +665,7 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
                             return p?.[0]?.payload?.date ?? "";
                           }}
                         />
-                        <Line type="monotone" dataKey="value" stroke="var(--accent)" strokeWidth={2} dot={{ r: 3, fill: "var(--accent)" }} connectNulls={false} />
+                        <Area type="monotone" dataKey="value" stroke="var(--accent)" strokeWidth={3} fill="url(#pm-evo-fill)" dot={{ r: 3, fill: "var(--accent)", strokeWidth: 0 }} activeDot={{ r: 5, fill: "var(--accent)" }} connectNulls={false} />
                         {showTrend && evoStat === "rating" && (
                           <Line type="monotone" dataKey="trendValue" stroke="#8b5cf6" strokeWidth={1.5} strokeDasharray="4 3" dot={false} />
                         )}
@@ -669,7 +675,7 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
                         {showTrend && evoData.length > 0 && (
                           <ReferenceLine x={`M${evoData.length}`} stroke="var(--border)" strokeDasharray="3 3" />
                         )}
-                      </LineChart>
+                      </AreaChart>
                     </ResponsiveContainer>
 
                     {showTrend && trendSummary && (

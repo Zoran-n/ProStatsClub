@@ -120,7 +120,7 @@ function App() {
       // Ctrl+1..5 → Switch tabs
       if (e.ctrlKey && e.key >= "1" && e.key <= "5") {
         e.preventDefault();
-        const tabs = ["players", "matches", "charts", "session", "compare"] as const;
+        const tabs = ["players", "matches", "charts", "session", "club"] as const;
         const idx = Number(e.key) - 1;
         setActiveTab(tabs[idx]);
         return;

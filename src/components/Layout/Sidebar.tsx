@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Users, Swords, BarChart3, Timer, GitCompare, Star, ChevronDown, Search, Send, ShieldCheck } from "lucide-react";
+import { Users, Swords, BarChart3, Timer, Star, ChevronDown, Search, Send, ShieldCheck } from "lucide-react";
 import { useAutoRefresh } from "../../hooks/useAutoRefresh";
 import { useAppStore, type ActiveTab } from "../../store/useAppStore";
 import { SearchTab } from "../Sidebar/SearchTab";
@@ -39,7 +39,6 @@ function useNavItems(): { id: ActiveTab; icon: ReactNode; label: string }[] {
     { id: "matches",  icon: <Swords size={18} />,      label: t("nav.matches") },
     { id: "charts",   icon: <BarChart3 size={18} />,   label: t("nav.charts") },
     { id: "session",  icon: <Timer size={18} />,       label: t("nav.session") },
-    { id: "compare",  icon: <GitCompare size={18} />,  label: t("nav.compare") },
   ];
 }
 
