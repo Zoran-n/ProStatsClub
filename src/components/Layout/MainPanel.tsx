@@ -1,17 +1,14 @@
-import { useState, useEffect, useMemo } from "react";
-import { BarChart2, Trophy, Search, Sparkles, Hash, Settings, Send, Pencil, X, Minimize2, Megaphone, ListChecks, BookOpen, LayoutDashboard } from "lucide-react";
-import { predictNextMatch, generateSmartGoals } from "../../utils/aiEngine";
-import { AIPanel } from "../AI/AIPanel";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { BarChart2, Trophy, Search, Sparkles, Settings, Send, Pencil, X, Minimize2, Megaphone, ListChecks, BookOpen, LayoutDashboard } from "lucide-react";
+import { GlassCard } from "../UI/GlassCard";
 import { useAppStore } from "../../store/useAppStore";
+import { ClubOverview } from "../Tabs/ClubOverview";
 import { PlayersTab } from "../Tabs/PlayersTab";
 import { MatchesTab } from "../Tabs/MatchesTab";
 import { ChartsTab } from "../Tabs/ChartsTab";
 import { SessionTab } from "../Tabs/SessionTab";
-import { CompareTab } from "../Sidebar/CompareTab";
 import { SettingsTab } from "../Sidebar/SettingsTab";
 import { ProfilePanel } from "../Modals/ProfilePanel";
-import { MyProfilePage } from "../Tabs/MyProfilePage";
-import { AnalysePage } from "../Tabs/AnalysePage";
 import { Spinner } from "../UI/Spinner";
 import { getLogo } from "../../api/tauri";
 import { sendDiscordWebhook } from "../../api/discord";
@@ -54,8 +51,15 @@ function DashboardView({
   const last5 = [...matches].sort((a, b) => Number(a.timestamp) - Number(b.timestamp)).slice(-5);
 
   const CARD: React.CSSProperties = {
-    background: "var(--hover)", border: "1px solid var(--border)", borderRadius: 10,
-    padding: "14px 16px", display: "flex", flexDirection: "column", gap: 6,
+    background: "var(--card)",
+    border: "1px solid var(--border)",
+    borderRadius: 8,
+    padding: "14px 16px",
+    display: "flex",
+    flexDirection: "column",
+    gap: 6,
+    position: "relative",
+    overflow: "hidden",
   };
   const TITLE: React.CSSProperties = {
     fontFamily: "'Bebas Neue', sans-serif", fontSize: 11, letterSpacing: "0.1em",
@@ -66,13 +70,15 @@ function DashboardView({
     switch (id) {
       case "forme":
         return formScore !== null ? (
-          <div key={id} style={CARD}>
+          <GlassCard key={id} beam glow="cyan"
+            padding="14px 16px"
+            style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <div style={TITLE}>SCORE DE FORME</div>
             <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 42, color: formColor, lineHeight: 1 }}>
               {formScore}<span style={{ fontSize: 18, opacity: 0.6 }}>/100</span>
             </div>
             <div style={{ fontSize: 10, color: formColor, fontWeight: 700 }}>{formLabel}</div>
-          </div>
+          </GlassCard>
         ) : null;
 
       case "serie":
@@ -171,16 +177,6 @@ function DashboardView({
           </div>
         );
 
-      case "ai_insights":
-        return (
-          <div key={id} className="col-span-full md:col-span-1">
-            <AIPanel 
-              prediction={predictNextMatch(club, matches)}
-              goals={generateSmartGoals(matches, club.id)}
-            />
-          </div>
-        );
-
       default:
         return null;
     }
@@ -223,9 +219,55 @@ function DashboardView({
         </div>
       )}
 
-      {/* Widget grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}>
+      {/* Widget grid — bento staggered */}
+      <div className="stagger-container"
+        style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}>
         {widgets.map(id => renderWidget(id)).filter(Boolean)}
+      </div>
+    </div>
+  );
+}
+
+// ─── Settings overlay modal ───────────────────────────────────────────────────
+
+function SettingsOverlay({ onClose, t }: { onClose: () => void; t: (k: string) => string }) {
+  return (
+    <div
+      role="dialog" aria-modal="true" aria-label={t("settings.title")}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      style={{
+        position: "fixed", inset: 0, zIndex: 1000,
+        background: "rgba(0,0,0,0.65)", backdropFilter: "blur(4px)",
+        display: "flex", alignItems: "flex-start", justifyContent: "center",
+        padding: "32px 16px", overflowY: "auto",
+      }}>
+      <div style={{
+        width: "100%", maxWidth: 1100,
+        background: "var(--main-bg)", border: "1px solid var(--border)",
+        borderRadius: 12, overflow: "hidden",
+        boxShadow: "0 24px 64px rgba(0,0,0,0.5)",
+      }}>
+        <div style={{
+          height: 48, display: "flex", alignItems: "center", gap: 8,
+          padding: "0 16px", borderBottom: "1px solid var(--border)",
+          background: "var(--surface)", flexShrink: 0,
+        }}>
+          <Settings size={15} style={{ color: "var(--accent)" }} />
+          <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.08em" }}>
+            {t("settings.title")}
+          </span>
+          <button onClick={onClose} style={{
+            marginLeft: "auto", background: "transparent", border: "none",
+            cursor: "pointer", color: "var(--muted)", display: "flex", alignItems: "center",
+            padding: 4, borderRadius: 4, transition: "color 0.15s",
+          }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "var(--text)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = "var(--muted)"; }}
+            aria-label="Fermer">
+            <X size={16} />
+          </button>
+        </div>
+        <SettingsTab />
       </div>
     </div>
   );
@@ -246,7 +288,18 @@ export function MainPanel() {
   const [showWeeklyRanking, setShowWeeklyRanking] = useState(false);
   const [showSeasonReport, setShowSeasonReport] = useState(false);
   const [dashboardMode, setDashboardMode] = useState(false);
-  const [dashWidgets, setDashWidgets] = useState<string[]>(["ai_insights", "forme", "serie", "derniers_matchs", "top_joueur", "kpis_rapides", "heatmap"]);
+  const [dashWidgets, setDashWidgets] = useState<string[]>(["forme", "serie", "derniers_matchs", "top_joueur", "kpis_rapides", "heatmap"]);
+
+  // Settings modal — intercepte sidebarTab === "settings" pour l'afficher en overlay
+  const showSettingsModal = sidebarTab === "settings";
+  const closeSettings = useCallback(() => setSidebarTab("search"), [setSidebarTab]);
+
+  useEffect(() => {
+    if (!showSettingsModal) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") closeSettings(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [showSettingsModal, closeSettings]);
 
   const shareTab = async () => {
     if (!discordWebhook || !currentClub) return;
@@ -263,6 +316,7 @@ export function MainPanel() {
   };
 
   const TAB_LABELS: Record<string, string> = {
+    club: "Vue Club",
     players: t("nav.players"),
     matches: t("nav.matches"),
     charts: t("nav.charts"),
@@ -326,43 +380,10 @@ export function MainPanel() {
 
   const KPIS = ALL_KPIS_CATALOG.filter(k => visibleKpis.includes(k.key));
 
-  // ── Analyse IA page ────────────────────────────────────────────────
-  if (sidebarTab === "analyse") {
-    return (
-      <main id="main-content" style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "var(--main-bg)" }}
-        role="main" aria-label="Analyse IA">
-        <div style={{
-          height: 48, display: "flex", alignItems: "center", gap: 8,
-          padding: "0 16px", borderBottom: "1px solid rgba(0,0,0,0.24)",
-          flexShrink: 0, background: "var(--main-bg)",
-        }}>
-          <span style={{ fontSize: 15, fontWeight: 600, color: "var(--text)" }}>Analyse</span>
-        </div>
-        <AnalysePage />
-      </main>
-    );
-  }
-
-  // ── My Profile stats page ───────────────────────────────────────────
-  if (sidebarTab === "myprofile") {
-    return (
-      <main id="main-content" style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "var(--main-bg)" }}
-        role="main" aria-label="Mon profil">
-        <div style={{
-          height: 48, display: "flex", alignItems: "center", gap: 8,
-          padding: "0 16px", borderBottom: "1px solid rgba(0,0,0,0.24)",
-          flexShrink: 0, background: "var(--main-bg)",
-        }}>
-          <span style={{ fontSize: 15, fontWeight: 600, color: "var(--text)" }}>Mon profil</span>
-        </div>
-        <MyProfilePage />
-      </main>
-    );
-  }
-
   // ── Profile settings page ─────────────────────────────────────────
   if (sidebarTab === "profile") {
     return (
+      <>
       <main id="main-content" style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "var(--main-bg)" }}
         role="main" aria-label="Paramètres profil">
         <div style={{
@@ -374,165 +395,70 @@ export function MainPanel() {
         </div>
         <ProfilePanel />
       </main>
+      {showSettingsModal && <SettingsOverlay onClose={closeSettings} t={t} />}
+      </>
     );
   }
 
-  // ── Settings page ──────────────────────────────────────────────────
-  if (!isLoading && sidebarTab === "settings") {
-    return (
-      <main id="main-content" style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "var(--main-bg)" }}
-        role="main" aria-label={t("settings.title")}>
-        <div style={{
-          height: 48, display: "flex", alignItems: "center", gap: 8,
-          padding: "0 16px", borderBottom: "1px solid rgba(0,0,0,0.24)",
-          flexShrink: 0, background: "var(--main-bg)",
-        }}>
-          <button onClick={() => setSidebarTab("search")} style={{
-            background: "none", border: "none", cursor: "pointer", color: "var(--muted)",
-            display: "flex", alignItems: "center", padding: 4, borderRadius: 4,
-            transition: "color 0.15s",
-          }} aria-label={t("sidebar.search")}
-            onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = "var(--muted)"; }}>
-            <Settings size={18} />
-          </button>
-          <span style={{ fontSize: 15, fontWeight: 600, color: "var(--text)" }}>{t("settings.title")}</span>
-        </div>
-        <div style={{ flex: 1, overflow: "auto", maxWidth: 600, margin: "0 auto", width: "100%" }}>
-          <SettingsTab />
-        </div>
-      </main>
-    );
-  }
-
-  // ── Club loaded: Discord-style main panel ─────────────────────────
+  // ── Club loaded ────────────────────────────────────────────────────
   return (
     <>
     <main id="main-content" style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "var(--main-bg)" }}
       role="main" aria-label={TAB_LABELS[activeTab] || t("nav.players")}>
 
-      {/* ── Discord-style header bar ──────────────────────────────────── */}
+      {/* ── Header contextuel ─────────────────────────────────────────── */}
       <div style={{
-        height: 48, display: "flex", alignItems: "center", gap: 8,
-        padding: "0 16px", borderBottom: "1px solid rgba(0,0,0,0.24)",
-        flexShrink: 0, background: "var(--main-bg)",
+        height: 44,
+        display: "flex", alignItems: "center", gap: 8,
+        padding: "0 16px",
+        borderBottom: "1px solid var(--border)",
+        flexShrink: 0,
+        background: "var(--surface)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
+        position: "sticky", top: 0,
+        zIndex: "var(--z-header)" as unknown as number,
       }}>
-        <Hash size={20} color="var(--muted)" aria-hidden="true" />
-        <span style={{ fontSize: 15, fontWeight: 600, color: "var(--text)" }}>
-          {TAB_LABELS[activeTab] || t("nav.players")}
-        </span>
+        {currentClub && <div className="refresh-bar" aria-hidden="true" />}
+        {/* Search — gauche */}
+        <button onClick={toggleGlobalSearch} title="Recherche globale (Ctrl+K)"
+          style={{
+            display: "flex", alignItems: "center", gap: 6,
+            padding: "5px 10px", background: "var(--hover)", border: "1px solid var(--border)",
+            borderRadius: 6, color: "var(--muted)", fontSize: 11, cursor: "pointer", flex: 1, maxWidth: 200,
+          }}>
+          <Search size={12} />
+          <span style={{ opacity: 0.6 }}>Rechercher…</span>
+          <kbd style={{ marginLeft: "auto", fontSize: 9, opacity: 0.5, background: "var(--card)", padding: "1px 4px", borderRadius: 3 }}>Ctrl+K</kbd>
+        </button>
+        {/* Vue buttons — droite */}
         {currentClub && (
-          <>
-            <div style={{ width: 1, height: 24, background: "var(--border)", margin: "0 8px" }} />
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              {logo && (
-                <img src={logo} alt="" style={{ width: 24, height: 24, borderRadius: 4, objectFit: "contain" }} />
-              )}
-              <span style={{ fontSize: 13, color: "var(--muted)" }}>
-                {currentClub.name}
-              </span>
-              {currentClub.skillRating && (
-                <span style={{ fontSize: 11, color: "var(--gold)", fontWeight: 600 }}>
-                  {currentClub.skillRating} SR
-                </span>
-              )}
-            </div>
-            <button onClick={() => setDashboardMode(v => !v)} title={dashboardMode ? "Vue normale" : "Dashboard"}
+          <div style={{ display: "flex", gap: 6, marginLeft: "auto" }}>
+            <button onClick={() => setDashboardMode(v => !v)}
               style={{
-                marginLeft: "auto", display: "flex", alignItems: "center", gap: 4,
-                padding: "4px 8px",
-                background: dashboardMode ? "rgba(0,212,255,0.12)" : "var(--hover)",
+                display: "flex", alignItems: "center", gap: 5,
+                padding: "5px 10px",
+                background: dashboardMode ? "rgba(var(--accent-rgb,59,130,246),0.12)" : "var(--hover)",
                 border: `1px solid ${dashboardMode ? "var(--accent)" : "var(--border)"}`,
-                borderRadius: 5, color: dashboardMode ? "var(--accent)" : "var(--muted)",
-                fontSize: 11, cursor: "pointer",
+                borderRadius: 6, color: dashboardMode ? "var(--accent)" : "var(--muted)",
+                fontSize: 10, fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.08em",
+                fontWeight: 700, cursor: "pointer", transition: "all 0.15s",
               }}>
-              <LayoutDashboard size={12} />
+              <LayoutDashboard size={11} /> VUE DASHBOARD
             </button>
-            <button onClick={toggleGlobalSearch} title="Recherche globale (Ctrl+K)"
+            <button onClick={() => setCompactMode(!compactMode)}
               style={{
-                marginLeft: 6, display: "flex", alignItems: "center", gap: 4,
-                padding: "4px 8px", background: "var(--hover)", border: "1px solid var(--border)",
-                borderRadius: 5, color: "var(--muted)", fontSize: 11, cursor: "pointer",
-              }}>
-              <Search size={12} />
-              <kbd style={{ fontSize: 9, opacity: 0.7 }}>Ctrl+K</kbd>
-            </button>
-            <button onClick={() => setCompactMode(!compactMode)} title={compactMode ? "Mode normal" : "Mode compact"}
-              style={{
-                marginLeft: 6, display: "flex", alignItems: "center", gap: 4,
-                padding: "4px 8px",
-                background: compactMode ? "rgba(0,212,255,0.12)" : "var(--hover)",
+                display: "flex", alignItems: "center", gap: 5,
+                padding: "5px 10px",
+                background: compactMode ? "rgba(var(--accent-rgb,59,130,246),0.12)" : "var(--hover)",
                 border: `1px solid ${compactMode ? "var(--accent)" : "var(--border)"}`,
-                borderRadius: 5, color: compactMode ? "var(--accent)" : "var(--muted)",
-                fontSize: 11, cursor: "pointer",
+                borderRadius: 6, color: compactMode ? "var(--accent)" : "var(--muted)",
+                fontSize: 10, fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.08em",
+                fontWeight: 700, cursor: "pointer", transition: "all 0.15s",
               }}>
-              <Minimize2 size={12} />
+              <Minimize2 size={11} /> VUE COMPACTE
             </button>
-            {discordWebhook && ["players", "matches", "charts"].includes(activeTab) && (
-              <button onClick={shareTab} disabled={sharing} title="Partager sur Discord"
-                style={{
-                  marginLeft: 6, display: "flex", alignItems: "center", gap: 5,
-                  padding: "4px 10px", background: "rgba(88,101,242,0.12)",
-                  border: "1px solid rgba(88,101,242,0.25)", borderRadius: 5,
-                  color: sharing ? "var(--muted)" : "#5865f2", fontSize: 11, cursor: sharing ? "default" : "pointer",
-                  opacity: sharing ? 0.6 : 1, transition: "all 0.15s",
-                  fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.06em",
-                }}>
-                <Send size={12} /> DISCORD
-              </button>
-            )}
-            {discordWebhook && currentClub && (
-              <>
-                <button onClick={() => setShowAnnounce(true)} title="Annonce pré-match"
-                  style={{ marginLeft: 4, display: "flex", alignItems: "center", padding: "4px 7px",
-                    background: "rgba(88,101,242,0.08)", border: "1px solid rgba(88,101,242,0.2)",
-                    borderRadius: 5, color: "#8b9cf4", cursor: "pointer", fontSize: 11 }}>
-                  <Megaphone size={12} />
-                </button>
-                <button onClick={() => setShowPoll(true)} title="Sondage Discord"
-                  style={{ marginLeft: 4, display: "flex", alignItems: "center", padding: "4px 7px",
-                    background: "rgba(88,101,242,0.08)", border: "1px solid rgba(88,101,242,0.2)",
-                    borderRadius: 5, color: "#8b9cf4", cursor: "pointer", fontSize: 11 }}>
-                  <ListChecks size={12} />
-                </button>
-                <button onClick={() => setShowHighlight(true)} title="Partager moment fort"
-                  style={{ marginLeft: 4, display: "flex", alignItems: "center", padding: "4px 7px",
-                    background: "rgba(88,101,242,0.08)", border: "1px solid rgba(88,101,242,0.2)",
-                    borderRadius: 5, color: "#8b9cf4", cursor: "pointer", fontSize: 11 }}>
-                  <Sparkles size={12} />
-                </button>
-                <button onClick={() => setShowSeasonThread(true)} title="Thread début de saison"
-                  style={{ marginLeft: 4, display: "flex", alignItems: "center", padding: "4px 7px",
-                    background: "rgba(88,101,242,0.08)", border: "1px solid rgba(88,101,242,0.2)",
-                    borderRadius: 5, color: "#8b9cf4", cursor: "pointer", fontSize: 11 }}>
-                  <BookOpen size={12} />
-                </button>
-                <button onClick={() => setShowWeeklyRanking(true)} title="Classement de la semaine"
-                  style={{ marginLeft: 4, display: "flex", alignItems: "center", padding: "4px 7px",
-                    background: "rgba(88,101,242,0.08)", border: "1px solid rgba(88,101,242,0.2)",
-                    borderRadius: 5, color: "#8b9cf4", cursor: "pointer", fontSize: 11 }}>
-                  <Trophy size={12} />
-                </button>
-                <button onClick={() => setShowSeasonReport(true)} title="Rapport de saison"
-                  style={{ marginLeft: 4, display: "flex", alignItems: "center", padding: "4px 7px",
-                    background: "rgba(88,101,242,0.08)", border: "1px solid rgba(88,101,242,0.2)",
-                    borderRadius: 5, color: "#8b9cf4", cursor: "pointer", fontSize: 11 }}>
-                  <BarChart2 size={12} />
-                </button>
-              </>
-            )}
-            {activeSession && (
-              <span style={{
-                marginLeft: 8,
-                fontSize: 10, color: "#fff",
-                background: "var(--red)", padding: "2px 8px", borderRadius: 3, fontWeight: 700,
-                display: "flex", alignItems: "center", gap: 4,
-              }} role="status">
-                <span className="pulse-dot" style={{ width: 6, height: 6 }} />
-                LIVE
-              </span>
-            )}
-          </>
+          </div>
         )}
       </div>
 
@@ -608,6 +534,55 @@ export function MainPanel() {
               <span style={{ fontSize: 10, color: streakColor, fontWeight: 700 }}>{streakText}</span>
             )}
           </div>
+          {/* Actions Discord */}
+          {discordWebhook && (
+            <div style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: 8 }}>
+              {["players", "matches", "charts"].includes(activeTab) && (
+                <button onClick={shareTab} disabled={sharing} title="Partager sur Discord"
+                  style={{
+                    display: "flex", alignItems: "center", gap: 4,
+                    padding: "4px 8px", background: "rgba(0,242,255,0.08)",
+                    border: "1px solid rgba(0,242,255,0.2)", borderRadius: 5,
+                    color: sharing ? "var(--muted)" : "var(--accent)", fontSize: 10, cursor: sharing ? "default" : "pointer",
+                    opacity: sharing ? 0.6 : 1, transition: "all 0.15s",
+                    fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.06em",
+                  }}>
+                  <Send size={11} /> PARTAGER
+                </button>
+              )}
+              {[
+                { icon: <Megaphone size={11} />, action: () => setShowAnnounce(true), title: "Annonce pré-match" },
+                { icon: <ListChecks size={11} />, action: () => setShowPoll(true), title: "Sondage Discord" },
+                { icon: <Sparkles size={11} />, action: () => setShowHighlight(true), title: "Moment fort" },
+                { icon: <BookOpen size={11} />, action: () => setShowSeasonThread(true), title: "Thread saison" },
+                { icon: <Trophy size={11} />, action: () => setShowWeeklyRanking(true), title: "Classement semaine" },
+                { icon: <BarChart2 size={11} />, action: () => setShowSeasonReport(true), title: "Rapport de saison" },
+              ].map(({ icon, action, title }) => (
+                <button key={title} onClick={action} title={title}
+                  style={{
+                    display: "flex", alignItems: "center", padding: "4px 6px",
+                    background: "var(--hover)", border: "1px solid var(--border)",
+                    borderRadius: 5, color: "var(--muted)", cursor: "pointer", fontSize: 11,
+                    transition: "all 0.15s",
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "var(--accent)"; (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--accent)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = "var(--muted)"; (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border)"; }}>
+                  {icon}
+                </button>
+              ))}
+            </div>
+          )}
+          {/* Settings button */}
+          <button onClick={() => setSidebarTab("settings")} title="Paramètres"
+            style={{
+              display: "flex", alignItems: "center", padding: "5px 6px",
+              background: "transparent", border: "1px solid var(--border)",
+              borderRadius: 6, color: "var(--muted)", cursor: "pointer", transition: "all 0.15s",
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "var(--accent)"; (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--accent)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = "var(--muted)"; (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border)"; }}>
+            <Settings size={13} />
+          </button>
           {/* LIVE badge */}
           {activeSession && (
             <span style={{
@@ -793,11 +768,11 @@ export function MainPanel() {
           />
         ) : (
           <div key={activeTab} className="tab-content" style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+            {activeTab === "club"     && <ClubOverview />}
             {activeTab === "players"  && <PlayersTab />}
             {activeTab === "matches"  && <MatchesTab />}
             {activeTab === "charts"   && <ChartsTab />}
             {activeTab === "session"  && <SessionTab />}
-            {activeTab === "compare"  && <CompareTab />}
           </div>
         )}
       </div>
@@ -808,6 +783,8 @@ export function MainPanel() {
     {showSeasonThread && <SeasonThreadModal   onClose={() => setShowSeasonThread(false)} />}
     {showWeeklyRanking && <WeeklyRankingModal onClose={() => setShowWeeklyRanking(false)} />}
     {showSeasonReport && <SeasonReportModal   onClose={() => setShowSeasonReport(false)} />}
-    </>
+
+    {showSettingsModal && <SettingsOverlay onClose={closeSettings} t={t} />}
+</>
   );
 }

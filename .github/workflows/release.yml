@@ -1,0 +1,295 @@
+name: Release (Production)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Type de version'
+        required: false
+        default: 'patch'
+        type: choice
+        options: [patch, minor, major]
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # 1. Bump version, commit, tag
+  # ─────────────────────────────────────────────────────────────────────────────
+  bump-and-tag:
+    name: 🔢 Bump version & tag
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      new_tag: ${{ steps.bump.outputs.new_tag }}
+      new_version: ${{ steps.bump.outputs.new_version }}
+
+    steps:
+      - name: 📥 Checkout Main
+        uses: actions/checkout@v4
+        with:
+          ref: Main
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: ⚙️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 🔢 Bump patch version
+        id: bump
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Run bump script — outputs the new version string on stdout
+          BUMP_TYPE="${{ github.event.inputs.version_type || 'patch' }}"
+          NEW_VERSION=$(node scripts/bump-version.js "$BUMP_TYPE")
+          NEW_TAG="v${NEW_VERSION}"
+
+          echo "new_version=${NEW_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "new_tag=${NEW_TAG}"         >> "$GITHUB_OUTPUT"
+
+          # Commit the 3 modified files
+          git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml
+          git commit -m "chore: bump version to ${NEW_VERSION} [skip ci]"
+
+          # Create and push tag (abort if already exists — should never happen)
+          if git ls-remote --tags origin "refs/tags/${NEW_TAG}" | grep -q "${NEW_TAG}"; then
+            echo "❌  Tag ${NEW_TAG} already exists on remote." >&2
+            exit 1
+          fi
+          git tag "${NEW_TAG}"
+          git push origin Main --follow-tags
+
+          echo "### 🔢 Version bump" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Nouvelle version : \`${NEW_VERSION}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Nouveau tag : \`${NEW_TAG}\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: 📝 Générer les Release Notes
+        run: |
+          NEW_TAG="${{ steps.bump.outputs.new_tag }}"
+          PREV_TAG=$(git tag --sort=-version:refname | grep -v "^${NEW_TAG}$" | head -1)
+          RANGE="${PREV_TAG:+${PREV_TAG}..HEAD}"
+          RANGE="${RANGE:-HEAD}"
+
+          COMMITS=$(git log "$RANGE" --pretty=format:"%s" \
+            | grep -E "^(feat|fix)(\(.+\))?:" \
+            | grep -vE "(skip ci|bump version|explicit secrets|duplicate asset|configure tauri|allow discord|tauri signing|updater bundle)" \
+            | sed 's/^feat[^:]*: /- ✨ /; s/^fix[^:]*: /- 🐛 /')
+
+          {
+            echo "## 🚀 Quoi de neuf dans ${NEW_TAG} ?"
+            echo ""
+            if [ -z "$COMMITS" ]; then
+              echo "- Améliorations internes et corrections de stabilité"
+            else
+              echo "$COMMITS"
+            fi
+          } > RELEASE_NOTES.md
+
+          echo "### 📝 Release Notes" >> "$GITHUB_STEP_SUMMARY"
+          cat RELEASE_NOTES.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: 📤 Upload Release Notes
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: RELEASE_NOTES.md
+          retention-days: 1
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # 2. Build Windows & publish GitHub Release
+  # ─────────────────────────────────────────────────────────────────────────────
+  build-and-release:
+    name: 🚀 Build & Release Windows
+    runs-on: windows-latest
+    needs: bump-and-tag
+    permissions:
+      contents: write
+    env:
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+
+    steps:
+      - name: 📥 Checkout Main (avec version bumpée)
+        uses: actions/checkout@v4
+        with:
+          ref: Main
+          fetch-depth: 0
+
+      - name: 📥 Télécharger les Release Notes
+        uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+
+      - name: ⚙️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 🦀 Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: 📦 Cache Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - name: 📥 Installer les dépendances Node
+        shell: bash
+        run: npm ci
+
+      - name: 🔑 Vérifier les secrets de signature
+        shell: bash
+        run: |
+          if [ -z "$TAURI_SIGNING_PRIVATE_KEY" ]; then
+            echo "### ❌ ERREUR : TAURI_SIGNING_PRIVATE_KEY absent" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          echo "### 🔑 Signature OK (longueur: ${#TAURI_SIGNING_PRIVATE_KEY})" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🔨 Build Tauri
+        shell: bash
+        run: |
+          if ! npm run tauri build -- --bundles nsis,updater 2>&1 | tee build.log; then
+            echo "### ❌ Échec : Build Tauri" >> $GITHUB_STEP_SUMMARY
+            ERROR_LINES=$(grep -E "^error(\[E[0-9]+\])?:|^error |panic!|FAILED|Cannot find module|TS[0-9]{4}:" build.log || true)
+            echo "<details><summary>🔍 Erreurs</summary>" >> $GITHUB_STEP_SUMMARY
+            echo '```text' >> $GITHUB_STEP_SUMMARY
+            if [ -n "$ERROR_LINES" ]; then
+              echo "$ERROR_LINES" | head -n 40 >> $GITHUB_STEP_SUMMARY
+            else
+              tail -n 60 build.log >> $GITHUB_STEP_SUMMARY
+            fi
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "</details>" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+      - name: 📎 Upload build.log (si échec)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log-${{ needs.bump-and-tag.outputs.new_tag }}
+          path: build.log
+          retention-days: 7
+
+      - name: 🔔 Notification Discord (si échec)
+        if: failure()
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        shell: bash
+        run: |
+          node scripts/notify-discord.js \
+            --log build.log \
+            --status fail \
+            --tag "${{ needs.bump-and-tag.outputs.new_tag }}" \
+            --commit "${{ github.sha }}" \
+            --run-url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - name: 🔍 Debug — listing target/release
+        if: always()
+        shell: bash
+        run: |
+          echo "### 📁 src-tauri/target/release" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          find src-tauri/target/release -not -path "*/deps/*" -not -path "*/.fingerprint/*" -not -path "*/incremental/*" -type f | sort >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: 📝 Générer latest.json
+        shell: bash
+        run: |
+          VERSION="${{ needs.bump-and-tag.outputs.new_tag }}"
+          VERSION_BARE="${VERSION#v}"
+          PUB_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          REPO="Zoran-n/ProStatsClub"
+
+          SIG_FILE=$(find src-tauri/target/release/bundle -name "*.sig" | head -1)
+          if [ -z "$SIG_FILE" ]; then
+            echo "### ❌ Signature non générée" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+          UPDATER_ARCHIVE="${SIG_FILE%.sig}"
+          ZIP_NAME=$(basename "$UPDATER_ARCHIVE")
+          ZIP_NAME_ENCODED="${ZIP_NAME// /%20}"
+          SIG_CONTENT=$(cat "$SIG_FILE")
+
+          cat > latest.json <<EOF
+          {
+            "version": "${VERSION_BARE}",
+            "notes": "Release ${VERSION}",
+            "pub_date": "${PUB_DATE}",
+            "platforms": {
+              "windows-x86_64": {
+                "url": "https://github.com/${REPO}/releases/download/${VERSION}/${ZIP_NAME_ENCODED}",
+                "signature": "${SIG_CONTENT}"
+              }
+            }
+          }
+          EOF
+
+          echo "### ✅ latest.json — \`${VERSION}\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🚀 Créer la GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          VERSION="${{ needs.bump-and-tag.outputs.new_tag }}"
+
+          SIG_FILE=$(find src-tauri/target/release/bundle -name "*.sig" | head -1)
+          UPDATER_ARCHIVE="${SIG_FILE%.sig}"
+          NSIS_EXE=$(find src-tauri/target/release/bundle -name "*.exe" \
+            ! -name "$(basename "$UPDATER_ARCHIVE")" | head -1)
+          [ "$NSIS_EXE" = "$UPDATER_ARCHIVE" ] && NSIS_EXE=""
+
+          if [ -z "$UPDATER_ARCHIVE" ] || [ ! -f "$UPDATER_ARCHIVE" ] || [ ! -f "$SIG_FILE" ]; then
+            echo "### ❌ Archive updater ou signature manquante" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+          # Écraser la release si elle existe déjà (re-run propre)
+          gh release delete "${VERSION}" --yes 2>/dev/null || true
+
+          ASSETS=()
+          [ -n "$NSIS_EXE" ] && [ -f "$NSIS_EXE" ] && ASSETS+=("$NSIS_EXE")
+          ASSETS+=("$UPDATER_ARCHIVE" "$SIG_FILE" latest.json)
+
+          gh release create "${VERSION}" \
+            "${ASSETS[@]}" \
+            --title "ProClubs Stats ${VERSION}" \
+            --notes-file RELEASE_NOTES.md
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # 3. Rapport final
+  # ─────────────────────────────────────────────────────────────────────────────
+  report:
+    name: 📊 Rapport de Release
+    runs-on: ubuntu-latest
+    needs: [bump-and-tag, build-and-release]
+    if: always()
+    steps:
+      - name: 📥 Checkout (pour notify-discord.js)
+        if: needs.build-and-release.result == 'success'
+        uses: actions/checkout@v4
+
+      - name: 📝 Résumé
+        run: |
+          echo "# 📊 Rapport de Release" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version** : \`${{ needs.bump-and-tag.outputs.new_tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔢 Bump & Tag : ${{ needs.bump-and-tag.result == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 🚀 Build & Release : ${{ needs.build-and-release.result == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🎉 Notification Discord (succès)
+        if: needs.build-and-release.result == 'success'
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          node scripts/notify-discord.js \
+            --status success \
+            --tag "${{ needs.bump-and-tag.outputs.new_tag }}" \
+            --commit "${{ github.sha }}" \
+            --run-url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"

@@ -78,7 +78,7 @@ export function PublicPlayerCard({ config, player, division }: Props) {
         try {
           await sendDiscordFile(discordWebhook, blob, "procard.png");
           addToast("Carte partagée sur Discord !", "success");
-        } catch (err) {
+        } catch (_err) {
           addToast("Erreur lors du partage Discord", "error");
         }
       }, "image/png");
@@ -99,7 +99,7 @@ export function PublicPlayerCard({ config, player, division }: Props) {
           width: 340,
           background: theme.bg,
           border: `2px solid ${theme.border}`,
-          borderRadius: 16,
+          borderRadius: 8,
           padding: 24,
           position: "relative",
           overflow: "hidden",
@@ -150,7 +150,7 @@ export function PublicPlayerCard({ config, player, division }: Props) {
                 {statLabels[statKey] || statKey.toUpperCase()}
               </span>
               <span style={{ fontSize: 22, color: theme.accent }}>
-                {(statValues as any)[statKey] ?? "—"}
+                {(statValues as Record<string, number | string>)[statKey] ?? "—"}
               </span>
             </div>
           ))}
@@ -164,12 +164,12 @@ export function PublicPlayerCard({ config, player, division }: Props) {
             </div>
             <div style={{ height: 6, background: "rgba(255,255,255,0.1)", borderRadius: 3, overflow: "hidden", marginBottom: 4 }}>
               <div style={{
-                width: `${Math.min(100, (((statValues as any)[config.objective.targetStat] || 0) / config.objective.targetValue) * 100)}%`,
+                width: `${Math.min(100, (((statValues as Record<string, number | string>)[config.objective.targetStat] as number || 0) / config.objective.targetValue) * 100)}%`,
                 height: "100%", background: theme.accent
               }} />
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, opacity: 0.6 }}>
-              <span>{(statValues as any)[config.objective.targetStat] || 0}</span>
+              <span>{(statValues as Record<string, number | string>)[config.objective.targetStat] || 0}</span>
               <span>{config.objective.targetValue}</span>
             </div>
           </div>
@@ -194,8 +194,8 @@ export function PublicPlayerCard({ config, player, division }: Props) {
             onClick={handleShareDiscord}
             style={{
               display: "flex", alignItems: "center", gap: 8, padding: "10px 20px",
-              background: "#5865F2", border: "none",
-              borderRadius: 8, color: "#fff", cursor: "pointer",
+              background: "var(--accent)", border: "none",
+              borderRadius: 8, color: "var(--bg)", cursor: "pointer",
               fontFamily: "'Bebas Neue', sans-serif", fontSize: 16
             }}
           >

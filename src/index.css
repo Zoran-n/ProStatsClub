@@ -1,35 +1,61 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg: #1e1f22;
-  --color-surface: #2b2d31;
-  --color-card: #313338;
+  --color-bg:       #030303;
+  --color-surface:  #0a0a0b;
+  --color-card:     #0d0d10;
+  --color-accent:   #00f2ff;
+  --color-accent-2: #7000ff;
   --font-heading: "Bebas Neue", sans-serif;
-  --font-body: "Barlow", sans-serif;
+  --font-body:    "Barlow", sans-serif;
 }
 
-/* ─── CSS Variables (Discord-inspired defaults) ─────────────────────────────── */
+/* ─── Design Tokens — SaaS High-Tech ────────────────────────────────────── */
 :root {
-  --bg:       #1e1f22;
-  --surface:  #2b2d31;
-  --card:     #313338;
-  --border:   #3f4147;
-  --accent:   #00d4ff;
-  --orange:   #ff6b35;
-  --gold:     #f59e0b;
-  --green:    #23a559;
-  --red:      #da373c;
-  --text:     #f2f3f5;
-  --muted:    #949ba4;
-  --fs:       13px;
-  --font-body: "Barlow", sans-serif;
-  /* Discord-specific layout vars */
-  --guild-bar: #1e1f22;
-  --sidebar-bg: #2b2d31;
-  --main-bg:  #313338;
-  --hover:    rgba(255,255,255,0.06);
-  --active:   rgba(255,255,255,0.1);
-  --radius:   8px;
+  /* ── Core palette ────────────────────────────────── */
+  --bg:         #030303;
+  --surface:    #0a0a0b;
+  --card:       #0d0d10;
+  --border:     rgba(255, 255, 255, 0.06);
+  --accent:     #00f2ff;
+  --accent-2:   #7000ff;
+  --orange:     #ff6b35;
+  --gold:       #ffd700;
+  --green:      #00ff87;
+  --red:        #ff2d55;
+  --text:       #f0f0f5;
+  --muted:      #8892a4;
+
+  /* ── Glow tokens ─────────────────────────────────── */
+  --glow-primary:   rgba(0, 242, 255, 0.15);
+  --glow-secondary: rgba(112, 0, 255, 0.12);
+
+  /* ── Typography ──────────────────────────────────── */
+  --fs:         13px;
+  --font-body:  "Barlow", sans-serif;
+
+  /* ── Layout dimensions (grid anchors) ────────────── */
+  --app-bar-w:  52px;
+  --sidebar-w:  220px;
+  --app-bar-bg:  #020202;
+  --sidebar-bg: #0a0a0b;
+  --main-bg:    #030303;
+
+  /* ── Interaction states ──────────────────────────── */
+  --hover:        rgba(255, 255, 255, 0.04);
+  --active:       rgba(0, 242, 255, 0.08);
+  --radius:       8px;
+
+  /* ── Glass / bento tile tokens ───────────────────── */
+  --tile-bg:      rgba(255, 255, 255, 0.07);
+  --border-glass: rgba(255, 255, 255, 0.12);
+
+  /* ── Z-index scale ───────────────────────────────── */
+  --z-content:  1;
+  --z-sidebar:  10;
+  --z-header:   20;
+  --z-modal:    50;
+  --z-toast:    100;
 }
 
 /* ─── Color themes ───────────────────────────────────────────────────────────── */
@@ -44,11 +70,33 @@
 [data-theme="rose"]     { --accent: #f43f5e; }
 /* custom theme: --accent set via JS inline style */
 /* ─── Palette presets (full bg + accent overrides) ───────────────────────── */
-[data-palette="eafc"]           { --accent: #F9C00C; --bg: #08090F; --surface: #0F1320; --card: #171D30; --border: #252E48; --guild-bar: #08090F; --sidebar-bg: #0F1320; --main-bg: #171D30; }
-[data-palette="blood"]          { --accent: #C0392B; --bg: #0D0606; --surface: #1A0A0A; --card: #230E0E; --border: #3D1515; --guild-bar: #0D0606; --sidebar-bg: #1A0A0A; --main-bg: #230E0E; }
-[data-palette="ocean"]          { --accent: #0EA5E9; --bg: #040D1A; --surface: #0B1930; --card: #0F2440; --border: #1A3A60; --guild-bar: #040D1A; --sidebar-bg: #0B1930; --main-bg: #0F2440; }
-[data-palette="forest"]         { --accent: #22C55E; --bg: #060E07; --surface: #0B1A0C; --card: #112413; --border: #1A3A1F; --guild-bar: #060E07; --sidebar-bg: #0B1A0C; --main-bg: #112413; }
-[data-palette="discord-classic"]{ --accent: #5865F2; --bg: #1e1f22; --surface: #2b2d31; --card: #313338; --border: #3f4147; --guild-bar: #1e1f22; --sidebar-bg: #2b2d31; --main-bg: #313338; }
+[data-palette="eafc"]           { --accent: #F9C00C; --bg: #08090F; --surface: #0F1320; --card: #171D30; --border: #252E48; --border-glass: rgba(249,192,12,0.1); --tile-bg: rgba(249,192,12,0.04); --app-bar-bg: #08090F; --sidebar-bg: #0F1320; --main-bg: #171D30; }
+[data-palette="blood"]          { --accent: #C0392B; --bg: #0D0606; --surface: #1A0A0A; --card: #230E0E; --border: #3D1515; --border-glass: rgba(192,57,43,0.15); --tile-bg: rgba(192,57,43,0.05); --app-bar-bg: #0D0606; --sidebar-bg: #1A0A0A; --main-bg: #230E0E; }
+[data-palette="ocean"]          { --accent: #0EA5E9; --bg: #040D1A; --surface: #0B1930; --card: #0F2440; --border: #1A3A60; --border-glass: rgba(14,165,233,0.15); --tile-bg: rgba(14,165,233,0.04); --app-bar-bg: #040D1A; --sidebar-bg: #0B1930; --main-bg: #0F2440; }
+[data-palette="forest"]         { --accent: #22C55E; --bg: #060E07; --surface: #0B1A0C; --card: #112413; --border: #1A3A1F; --border-glass: rgba(34,197,94,0.15); --tile-bg: rgba(34,197,94,0.04); --app-bar-bg: #060E07; --sidebar-bg: #0B1A0C; --main-bg: #112413; }
+[data-palette="classic"]        { --accent: #3b82f6; --accent-2: #6366f1; --bg: #121212; --surface: #1e1e1e; --card: #252525; --border: rgba(255,255,255,0.1); --border-glass: rgba(255,255,255,0.08); --tile-bg: rgba(255,255,255,0.03); --text: #e5e7eb; --muted: #9ca3af; --app-bar-bg: #0f0f0f; --sidebar-bg: #1a1a1a; --main-bg: #121212; --hover: rgba(255,255,255,0.05); --active: rgba(59,130,246,0.1); --glow-primary: rgba(59,130,246,0.15); --glow-secondary: rgba(99,102,241,0.12); }
+[data-palette="discord-classic"]{ --accent: #5865F2; --bg: #1e1f22; --surface: #2b2d31; --card: #313338; --border: #3f4147; --border-glass: rgba(255,255,255,0.10); --tile-bg: rgba(255,255,255,0.06); --app-bar-bg: #1e1f22; --sidebar-bg: #2b2d31; --main-bg: #313338; }
+[data-palette="neon-cyber"]     {
+  --accent:         #00f2ff;
+  --accent-2:       #7000ff;
+  --bg:             #030303;
+  --surface:        #0a0a0b;
+  --card:           #0d0d10;
+  --border:         rgba(255, 255, 255, 0.06);
+  --green:          #00ff87;
+  --red:            #ff2d55;
+  --gold:           #ffd700;
+  --muted:          #8892a4;
+  --text:           #f0f0f5;
+  --glow-primary:   rgba(0, 242, 255, 0.15);
+  --glow-secondary: rgba(112, 0, 255, 0.12);
+  --app-bar-bg:      #020202;
+  --sidebar-bg:     #0a0a0b;
+  --main-bg:        #030303;
+  --hover:          rgba(255, 255, 255, 0.04);
+  --active:         rgba(0, 242, 255, 0.08);
+  --radius:         8px;
+}
 
 /* ─── Font family ─────────────────────────────────────────────────────────────── */
 [data-font="inter"]  { --font-body: "Inter", sans-serif; }
@@ -103,7 +151,6 @@ body {
 /* High contrast mode improvements */
 @media (forced-colors: active) {
   .channel-item.active { border: 2px solid ButtonText; }
-  .guild-icon.active { border: 2px solid Highlight; }
 }
 
 /* ─── Light mode ─────────────────────────────────────────────────────────────── */
@@ -114,7 +161,7 @@ body {
   --border:    #d3d6db;
   --text:      #060607;
   --muted:     #6d6f78;
-  --guild-bar: #e3e5e8;
+  --app-bar-bg: #e3e5e8;
   --sidebar-bg:#f2f3f5;
   --main-bg:   #ffffff;
   --hover:     rgba(0,0,0,0.04);
@@ -141,14 +188,14 @@ body {
   animation-duration: 1ms !important;
 }
 
-/* ─── Scrollbar (Discord-style) ───────────────────────────────────────────── */
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: transparent; margin: 4px 0; }
-::-webkit-scrollbar-thumb { background: #1a1b1e; border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
-::-webkit-scrollbar-thumb:hover { background: #0d0e10; border: 2px solid transparent; background-clip: content-box; }
+/* ─── Scrollbar ────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,242,255,0.4); }
 
-[data-light] ::-webkit-scrollbar-thumb { background: #c4c9ce; border: 2px solid transparent; background-clip: content-box; }
-[data-light] ::-webkit-scrollbar-thumb:hover { background: #9ea4aa; border: 2px solid transparent; background-clip: content-box; }
+[data-light] ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); }
+[data-light] ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.3); }
 
 /* ─── Range input ──────────────────────────────────────────────────────────── */
 input[type="range"] { appearance: none; background: rgba(255,255,255,0.1); border-radius: 4px; outline: none; height: 6px; }
@@ -173,78 +220,64 @@ input[type="range"]::-webkit-slider-thumb { appearance: none; width: 14px; heigh
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0);   }
 }
+
+/* ─── Auto-refresh progress bar ─────────────────────────────────────────────── */
+@keyframes refresh-sweep {
+  from { width: 0%; }
+  to   { width: 100%; }
+}
+.refresh-bar {
+  position: absolute;
+  top: 0; left: 0;
+  height: 1px;
+  background: #00f2ff;
+  animation: refresh-sweep 60s linear infinite;
+  opacity: 0.55;
+  box-shadow: 0 0 6px rgba(0, 242, 255, 0.35);
+  pointer-events: none;
+  z-index: 1;
+}
 .tab-content  { animation: fadeSlideIn 0.15s ease-out; }
 .sidebar-tab  { animation: fadeSlideIn 0.12s ease-out; }
 
-/* ─── Discord-style channel item ─────────────────────────────────────────── */
+/* ─── Nav item (sidebar) — migré vers .nav-icon-btn, garde compat transitoire */
 .channel-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  margin: 1px 8px;
-  border-radius: 4px;
+  gap: 10px;
+  padding: 8px 12px;
+  margin: 1px 6px;
+  border-radius: var(--radius);
   cursor: pointer;
   color: var(--muted);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
-  transition: background 0.1s, color 0.1s;
+  transition: background 0.15s ease-out, color 0.15s ease-out;
 }
-.channel-item:hover { background: var(--hover); color: var(--text); }
-.channel-item.active { background: var(--active); color: var(--text); }
+.channel-item:hover  { background: var(--hover); color: var(--text); }
+.channel-item.active {
+  background: rgba(0, 242, 255, 0.06);
+  color: var(--accent);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.channel-item.active svg { filter: drop-shadow(0 0 4px rgba(0, 242, 255, 0.4)); }
 
-/* ─── Discord-style category header ──────────────────────────────────────── */
+/* ─── Section label (sidebar) ────────────────────────────────────────────── */
 .category-header {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 16px 10px 4px;
-  margin: 0 8px;
-  font-size: 11px;
+  padding: 14px 12px 4px;
+  margin: 0 6px;
+  font-size: 10px;
   font-weight: 700;
   color: var(--muted);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   cursor: default;
   user-select: none;
+  opacity: 0.6;
 }
-
-/* ─── Guild icon (server icon bar) ───────────────────────────────────────── */
-.guild-icon {
-  width: 48px; height: 48px;
-  border-radius: 24px;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer;
-  transition: border-radius 0.15s, background 0.15s;
-  background: var(--surface);
-  overflow: hidden;
-  position: relative;
-}
-.guild-icon:hover, .guild-icon.active {
-  border-radius: 16px;
-}
-.guild-icon.active { background: var(--accent); }
-.guild-icon.active .guild-icon-text { color: #fff; }
-.guild-icon img { width: 100%; height: 100%; object-fit: cover; }
-.guild-icon-text {
-  font-family: "Bebas Neue", sans-serif;
-  font-size: 18px;
-  color: var(--accent);
-}
-
-/* Guild indicator pill (left side) */
-.guild-pill {
-  position: absolute;
-  left: 0; top: 50%;
-  transform: translateY(-50%);
-  width: 4px;
-  height: 0;
-  border-radius: 0 4px 4px 0;
-  background: var(--text);
-  transition: height 0.15s;
-}
-.guild-icon:hover .guild-pill { height: 20px; }
-.guild-icon.active .guild-pill { height: 40px; }
 
 /* ─── Player table row hover ─────────────────────────────────────────────── */
 .player-row {
@@ -375,31 +408,35 @@ input[type="range"]::-webkit-slider-thumb { appearance: none; width: 14px; heigh
 .dev-log-entry.ok  { border-left-color: var(--green); color: #86efac; }
 .dev-log-entry.info { border-left-color: var(--muted); color: var(--muted); }
 
-/* ─── Discord tooltip ────────────────────────────────────────────────────── */
-.discord-tooltip {
+/* ─── UI Tooltip (SaaS minimal) ──────────────────────────────────────────── */
+.ui-tooltip {
   position: absolute;
-  left: calc(100% + 12px);
+  left: calc(100% + 10px);
   top: 50%;
   transform: translateY(-50%);
-  background: #111214;
+  background: var(--surface);
   color: var(--text);
-  padding: 6px 10px;
+  padding: 5px 10px;
   border-radius: 6px;
-  font-size: 13px;
-  font-weight: 600;
+  border: 1px solid var(--border);
+  font-size: 12px;
+  font-weight: 500;
   white-space: nowrap;
   pointer-events: none;
-  z-index: 1000;
-  box-shadow: 0 8px 16px rgba(0,0,0,0.24);
+  z-index: var(--z-toast);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(0, 242, 255, 0.06);
 }
-.discord-tooltip::before {
+.ui-tooltip::before {
   content: '';
   position: absolute;
   left: -4px;
   top: 50%;
   transform: translateY(-50%) rotate(45deg);
-  width: 8px; height: 8px;
-  background: #111214;
+  width: 7px;
+  height: 7px;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
 }
 
 /* ── Compact mode ─────────────────────────────────────────────────────── */
@@ -454,11 +491,11 @@ input[type="range"]::-webkit-slider-thumb { appearance: none; width: 14px; heigh
 
 /* Hover lift card */
 .hover-lift {
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.18s ease-out, box-shadow 0.18s ease-out;
 }
 .hover-lift:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(0, 242, 255, 0.08);
 }
 
 /* Modal slide-in (already fadeSlideIn but add a specific one for modals) */
@@ -468,3 +505,308 @@ input[type="range"]::-webkit-slider-thumb { appearance: none; width: 14px; heigh
 }
 .modal-anim { animation: modalIn 0.18s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 1 — SaaS High-Tech Utility Classes
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── Glass Card ─────────────────────────────────────────────────────────── */
+.glass-card {
+  position: relative;
+  background: var(--tile-bg, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--border-glass, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius);
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+/* Gradient border subtil via mask */
+.glass-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(0, 242, 255, 0.14) 0%,
+    rgba(112, 0, 255, 0.07) 50%,
+    transparent 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+/* Micro-glow coin supérieur gauche */
+.glass-card::after {
+  content: '';
+  position: absolute;
+  top: -24px;
+  left: -24px;
+  width: 140px;
+  height: 140px;
+  background: var(--glow-primary);
+  filter: blur(32px);
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0.55;
+}
+.glass-card.glow-violet::after { background: var(--glow-secondary); }
+.glass-card.glow-none::after   { display: none; }
+
+/* ─── Border Beam animation ──────────────────────────────────────────────── */
+@property --border-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+@keyframes border-beam {
+  to { --border-angle: 360deg; }
+}
+.border-beam::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: var(--radius);
+  background: conic-gradient(
+    from var(--border-angle),
+    transparent 75%,
+    var(--accent) 88%,
+    var(--accent-2) 94%,
+    transparent 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1px;
+  animation: border-beam 3s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ─── Stagger entrance ───────────────────────────────────────────────────── */
+.stagger-container > * {
+  animation: fadeSlideIn 0.2s ease-out both;
+}
+.stagger-container > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-container > *:nth-child(2) { animation-delay: 55ms; }
+.stagger-container > *:nth-child(3) { animation-delay: 110ms; }
+.stagger-container > *:nth-child(4) { animation-delay: 165ms; }
+.stagger-container > *:nth-child(5) { animation-delay: 220ms; }
+.stagger-container > *:nth-child(6) { animation-delay: 275ms; }
+.stagger-container > *:nth-child(7) { animation-delay: 330ms; }
+.stagger-container > *:nth-child(8) { animation-delay: 385ms; }
+
+/* ─── Data table rows (no zebra, séparateurs 0.5px) ─────────────────────── */
+.data-table-row {
+  border-top: 0.5px solid rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  transition: background 0.15s ease-out;
+  position: relative;
+}
+.data-table-row::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 2px;
+  background: var(--accent);
+  opacity: 0;
+  transition: opacity 0.15s ease-out;
+}
+.data-table-row:hover { background: rgba(0, 242, 255, 0.03) !important; }
+.data-table-row:hover::before { opacity: 1; }
+/* Désactive les animations sur les grandes listes */
+.data-table-row:nth-child(n+100) { transition: none; }
+
+/* ─── Nav icon button (sidebar SaaS) ────────────────────────────────────── */
+.nav-icon-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  margin: 1px 6px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  transition: background 0.15s ease-out, color 0.15s ease-out;
+  user-select: none;
+}
+.nav-icon-btn:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.nav-icon-btn.active {
+  background: rgba(0, 242, 255, 0.06);
+  color: var(--accent);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.nav-icon-btn.active svg { filter: drop-shadow(0 0 4px rgba(0, 242, 255, 0.4)); }
+
+/* ─── Grid overlay neon ──────────────────────────────────────────────────── */
+#grid-overlay {
+  background-image:
+    linear-gradient(rgba(0, 242, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 242, 255, 0.02) 1px, transparent 1px);
+}
+
+/* ─── Profile page responsive grid ──────────────────────────────────────── */
+@media (max-width: 768px) {
+  .profile-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ─── ProfilePanel bento responsive ─────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .profile-panel-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .profile-panel-grid > * {
+    grid-column: 1 !important;
+    grid-row: auto !important;
+  }
+}
+
+/* ─── SettingsTab bento responsive ──────────────────────────────────────── */
+.settings-bento {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+  align-items: start;
+}
+
+.settings-bento-span2 {
+  grid-column: span 2;
+}
+
+.settings-bento-full {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 1024px) {
+  .settings-bento {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  .settings-bento-span2 {
+    grid-column: span 2 !important;
+  }
+  .settings-bento-full {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+@media (max-width: 680px) {
+  .settings-bento {
+    grid-template-columns: 1fr !important;
+  }
+  .settings-bento-span2,
+  .settings-bento-full {
+    grid-column: 1 !important;
+  }
+}
+
+/* ─── MatchesTab dashboard grid ──────────────────────────────────────────── */
+.matches-dashboard {
+  flex: 1;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 38%);
+  gap: 12px;
+  padding: 10px 14px 16px;
+  align-items: start;
+}
+
+/* Col droite sticky pour rester visible pendant le scroll de la liste */
+.matches-dashboard > *:last-child {
+  position: sticky;
+  top: 0;
+  max-height: calc(100vh - 160px);
+  overflow-y: auto;
+}
+
+@media (max-width: 1024px) {
+  .matches-dashboard {
+    grid-template-columns: 1fr !important;
+  }
+  .matches-dashboard > *:last-child {
+    position: static !important;
+    max-height: none !important;
+  }
+}
+
+/* ─── Session dashboard 2-col ───────────────────────────────────────────── */
+.session-dashboard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 36%);
+  gap: 12px;
+  height: 100%;
+  overflow: hidden;
+}
+.session-left-col {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 0 16px 16px;
+}
+.session-right-col {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 16px 16px 0;
+  position: sticky;
+  top: 0;
+  max-height: 100%;
+}
+@media (max-width: 1024px) {
+  .session-dashboard {
+    grid-template-columns: 1fr !important;
+    overflow: auto;
+  }
+  .session-left-col {
+    padding: 16px;
+  }
+  .session-right-col {
+    position: static;
+    padding: 0 16px 16px;
+    max-height: none;
+  }
+}
+
+/* ─── ClubOverview bento grid ───────────────────────────────────────────── */
+.club-overview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+  align-items: start;
+}
+
+.club-overview-span2 {
+  grid-column: span 2;
+}
+
+@media (max-width: 1100px) {
+  .club-overview-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  .club-overview-span2 {
+    grid-column: span 2 !important;
+  }
+}
+
+@media (max-width: 700px) {
+  .club-overview-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .club-overview-span2 {
+    grid-column: 1 !important;
+  }
+}

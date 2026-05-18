@@ -13,6 +13,15 @@
     "core:window:allow-is-maximized",
     "core:window:allow-set-size",
     "core:window:allow-set-position",
+    {
+      "identifier": "http:allow-fetch",
+      "allow": [
+        { "url": "https://discord.com/api/webhooks/**" },
+        { "url": "https://discordapp.com/api/webhooks/**" }
+      ]
+    },
+    "http:allow-fetch-send",
+    "http:allow-fetch-read-body",
     "updater:default",
     "process:default",
     "notification:default",

@@ -36,8 +36,8 @@ export function Onboarding() {
       display: "flex", alignItems: "center", justifyContent: "center",
     }}>
       <div style={{
-        background: "var(--surface)", borderRadius: 16, padding: "36px 40px",
-        maxWidth: 720, width: "90%", boxShadow: "0 16px 64px rgba(0,0,0,0.5)",
+        background: "var(--surface)", borderRadius: 8, padding: "36px 40px",
+        maxWidth: 480, width: "90%", boxShadow: "0 16px 64px rgba(0,0,0,0.5)",
         display: "flex", flexDirection: "column", alignItems: "center", gap: 24,
       }}>
         {/* ── Step 0: Language selection ── */}

@@ -6,8 +6,8 @@ import type { Lang } from "../i18n";
 import { sendDiscordWebhook } from "../api/discord";
 import { buildSessionSummaryEmbed } from "../utils/discordEmbeds";
 
-export type ActiveTab = "players" | "matches" | "charts" | "session" | "compare";
-export type SidebarTab = "search" | "favs" | "settings" | "profile" | "myprofile" | "analyse";
+export type ActiveTab = "club" | "players" | "matches" | "charts" | "session";
+export type SidebarTab = "search" | "favs" | "settings" | "profile";
 
 // Injects a <style> tag that proportionally overrides hard-coded inline font-size px values.
 // This scales only text, without affecting layout dimensions or icons.
@@ -111,7 +111,7 @@ interface AppState {
   archiveSession: (id: string) => void;
   updateSession: (id: string, patch: Partial<Session>) => void;
   setActiveSessionGoal: (goal: number | undefined) => void;
-  setActiveSessionAdvancedGoals: (ag: { maxLosses?: number; minRating?: number }) => void;
+  setActiveSessionAdvancedGoals: (ag: { maxLosses?: number; minRating?: number; goalGoals?: number; goalAssists?: number }) => void;
   saveSessionTemplate: (tpl: SessionTemplate) => void;
   deleteSessionTemplate: (id: string) => void;
   mergeSessions: (ids: string[], label: string) => void;
@@ -153,6 +153,9 @@ interface AppState {
   clearMatchCacheStaleFor: (clubId: string, platform: string) => void;
   clearMatchCacheForPeriod: (key: string, fromMs: number, toMs: number) => void;
   clearMatchCacheForProfile: (gamertag: string) => void;
+  syncMatchCache: (key: string, incoming: Match[]) => number;
+  exportMatchCacheJson: () => string;
+  importMatchCacheJson: (json: string) => { added: number; errors: string[] };
   setDiscordWebhook: (v: string) => void;
   setAutoUpdate: (v: boolean) => void;
   setUpdateAvailable: (v: boolean) => void;
@@ -206,7 +209,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   settingsLoaded: false,
   proxyUrl: "",
   isLoading: false, error: null,
-  activeTab: "players", sidebarTab: "search",
+  activeTab: "club", sidebarTab: "search",
   activeSession: null, viewingSession: null,
   logs: ["Prêt."],
   rawLogs: [],
@@ -237,7 +240,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   favFolders: [],
   srAlerts: [],
   savedComparisons: [],
-  palettePreset: null,
+  palettePreset: "classic",
   autoPostSession: false,
   personalRecords: [],
   recordAlerts: [],
@@ -295,7 +298,12 @@ export const useAppStore = create<AppState>((set, get) => ({
     const s = get();
     if (!s.activeSession) return;
     const session = s.activeSession;
-    set({ sessions: [session, ...s.sessions], activeSession: null });
+    // Auto-archive sessions older than 90 days to protect memory
+    const cutoff = Date.now() - 90 * 24 * 60 * 60 * 1000;
+    const updatedSessions = [session, ...s.sessions].map((x) =>
+      !x.archived && new Date(x.date).getTime() < cutoff ? { ...x, archived: true } : x
+    );
+    set({ sessions: updatedSessions, activeSession: null });
     // Auto post-match Discord
     if (s.autoPostSession && s.discordWebhook && session.matches.length > 0) {
       const embed = buildSessionSummaryEmbed(session);
@@ -521,6 +529,54 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
     return { matchCache: next, cacheTimestamps: nextTs, cacheOwners: nextOwners };
   }),
+  syncMatchCache: (key, incoming) => {
+    let added = 0;
+    set((s) => {
+      const existing = s.matchCache[key] ?? [];
+      const seen = new Set(existing.map((m) => m.matchId));
+      const fresh = incoming.filter((m) => m.matchId && !seen.has(m.matchId));
+      added = fresh.length;
+      if (fresh.length === 0) return s;
+      const merged = [...existing, ...fresh].sort((a, b) => Number(b.timestamp) - Number(a.timestamp));
+      return {
+        matchCache: { ...s.matchCache, [key]: merged },
+        cacheTimestamps: { ...s.cacheTimestamps, [key]: Date.now() },
+        cacheOwners: { ...s.cacheOwners, [key]: s.eaProfile?.gamertag ?? "" },
+      };
+    });
+    return added;
+  },
+  exportMatchCacheJson: (): string => {
+    const s = useAppStore.getState();
+    return JSON.stringify({ matchCache: s.matchCache, exportedAt: new Date().toISOString() }, null, 2);
+  },
+  importMatchCacheJson: (json) => {
+    const errors: string[] = [];
+    let added = 0;
+    try {
+      const parsed = JSON.parse(json) as { matchCache?: Record<string, unknown> };
+      if (!parsed.matchCache || typeof parsed.matchCache !== "object") {
+        return { added: 0, errors: ["Format invalide : clé matchCache manquante"] };
+      }
+      set((s) => {
+        const next = { ...s.matchCache };
+        const nextTs = { ...s.cacheTimestamps };
+        for (const [key, val] of Object.entries(parsed.matchCache!)) {
+          if (!Array.isArray(val)) { errors.push(`Clé "${key}" ignorée (pas un tableau)`); continue; }
+          const existing = next[key] ?? [];
+          const seen = new Set(existing.map((m: Match) => m.matchId));
+          const fresh = (val as Match[]).filter((m) => m?.matchId && !seen.has(m.matchId));
+          added += fresh.length;
+          next[key] = [...existing, ...fresh].sort((a, b) => Number(b.timestamp) - Number(a.timestamp));
+          nextTs[key] = Date.now();
+        }
+        return { matchCache: next, cacheTimestamps: nextTs };
+      });
+    } catch (e) {
+      return { added: 0, errors: [`JSON invalide : ${String(e)}`] };
+    }
+    return { added, errors };
+  },
   setDiscordWebhook: (discordWebhook) => set({ discordWebhook }),
   setAutoUpdate: (autoUpdate) => set({ autoUpdate }),
   setUpdateAvailable: (updateAvailable) => set({ updateAvailable }),

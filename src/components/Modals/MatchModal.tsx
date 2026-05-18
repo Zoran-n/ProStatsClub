@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Send } from "lucide-react";
+import { Send, Shield } from "lucide-react";
 import { useAppStore } from "../../store/useAppStore";
 import { useT } from "../../i18n";
 import type { Match } from "../../types";
@@ -18,7 +18,6 @@ function formatDuration(secs?: number) {
   return `${m}min ${s}s`;
 }
 
-/* ─── Team stats helpers (kept for Discord export) ─── */
 interface TeamStat { label: string; my: string | number; opp: string | number }
 
 export function extractTeamStats(match: Match, clubId: string, t: (key: string) => string): TeamStat[] {
@@ -55,7 +54,6 @@ export function extractTeamStats(match: Match, clubId: string, t: (key: string) 
   return stats;
 }
 
-/* ─── Match events ─── */
 interface MatchEvent { type: "goal" | "assist" | "card" | "motm"; player: string; detail?: string }
 
 export function extractMatchEvents(match: Match, clubId: string): MatchEvent[] {
@@ -71,8 +69,8 @@ export function extractMatchEvents(match: Match, clubId: string): MatchEvent[] {
     for (let i = 0; i < assists; i++) events.push({ type: "assist", player: name });
     const yc = Number(p["yellowCards"] ?? p["yellowcards"] ?? 0);
     const rc = Number(p["redCards"] ?? p["redcards"] ?? 0);
-    if (yc > 0) events.push({ type: "card", player: name, detail: `🟨 ${yc}` });
-    if (rc > 0) events.push({ type: "card", player: name, detail: `🟥 ${rc}` });
+    if (yc > 0) events.push({ type: "card", player: name, detail: `yellow:${yc}` });
+    if (rc > 0) events.push({ type: "card", player: name, detail: `red:${rc}` });
     if (p["mom"] === "1" || p["manofthematch"] === "1") events.push({ type: "motm", player: name });
   }
   const order = { goal: 0, assist: 1, card: 2, motm: 3 };
@@ -80,15 +78,7 @@ export function extractMatchEvents(match: Match, clubId: string): MatchEvent[] {
   return events;
 }
 
-/* ─── Rating color ─── */
-function ratingColor(r: number) {
-  if (r >= 8) return "var(--green)";
-  if (r >= 7) return "#4ade80";
-  if (r >= 6) return "#eab308";
-  if (r > 0)  return "var(--red)";
-  return "var(--muted)";
-}
-
+/* ─── Main component ─── */
 export function MatchModal({ match, clubId, onClose }: { match: Match; clubId: string; onClose: () => void }) {
   const t = useT();
   const lang = useAppStore((s) => s.language);
@@ -122,15 +112,17 @@ export function MatchModal({ match, clubId, onClose }: { match: Match; clubId: s
   const myGoals  = String(myData?.["goals"]  ?? "?");
   const oppGoals = String(oppData?.["goals"] ?? "?");
   const res = myData?.["wins"] === "1" ? "W" : myData?.["losses"] === "1" ? "L" : "D";
+  const isVictory = res === "W";
+  const isDraw = res === "D";
 
-  const RESULT_LABEL: Record<string, { text: string; color: string; bg: string }> = {
-    W: { text: t("match.win"),  color: "var(--green)", bg: "rgba(35,165,89,0.12)" },
-    D: { text: t("match.draw"), color: "#eab308",      bg: "rgba(234,179,8,0.12)" },
-    L: { text: t("match.loss"), color: "var(--red)",   bg: "rgba(218,55,60,0.12)" },
-  };
-
-  const rl = RESULT_LABEL[res];
+  const teamStats = extractTeamStats(match, clubId, t);
   const events = extractMatchEvents(match, clubId);
+
+  const resultBadge = isVictory
+    ? { label: t("match.win").toUpperCase(),  color: "var(--green)" }
+    : isDraw
+    ? { label: t("match.draw").toUpperCase(), color: "var(--gold)" }
+    : { label: t("match.loss").toUpperCase(), color: "var(--red)" };
 
   const shareToDiscord = async () => {
     if (!discordWebhook) { addToast(t("discord.noWebhook"), "error"); return; }
@@ -140,36 +132,40 @@ export function MatchModal({ match, clubId, onClose }: { match: Match; clubId: s
       const eventsLine = events.map((ev) => {
         if (ev.type === "goal")   return `⚽ ${ev.player}`;
         if (ev.type === "assist") return `🅰️ ${ev.player}`;
-        if (ev.type === "motm")   return `★ ${ev.player}`;
-        if (ev.type === "card")   return `${ev.detail} ${ev.player}`;
+        if (ev.type === "motm" && isVictory) return `★ ${ev.player}`;
+        if (ev.type === "card")   return `${ev.detail?.startsWith("red") ? "🟥" : "🟨"} ${ev.player}`;
         return "";
       }).filter(Boolean).join("  ·  ");
 
-      const showTackles       = myPlayers.some((p) => p.tackles > 0);
+      const showTackles = myPlayers.some((p) => p.tackles > 0);
       const showInterceptions = myPlayers.some((p) => p.interceptions > 0);
       const col = (s: string, w: number) => s.padEnd(w).slice(0, w);
-      const header  = [col("Joueur",14),col("Note",5),col("Buts",5),col("PD",4),col("Passes",7),
-        ...(showTackles?[col("Tack.",6)]:[]),
-        ...(showInterceptions?[col("Int.",5)]:[]),"MOTM"].join(" ");
+      const header = [
+        col("Joueur", 14), col("Note", 5), col("Buts", 5), col("PD", 4), col("Passes", 7),
+        ...(showTackles ? [col("Tack.", 6)] : []),
+        ...(showInterceptions ? [col("Int.", 5)] : []),
+        "MOTM",
+      ].join(" ");
       const divider = "-".repeat(header.length);
       const rows = myPlayers.map((p) => [
-        col(p.name,14),col(p.rating>0?p.rating.toFixed(1):"—",5),
-        col(p.goals>0?String(p.goals):"—",5),col(p.assists>0?String(p.assists):"—",4),
-        col(String(p.passes),7),
-        ...(showTackles?[col(p.tackles>0?String(p.tackles):"—",6)]:[]),
-        ...(showInterceptions?[col(p.interceptions>0?String(p.interceptions):"—",5)]:[]),
-        p.motm?"★":"",
+        col(p.name, 14), col(p.rating > 0 ? p.rating.toFixed(1) : "—", 5),
+        col(p.goals   > 0 ? String(p.goals)   : "—", 5),
+        col(p.assists > 0 ? String(p.assists) : "—", 4),
+        col(String(p.passes), 7),
+        ...(showTackles       ? [col(p.tackles       > 0 ? String(p.tackles)       : "—", 6)] : []),
+        ...(showInterceptions ? [col(p.interceptions > 0 ? String(p.interceptions) : "—", 5)] : []),
+        p.motm && isVictory ? "★" : "",
       ].join(" "));
-      const tableBlock = "```\n"+[header,divider,...rows].join("\n")+"\n```";
+      const tableBlock = "```\n" + [header, divider, ...rows].join("\n") + "\n```";
 
       const fields: { name: string; value: string; inline?: boolean }[] = [];
-      if (eventsLine) fields.push({ name: "​", value: eventsLine });
+      if (eventsLine) fields.push({ name: "\u200b", value: eventsLine });
       fields.push({ name: "JOUEURS", value: tableBlock });
 
       await sendDiscordWebhook(discordWebhook, [{
         title: `${myGoals} — ${oppGoals}  ·  vs ${oppName}`,
         color,
-        description: `${formatDate(match.timestamp, locale)}  **${rl.text.toUpperCase()}**`,
+        description: `${formatDate(match.timestamp, locale)}  **${resultBadge.label}**`,
         fields,
         footer: { text: "ProClubs Stats" },
       }]);
@@ -178,193 +174,124 @@ export function MatchModal({ match, clubId, onClose }: { match: Match; clubId: s
     finally { setSharing(false); }
   };
 
+  /* ── helpers pour les joueurs adverses ── */
+  const oppPlayers = Object.entries(
+    (match.players[oppEntry?.[0] ?? ""] ?? {}) as Record<string, Record<string, unknown>>
+  ).map(([, p]) => ({
+    name:   String(p["name"] ?? p["playername"] ?? "—"),
+    goals:  Number(p["goals"]   ?? 0),
+    assists:Number(p["assists"] ?? 0),
+    rating: Number(p["rating"]  ?? p["ratingAve"] ?? 0),
+  })).sort((a, b) => b.rating - a.rating);
+
+  const TILE = "rounded-xl bg-[#13151A]/80 backdrop-blur-2xl border border-white/5";
+
+  const PlayerRow = ({ name, goals, assists, rating, rank, motm: isMOTM }: {
+    name: string; goals: number; assists: number; rating: number; rank: number; motm: boolean;
+  }) => (
+    <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${isMOTM && isVictory ? "bg-amber-500/5 border border-amber-500/20" : "bg-white/[0.025] border border-white/5"}`}>
+      <span className="font-['Bebas_Neue'] text-xs w-5 text-center text-slate-500">{rank}</span>
+      <span className="flex-1 text-sm font-semibold text-slate-100 truncate">{name}</span>
+      {goals > 0 && <span className="text-xs text-slate-400">⚽{goals}</span>}
+      {assists > 0 && <span className="text-xs text-slate-400">🅰️{assists}</span>}
+      <span className="font-['Bebas_Neue'] text-base leading-none font-bold"
+        style={{ color: rating >= 7.5 ? "#23a559" : rating >= 6.5 ? "#f59e0b" : rating > 0 ? "#da373c" : "#6b7280" }}>
+        {rating > 0 ? rating.toFixed(1) : "—"}
+      </span>
+      {isMOTM && isVictory && <Shield size={12} className="text-amber-400 flex-shrink-0" />}
+    </div>
+  );
+
   return (
-    <div
-      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", zIndex: 50,
-        display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div
-        style={{ background: "var(--card)", borderRadius: 16, width: "100%", maxWidth: 960,
-          maxHeight: "90vh", overflowY: "auto", border: "1px solid var(--border)",
-          boxShadow: "0 24px 64px rgba(0,0,0,0.5)" }}
+        className={`relative w-full max-w-[900px] max-h-[92vh] overflow-y-auto rounded-2xl shadow-2xl shadow-black/50 ${TILE} border border-white/5`}
+        style={{ animation: "fadeSlideIn 0.15s ease-out" }}
         onClick={(e) => e.stopPropagation()}
       >
-
-        {/* ── Scoreboard header ───────────────────────────────── */}
-        <div style={{
-          background: rl.bg,
-          borderBottom: `1px solid var(--border)`,
-          borderRadius: "16px 16px 0 0",
-          padding: "40px 32px 28px",
-          textAlign: "center",
-          position: "relative",
-        }}>
-          {/* Close */}
-          <button onClick={onClose} style={{
-            position: "absolute", top: 16, right: 16,
-            background: "rgba(255,255,255,0.06)", border: "1px solid var(--border)",
-            borderRadius: 10, color: "var(--muted)", cursor: "pointer",
-            width: 38, height: 38, display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 18, transition: "all 0.15s",
-          }}>✕</button>
-
-          {/* Discord */}
-          {discordWebhook && (
-            <button onClick={shareToDiscord} disabled={sharing} style={{
-              position: "absolute", top: 16, left: 16,
-              display: "flex", alignItems: "center", gap: 7,
-              padding: "7px 14px", background: "rgba(88,101,242,0.15)",
-              border: "1px solid rgba(88,101,242,0.3)", borderRadius: 8,
-              color: "#5865f2", fontSize: 13, cursor: sharing ? "default" : "pointer",
-              opacity: sharing ? 0.5 : 1, transition: "all 0.15s",
-            }}>
-              <Send size={14} /> Discord
-            </button>
-          )}
-
-          {/* Result badge */}
-          <div style={{
-            display: "inline-block", padding: "4px 16px", borderRadius: 20,
-            background: `${rl.color}22`, border: `1px solid ${rl.color}55`,
-            color: rl.color, fontSize: 13, fontWeight: 700, letterSpacing: "0.14em",
-            fontFamily: "'Bebas Neue', sans-serif", marginBottom: 14,
-          }}>
-            {rl.text.toUpperCase()}
+        {/* ── Header : score hero ─────────────────────────────── */}
+        <div className="relative px-6 pt-6 pb-5 text-center rounded-t-2xl bg-white/[0.02] border-b border-white/5">
+          <div className="absolute top-4 right-4 flex items-center gap-2">
+            {discordWebhook && (
+              <button onClick={shareToDiscord} disabled={sharing}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors disabled:opacity-40 bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 cursor-pointer">
+                <Send size={11} /> Discord
+              </button>
+            )}
+            <button onClick={onClose} className="win-btn">✕</button>
           </div>
 
-          {/* Score */}
-          <div style={{
-            fontFamily: "'Bebas Neue', sans-serif",
-            fontSize: 96, lineHeight: 1,
-            letterSpacing: 4,
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 22,
-          }}>
-            <span style={{ color: res === "W" ? "var(--green)" : res === "L" ? "var(--red)" : "#eab308" }}>
-              {myGoals}
-            </span>
-            <span style={{ fontSize: 48, color: "var(--muted)", opacity: 0.4 }}>—</span>
-            <span style={{ color: res === "L" ? "var(--green)" : res === "W" ? "var(--red)" : "#eab308" }}>
-              {oppGoals}
-            </span>
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold tracking-widest mb-3"
+            style={{ background: resultBadge.color + "22", color: resultBadge.color, border: `1px solid ${resultBadge.color}44` }}>
+            {resultBadge.label}
+          </span>
+
+          <div className="font-['Bebas_Neue'] text-8xl leading-none tracking-widest"
+            style={{ textShadow: `0 0 60px ${resultBadge.color}44` }}>
+            <span style={{ color: resultBadge.color }}>{myGoals}</span>
+            <span className="mx-4 text-slate-600 text-6xl">—</span>
+            <span className="text-slate-400">{oppGoals}</span>
           </div>
 
-          {/* Opponent + date */}
-          <div style={{ marginTop: 12, fontSize: 17, color: "var(--text)", fontWeight: 600 }}>
-            vs {oppName}
-          </div>
-          <div style={{ fontSize: 14, color: "var(--muted)", marginTop: 5 }}>
+          <div className="mt-2 text-base font-semibold text-slate-200">vs {oppName}</div>
+          <div className="mt-0.5 text-xs text-slate-500">
             {formatDate(match.timestamp, locale)}
             {match.matchDuration ? ` · ${formatDuration(match.matchDuration)}` : ""}
           </div>
         </div>
 
-        <div style={{ padding: "22px 28px 28px" }}>
+        <div className="p-6 space-y-5">
+          {/* ── Layout 3 colonnes ─────────────────────────────── */}
+          <div className="grid grid-cols-3 gap-4">
 
-          {/* ── Events ─────────────────────────────────────────── */}
-          {events.length > 0 && (
-            <div style={{
-              display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20,
-              padding: "14px 18px", background: "var(--bg)",
-              borderRadius: 10, border: "1px solid var(--border)",
-            }}>
-              {events.map((ev, i) => {
-                const icon  = ev.type === "goal" ? "⚽" : ev.type === "assist" ? "🅰️" : ev.type === "motm" ? "⭐" : (ev.detail ?? "🟨");
-                const color = ev.type === "goal" ? "var(--accent)" : ev.type === "assist" ? "#eab308" : ev.type === "motm" ? "#ffd700" : ev.detail?.includes("🟥") ? "var(--red)" : "#eab308";
-                const label = ev.type === "goal" ? "But" : ev.type === "assist" ? "Passe déc." : ev.type === "motm" ? "MOTM" : ev.detail?.includes("🟥") ? "Rouge" : "Jaune";
-                return (
-                  <span key={i} style={{
-                    display: "inline-flex", alignItems: "center", gap: 7,
-                    padding: "6px 14px", borderRadius: 20, fontSize: 13,
-                    background: `${color}15`, border: `1px solid ${color}40`,
-                    color, fontWeight: 600,
-                  }}>
-                    {icon} {ev.player}
-                    <span style={{ fontSize: 11, opacity: 0.6, fontWeight: 400 }}>{label}</span>
-                  </span>
-                );
-              })}
+            {/* Col gauche — mes joueurs */}
+            <div className={`${TILE} p-4 space-y-1.5`}>
+              <p className="text-[9px] font-['Bebas_Neue'] tracking-widest text-slate-400 mb-3">MON ÉQUIPE</p>
+              {myPlayers.length > 0 ? myPlayers.map((p, i) => (
+                <PlayerRow key={i} rank={i+1} name={p.name} goals={p.goals} assists={p.assists} rating={p.rating} motm={p.motm} />
+              )) : <p className="text-xs text-slate-500 text-center py-4">—</p>}
             </div>
-          )}
 
-          {/* ── Joueurs ─────────────────────────────────────────── */}
-          {myPlayers.length > 0 ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <div style={{
-                fontSize: 12, color: "var(--muted)", letterSpacing: "0.12em",
-                fontFamily: "'Bebas Neue', sans-serif", marginBottom: 6, paddingLeft: 2,
-              }}>
-                {t("matches.playerStats")}
-              </div>
-
-              {myPlayers.map((p, i) => (
-                <div key={i} style={{
-                  display: "flex", alignItems: "center", gap: 16,
-                  padding: "14px 18px", borderRadius: 10,
-                  background: i === 0 && p.motm ? "rgba(255,215,0,0.06)" : "var(--bg)",
-                  border: `1px solid ${i === 0 && p.motm ? "rgba(255,215,0,0.2)" : "var(--border)"}`,
-                  transition: "background 0.1s",
-                }}>
-                  {/* Rank */}
-                  <div style={{
-                    width: 28, textAlign: "center", fontSize: 14,
-                    color: "var(--muted)", fontFamily: "'Bebas Neue', sans-serif", flexShrink: 0,
-                  }}>
-                    {i + 1}
-                  </div>
-
-                  {/* Name */}
-                  <div style={{ flex: 1, fontSize: 16, color: "var(--text)", fontWeight: 600, minWidth: 0 }}>
-                    {p.name}
-                    {p.motm && (
-                      <span style={{
-                        marginLeft: 8, fontSize: 11, color: "#ffd700",
-                        background: "rgba(255,215,0,0.15)", padding: "2px 8px",
-                        borderRadius: 10, fontWeight: 700, letterSpacing: "0.06em",
-                      }}>MOTM</span>
-                    )}
-                  </div>
-
-                  {/* Stat chips */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                    {p.goals > 0 && (
-                      <span style={{
-                        fontSize: 13, padding: "3px 11px", borderRadius: 12,
-                        background: "rgba(var(--accent-rgb,88,101,242),0.15)",
-                        border: "1px solid var(--accent)", color: "var(--accent)", fontWeight: 700,
-                      }}>⚽ {p.goals}</span>
-                    )}
-                    {p.assists > 0 && (
-                      <span style={{
-                        fontSize: 13, padding: "3px 11px", borderRadius: 12,
-                        background: "rgba(234,179,8,0.12)", border: "1px solid #eab308",
-                        color: "#eab308", fontWeight: 700,
-                      }}>🅰️ {p.assists}</span>
-                    )}
-                    {p.yellowCards > 0 && (
-                      <span style={{ fontSize: 16 }}>🟨</span>
-                    )}
-                    {p.redCards > 0 && (
-                      <span style={{ fontSize: 16 }}>🟥</span>
-                    )}
-                  </div>
-
-                  {/* Rating */}
-                  <div style={{
-                    width: 56, textAlign: "center", flexShrink: 0,
-                    fontFamily: "'Bebas Neue', sans-serif", fontSize: 28,
-                    color: ratingColor(p.rating), lineHeight: 1,
-                  }}>
-                    {p.rating > 0 ? p.rating.toFixed(1) : "—"}
-                  </div>
+            {/* Col centre — stats d'équipe */}
+            <div className={`${TILE} p-4`}>
+              <p className="text-[9px] font-['Bebas_Neue'] tracking-widest text-slate-400 mb-3 text-center">{t("matches.teamStats")}</p>
+              {teamStats.length > 0 ? (
+                <div className="space-y-1">
+                  {teamStats.map(({ label, my, opp: oppStat }) => {
+                    const nMy = Number(String(my).replace("%","")), nOpp = Number(String(oppStat).replace("%",""));
+                    const myW = !isNaN(nMy) && !isNaN(nOpp) && nMy > nOpp;
+                    const oppW = !isNaN(nMy) && !isNaN(nOpp) && nOpp > nMy;
+                    return (
+                      <div key={label} className="grid grid-cols-3 items-center py-1.5 border-b border-white/5 last:border-0">
+                        <span className={`text-right text-sm font-['Bebas_Neue'] ${myW ? "text-[var(--accent)]" : "text-slate-200"}`}>{my}</span>
+                        <span className="text-center text-[9px] tracking-wider font-['Bebas_Neue'] uppercase text-slate-500">{label}</span>
+                        <span className={`text-left text-sm font-['Bebas_Neue'] ${oppW ? "text-red-400" : "text-slate-400"}`}>{oppStat}</span>
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
+              ) : (
+                <p className="text-xs text-slate-500 text-center py-8">Aucune stat d'équipe</p>
+              )}
             </div>
-          ) : (
-            <p style={{ textAlign: "center", color: "var(--muted)", fontSize: 15, marginTop: 8 }}>
-              {t("matches.noPlayerStats")}
-            </p>
-          )}
+
+            {/* Col droite — joueurs adverses */}
+            <div className={`${TILE} p-4 space-y-1.5`}>
+              <p className="text-[9px] font-['Bebas_Neue'] tracking-widest text-slate-400 mb-3">{oppName.toUpperCase()}</p>
+              {oppPlayers.length > 0 ? oppPlayers.map((p, i) => (
+                <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.025] border border-white/5">
+                  <span className="font-['Bebas_Neue'] text-xs w-5 text-center text-slate-500">{i+1}</span>
+                  <span className="flex-1 text-sm font-semibold text-slate-300 truncate">{p.name}</span>
+                  {p.goals > 0 && <span className="text-xs text-slate-400">⚽{p.goals}</span>}
+                  {p.assists > 0 && <span className="text-xs text-slate-400">🅰️{p.assists}</span>}
+                  <span className="font-['Bebas_Neue'] text-base leading-none font-bold"
+                    style={{ color: p.rating >= 7.5 ? "#23a559" : p.rating >= 6.5 ? "#f59e0b" : p.rating > 0 ? "#da373c" : "#6b7280" }}>
+                    {p.rating > 0 ? p.rating.toFixed(1) : "—"}
+                  </span>
+                </div>
+              )) : <p className="text-xs text-slate-500 text-center py-4">Aucun joueur</p>}
+            </div>
+          </div>
         </div>
       </div>
     </div>

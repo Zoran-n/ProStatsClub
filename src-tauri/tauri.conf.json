@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "ProClubs Stats",
-  "version": "0.5.1",
+  "productName": "ProClubsStats",
+  "version": "0.9.7",
   "identifier": "com.codespace.proclubs-tauri",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -24,21 +24,21 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://eafc24.content.easports.com; connect-src 'self' https://proclubs.ea.com https://discord.com https://discordapp.com https://github.com https://objects.githubusercontent.com ipc: http://ipc.localhost; worker-src blob:;"
     }
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDgzOEUyMjY0QkFEODE1NUEKUldSYUZkaTZaQ0tPZzlKYWxzbjZrMHlINFpnUElIL2V1bFpGRC9Ub3h3SGhkQkEyTWEvUXhmQ2wK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDczOUUwRjRCODhBMzE1MzYKUldRMkZhT0lTdytlYy9aS3paR2gzZXlJYTJNQ2FpK0ZhL3ZkalFMMEtjNnh3VTVRZUplbVpkRE4K",
       "endpoints": [
-        "https://github.com/Zoran-n/proclubs-tauri/releases/latest/download/latest.json"
+        "https://github.com/Zoran-n/ProStatsClub/releases/latest/download/latest.json"
       ]
     }
-
   },
   "bundle": {
     "active": true,
     "targets": "all",
+    "createUpdaterArtifacts": true,
     "publisher": "Zoran",
     "shortDescription": "Outil de suivi et statistiques pour ProClubs EA FC",
     "icon": [

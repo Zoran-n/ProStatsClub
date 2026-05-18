@@ -1,13 +1,13 @@
 import { useState, useMemo, useCallback } from "react";
 import { List, useListRef } from "react-window";
-import { Search, Download, ChevronUp, ChevronDown, Users, Filter, AlertTriangle, LayoutGrid, Trophy, Globe } from "lucide-react";
+import { Search, Download, ChevronUp, ChevronDown, Filter, AlertTriangle, LayoutGrid, Trophy, Globe, DatabaseZap } from "lucide-react";
+import { GlassCard } from "../UI/GlassCard";
 import { detectPerformanceAnomaly } from "../../utils/aiEngine";
 import { useAppStore } from "../../store/useAppStore";
 import { ExportModal } from "../Modals/ExportModal";
 import { useT } from "../../i18n";
 import type { Player, Match } from "../../types";
 import { PlayerModal, POS_LABELS, PlayerAvatar, ratingColor } from "../Modals/PlayerModal";
-import { CompareModal } from "../Modals/CompareModal";
 import { CrossClubsModal } from "../Modals/CrossClubsModal";
 import { useDebounce } from "../../hooks/useDebounce";
 
@@ -60,14 +60,10 @@ const BTN: React.CSSProperties = {
   display: "flex", alignItems: "center", gap: 4, flexShrink: 0,
 };
 
-const COMPARE_COLORS = ["var(--accent)", "#8b5cf6", "#ff6b35", "#57f287"];
-
 // ─── Row props ────────────────────────────────────────────────────────────────
 interface PlayerRowProps {
   sorted: Player[];
   compactMode: boolean;
-  compareMode: boolean;
-  compareSelected: Player[];
   sortKey: SortKey;
   t: ReturnType<typeof useT>;
   sparklineFor: (name: string) => number[];
@@ -80,7 +76,7 @@ interface PlayerRowProps {
 // ─── Row component ────────────────────────────────────────────────────────────
 function PlayerRow({
   index, style, ariaAttributes,
-  sorted, compactMode, compareMode, compareSelected, sortKey, t,
+  sorted, compactMode, sortKey, t,
   sparklineFor, isUnderperforming, handleCardClick, presenceFor, showPresence,
 }: {
   index: number;
@@ -91,8 +87,6 @@ function PlayerRow({
   if (!p) return null;
 
   const posLabel  = POS_LABELS[p.position] || p.position || "—";
-  const cIdx      = compareSelected.findIndex((pp) => pp.name === p.name);
-  const sel       = compareMode && cIdx >= 0;
   const sparkline = sparklineFor(p.name);
   const alert     = isUnderperforming(p.name);
   const score     = compositeScore(p);
@@ -107,13 +101,13 @@ function PlayerRow({
         style={{
           display: "flex", alignItems: "center", gap: compactMode ? 8 : 12,
           padding: compactMode ? "6px 10px" : "12px 16px",
-          background: sel ? `${COMPARE_COLORS[cIdx]}08` : "var(--card)",
-          border: `1px solid ${sel ? COMPARE_COLORS[cIdx] : alert ? "rgba(218,55,60,0.35)" : "var(--border)"}`,
+          background: "var(--card)",
+          border: `1px solid ${alert ? "rgba(218,55,60,0.35)" : "var(--border)"}`,
           borderRadius: 8, cursor: "pointer", transition: "border-color 0.15s",
           height: "calc(100% - 6px)", boxSizing: "border-box",
         }}
-        onMouseEnter={(e) => { if (!sel) e.currentTarget.style.borderColor = "var(--accent)"; }}
-        onMouseLeave={(e) => { if (!sel) e.currentTarget.style.borderColor = alert ? "rgba(218,55,60,0.35)" : "var(--border)"; }}
+        onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(0,242,255,0.3)"; e.currentTarget.style.background = "rgba(0,242,255,0.03)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.borderColor = alert ? "rgba(218,55,60,0.35)" : "var(--border)"; e.currentTarget.style.background = "var(--card)"; }}
       >
         <span style={{
           fontSize: 11, fontWeight: 700,
@@ -191,8 +185,11 @@ function HeatmapView({ players, matchCache, currentClub }: {
     .reverse();
 
   if (recent.length === 0) return (
-    <div style={{ padding: 40, textAlign: "center", color: "var(--muted)", fontSize: 13 }}>
-      Aucun match en cache — charge les matchs d'abord
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", padding: 40 }}>
+      <GlassCard glow="none" hover={false} padding="32px 48px" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+        <DatabaseZap size={32} style={{ color: "var(--muted)", opacity: 0.4 }} />
+        <span style={{ color: "var(--muted)", fontSize: 13 }}>Aucun match en cache — charge les matchs d'abord</span>
+      </GlassCard>
     </div>
   );
 
@@ -350,9 +347,6 @@ export function PlayersTab() {
   const [toDate, setToDate]       = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [exportModal, setExportModal] = useState<"png" | "csv" | null>(null);
-  const [compareMode, setCompareMode] = useState(false);
-  const [compareSelected, setCompareSelected] = useState<Player[]>([]);
-  const [showCompareModal, setShowCompareModal] = useState(false);
   const [showCrossClubs, setShowCrossClubs] = useState(false);
   const [viewMode, setViewMode]   = useState<"list" | "heatmap" | "podium">("list");
 
@@ -520,24 +514,16 @@ export function PlayersTab() {
   const dateStr = new Date().toISOString().slice(0, 10);
 
   const handleCardClick = useCallback((p: Player) => {
-    if (compareMode) {
-      setCompareSelected((prev) => {
-        if (prev.some((pp) => pp.name === p.name)) return prev.filter((pp) => pp.name !== p.name);
-        if (prev.length >= 4) return [...prev.slice(1), p];
-        return [...prev, p];
-      });
-    } else {
-      setSelected(p);
-    }
-  }, [compareMode]);
+    setSelected(p);
+  }, []);
 
   const hasFilters = filterPos !== "all" || filterMinRating > 0 || filterMinGames > 0 || filterAlertsOnly || filterMinPresence > 0 || isPeriodActive;
 
   const rowProps: PlayerRowProps = useMemo(() => ({
-    sorted, compactMode, compareMode, compareSelected, sortKey, t,
+    sorted, compactMode, sortKey, t,
     sparklineFor, isUnderperforming, handleCardClick, presenceFor,
     showPresence: filterMinPresence > 0,
-  }), [sorted, compactMode, compareMode, compareSelected, sortKey, t,
+  }), [sorted, compactMode, sortKey, t,
       sparklineFor, isUnderperforming, handleCardClick, presenceFor, filterMinPresence]);
 
   return (
@@ -586,13 +572,6 @@ export function PlayersTab() {
           </span>}
         </button>
 
-        <button onClick={() => { setCompareMode(!compareMode); setCompareSelected([]); setShowCompareModal(false); }}
-          style={{ ...BTN, color: compareMode ? "#000" : "var(--muted)",
-            background: compareMode ? "var(--accent)" : "var(--card)",
-            borderColor: compareMode ? "var(--accent)" : "var(--border)" }}>
-          <Users size={11} /> {t("players.compare")}
-        </button>
-
         <button onClick={() => setShowCrossClubs(true)}
           title="Classement cross-clubs"
           style={{ ...BTN, color: "var(--muted)" }}>
@@ -619,27 +598,6 @@ export function PlayersTab() {
           ))}
         </div>
       </div>
-
-      {/* Compare banner */}
-      {compareMode && (
-        <div style={{ padding: "6px 16px", background: "var(--card)", borderBottom: "1px solid var(--border)",
-          fontSize: 11, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-          <Users size={11} style={{ color: "var(--accent)", flexShrink: 0 }} />
-          {compareSelected.length === 0 && <span style={{ color: "var(--muted)" }}>Sélectionne 2 à 4 joueurs à comparer</span>}
-          {compareSelected.map((p, i) => (
-            <span key={p.name} style={{ padding: "2px 8px", borderRadius: 4, fontSize: 10, fontWeight: 700,
-              background: `${COMPARE_COLORS[i]}18`, border: `1px solid ${COMPARE_COLORS[i]}55`,
-              color: COMPARE_COLORS[i] }}>{p.name}</span>
-          ))}
-          {compareSelected.length >= 2 && (
-            <button onClick={() => setShowCompareModal(true)}
-              style={{ ...BTN, color: "#000", background: "var(--accent)",
-                borderColor: "var(--accent)", padding: "4px 10px", fontSize: 11, marginLeft: "auto" }}>
-              <Users size={11} /> Comparer ({compareSelected.length})
-            </button>
-          )}
-        </div>
-      )}
 
       {/* Filters panel */}
       {showFilters && (
@@ -784,9 +742,6 @@ export function PlayersTab() {
       </div>
 
       {selected && <PlayerModal player={selected} onClose={() => setSelected(null)} />}
-      {showCompareModal && compareSelected.length >= 2 && (
-        <CompareModal players={compareSelected} allPlayers={players} onClose={() => setShowCompareModal(false)} />
-      )}
       {showCrossClubs && <CrossClubsModal onClose={() => setShowCrossClubs(false)} />}
       {exportModal === "png" && (
         <ExportModal type="png" pngSourceEl={listRef.current?.element ?? null}

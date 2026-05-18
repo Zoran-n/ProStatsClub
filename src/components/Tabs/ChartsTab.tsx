@@ -1,15 +1,20 @@
 import { useState, useMemo, useRef, useEffect, Fragment } from "react";
-import { Download } from "lucide-react";
+import { Download, TrendingUp, Target, Users, BarChart2, Activity } from "lucide-react";
 import {
   PieChart, Pie, Cell, Label, ResponsiveContainer,
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   BarChart, Bar, RadarChart, Radar, PolarGrid, PolarAngleAxis,
+  AreaChart, Area,
 } from "recharts";
 import { useAppStore } from "../../store/useAppStore";
 import { ExportModal } from "../Modals/ExportModal";
+import { GlassCard } from "../UI/GlassCard";
 import { getSeasonHistory, getLeaderboard } from "../../api/tauri";
 import { useT } from "../../i18n";
 import type { Match, Player } from "../../types";
+import { avatarColor } from "../Modals/PlayerModal";
+
+/* ─── Helpers ─────────────────────────────────────────────────────────────── */
 
 function aggregateMatchPlayers(matches: Match[], clubId: string): Player[] {
   const acc: Record<string, { goals: number; assists: number; passesMade: number }> = {};
@@ -32,35 +37,59 @@ function aggregateMatchPlayers(matches: Match[], clubId: string): Player[] {
 
 type Mode = "last10" | "alltime";
 
-const BTN: React.CSSProperties = {
-  padding: "6px 10px", background: "var(--card)", border: "1px solid var(--border)",
-  borderRadius: 6, cursor: "pointer", color: "var(--muted)", fontSize: 11,
-  display: "flex", alignItems: "center", gap: 0,
+interface SeasonRow { wins: number; losses: number; ties: number; goals: number; goalDiff: number; label: string; sr?: number }
+interface LeaderRow { rank: number; name: string; wins: number; losses: number; ties: number; goals: number; sr: string }
+
+/* ─── Shared UI primitives ────────────────────────────────────────────────── */
+
+function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return (
+    <GlassCard className={className} padding="16px">
+      {children}
+    </GlassCard>
+  );
+}
+
+/* IDs de gradient SVG uniques pour éviter les conflits de rendu ──────────── */
+const GRAD_IDS = {
+  radar:  "ct-radar-fill",
+  poss:   "ct-poss-area",
+  sr:     "ct-sr-area",
+  line:   "ct-line-area",
+} as const;
+
+/* Tooltip SaaS minimaliste ─────────────────────────────────────────────────── */
+const TOOLTIP_STYLE = {
+  background: "var(--surface)",
+  border: "1px solid var(--border)",
+  borderRadius: 6,
+  fontSize: 11,
+  boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
 };
 
-function ChartCard({ title, children, action }: { title: string; children: React.ReactNode; action?: React.ReactNode }) {
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return <p className="category-header">{children}</p>;
+}
+
+function NoData({ text = "Aucune donnée", icon: Icon = BarChart2 }: { text?: string; icon?: React.ElementType }) {
   return (
-    <div style={{ background: "var(--card)", borderRadius: 8, padding: "14px 16px" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-        <p style={{ fontSize: 9, color: "var(--muted)", letterSpacing: "0.12em",
-          fontFamily: "'Bebas Neue', sans-serif", margin: 0 }}>{title}</p>
-        {action}
-      </div>
-      {children}
+    <div className="flex flex-col items-center justify-center py-8 gap-2">
+      <Icon size={26} style={{ color: "var(--border)" }} />
+      <p style={{ fontSize: 11, color: "var(--muted)", textAlign: "center" }}>{text}</p>
     </div>
   );
 }
 
-function NoData({ text = "Aucune donnée" }: { text?: string }) {
-  return <p style={{ fontSize: 12, color: "var(--muted)", textAlign: "center", padding: "16px 0" }}>{text}</p>;
-}
+const TOOLTIP_LABEL = { color: "var(--muted)" };
+
+/* ─── Donut ───────────────────────────────────────────────────────────────── */
 
 function DonutCenter({ viewBox, value, sub }: { viewBox?: { cx: number; cy: number }; value: number | string; sub: string }) {
   const cx = viewBox?.cx ?? 0, cy = viewBox?.cy ?? 0;
   return (
     <g>
-      <text x={cx} y={cy - 4} textAnchor="middle" fill="#fff" fontFamily="'Bebas Neue', sans-serif" fontSize={30} dominantBaseline="auto">{value}</text>
-      <text x={cx} y={cy + 14} textAnchor="middle" fill="#64748b" fontSize={10} dominantBaseline="auto">{sub}</text>
+      <text x={cx} y={cy - 4} textAnchor="middle" fill="#f1f5f9" fontFamily="'Bebas Neue', sans-serif" fontSize={28} dominantBaseline="auto">{value}</text>
+      <text x={cx} y={cy + 14} textAnchor="middle" fill="#949ba4" fontSize={9} dominantBaseline="auto">{sub}</text>
     </g>
   );
 }
@@ -71,34 +100,36 @@ function DonutChart({ data, centerValue, centerSub }: {
 }) {
   const safe = data.every(d => d.value === 0) ? data.map(d => ({ ...d, value: 1 })) : data;
   return (
-    <ResponsiveContainer width="100%" height={180}>
+    <ResponsiveContainer width="100%" height={160}>
       <PieChart>
-        <Pie data={safe} cx="50%" cy="50%" innerRadius={52} outerRadius={78}
-          dataKey="value" startAngle={90} endAngle={-270} strokeWidth={2} stroke="var(--card)">
+        <Pie data={safe} cx="50%" cy="50%" innerRadius={48} outerRadius={70}
+          dataKey="value" startAngle={90} endAngle={-270} strokeWidth={2} stroke="var(--border)">
           {safe.map((d, i) => <Cell key={i} fill={d.color} />)}
           <Label content={(props: unknown) => {
             const p = props as { viewBox?: { cx: number; cy: number } };
             return <DonutCenter viewBox={p.viewBox} value={centerValue} sub={centerSub} />;
           }} />
         </Pie>
+        <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={TOOLTIP_LABEL}
+          formatter={(v: unknown, name: unknown) => [String(v), String(name)]} />
       </PieChart>
     </ResponsiveContainer>
   );
 }
 
-function WdlLegend({ data, total }: { data: { name: string; value: number; color: string }[]; total: number }) {
+function DonutLegend({ data, total }: { data: { name: string; value: number; color: string }[]; total: number }) {
   return (
-    <div style={{ display: "flex", justifyContent: "center", gap: 18, marginTop: 4 }}>
+    <div className="flex justify-center gap-5 mt-1">
       {data.map((d) => {
         const pct = total > 0 ? Math.round((d.value / total) * 100) : 0;
         return (
-          <div key={d.name} style={{ textAlign: "center" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 0 }}>
-              <span style={{ width: 8, height: 8, borderRadius: "50%", background: d.color, display: "inline-block" }} />
-              <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 16, color: "#fff" }}>{d.value}</span>
+          <div key={d.name} className="flex flex-col items-center gap-0.5">
+            <div className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full inline-block" style={{ background: d.color }} />
+              <span className="font-['Bebas_Neue'] text-base text-white leading-none">{d.value}</span>
             </div>
-            <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: "0.06em" }}>{d.name}</div>
-            <div style={{ fontSize: 9, color: d.color }}>({pct}%)</div>
+            <span style={{ fontSize: 9, color: "var(--muted)" }}>{d.name}</span>
+            <span className="text-[9px]" style={{ color: d.color }}>{pct}%</span>
           </div>
         );
       })}
@@ -106,32 +137,51 @@ function WdlLegend({ data, total }: { data: { name: string; value: number; color
   );
 }
 
-const GRADIENTS: Record<string, string> = {
-  cyan: "linear-gradient(90deg, #0098b8, #00d4ff)",
-  orange: "linear-gradient(90deg, #c2410c, #f97316)",
-  purple: "linear-gradient(90deg, #6d28d9, #a855f7)",
-};
-const VALUE_COLORS: Record<string, string> = {
-  cyan: "#00d4ff", orange: "#f97316", purple: "#a855f7",
+/* ─── Horizontal Bar with Avatar ─────────────────────────────────────────── */
+
+const ACCENT: Record<string, { bar: string; text: string }> = {
+  cyan:   { bar: "from-cyan-800/60 to-cyan-400",   text: "#22d3ee" },
+  orange: { bar: "from-orange-800/60 to-orange-400", text: "#fb923c" },
+  purple: { bar: "from-violet-800/60 to-violet-400", text: "#a78bfa" },
 };
 
 function HBarChart({ players, valueKey, color }: {
   players: Player[]; valueKey: keyof Player; color: "cyan" | "orange" | "purple";
 }) {
   const maxVal = Math.max(...players.map((p) => Number(p[valueKey]) || 0), 1);
+  const ac = ACCENT[color];
+  if (players.length === 0 || players.every(p => Number(p[valueKey]) === 0)) {
+    return <NoData text="Aucun joueur" icon={Users} />;
+  }
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+    <div className="flex flex-col gap-2.5">
       {players.map((p) => {
         const val = Number(p[valueKey]) || 0;
+        const pct = (val / maxVal) * 100;
+        const initials = p.name.split(/[\s_-]+/).map(w => w[0]?.toUpperCase() ?? "").join("").slice(0, 2) || "?";
+        const bg = avatarColor(p.name);
         return (
-          <div key={p.name} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ width: 82, textAlign: "right", fontSize: 11, color: "var(--muted)",
-              flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</div>
-            <div style={{ flex: 1, background: "var(--bg)", borderRadius: 3, height: 30, overflow: "hidden" }}>
-              <div style={{ width: `${(val / maxVal) * 100}%`, height: "100%",
-                background: GRADIENTS[color], borderRadius: "0 3px 3px 0", transition: "width 0.5s ease" }} />
+          <div key={p.name} className="flex items-center gap-2.5 group">
+            {/* Avatar */}
+            <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold text-white font-['Bebas_Neue']"
+              style={{ background: bg }}>
+              {initials}
             </div>
-            <div style={{ width: 32, fontSize: 13, fontWeight: 700, color: VALUE_COLORS[color], flexShrink: 0, textAlign: "right" }}>{val}</div>
+            {/* Name + bar */}
+            <div className="flex-1 min-w-0">
+              <div className="text-[10px] truncate mb-1 font-medium" style={{ color: "var(--muted)" }}>{p.name}</div>
+              <div className="relative h-5 rounded overflow-hidden" style={{ background: "var(--surface)" }}>
+                <div
+                  className={`absolute inset-y-0 left-0 bg-gradient-to-r ${ac.bar} rounded-full transition-all duration-500`}
+                  style={{ width: `${pct}%`, minWidth: val > 0 ? "1.5rem" : 0 }}
+                />
+                {val > 0 && (
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold" style={{ color: ac.text }}>
+                    {val}
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
         );
       })}
@@ -139,322 +189,8 @@ function HBarChart({ players, valueKey, color }: {
   );
 }
 
-interface SeasonRow { wins: number; losses: number; ties: number; goals: number; goalDiff: number; label: string; sr?: number }
-interface LeaderRow { rank: number; name: string; wins: number; losses: number; ties: number; goals: number; sr: string }
+/* ─── Radar collectif ─────────────────────────────────────────────────────── */
 
-function parseSeasonHistory(raw: unknown, clubId: string): SeasonRow[] {
-  if (!raw || typeof raw !== "object") return [];
-  const obj = raw as Record<string, unknown>;
-  const seasons: unknown[] = (
-    (obj[clubId] as Record<string, unknown>)?.["history"] as unknown[]
-    ?? obj["history"] as unknown[]
-    ?? (Array.isArray(raw) ? raw : [])
-  );
-  return seasons.map((s) => {
-    const v = s as Record<string, string | number>;
-    const w = Number(v["wins"] ?? 0), l = Number(v["losses"] ?? 0), t = Number(v["ties"] ?? 0);
-    const g = Number(v["goals"] ?? 0), ga = Number(v["goalsAgainst"] ?? 0);
-    const sid = String(v["seasonId"] ?? v["season"] ?? "");
-    const sr = Number(v["skillRating"] ?? v["skill_rating"] ?? 0) || undefined;
-    return { wins: w, losses: l, ties: t, goals: g, goalDiff: g - ga, label: sid ? `S${sid}` : "?", sr };
-  }).filter((s) => s.wins + s.losses + s.ties > 0).slice(-10);
-}
-
-function parseLeaderboard(raw: unknown, myClubId: string): LeaderRow[] {
-  if (!raw || typeof raw !== "object") return [];
-  const arr: unknown[] = Array.isArray(raw) ? raw
-    : (raw as Record<string, unknown[]>)["clubs"] ?? (raw as Record<string, unknown[]>)["data"] ?? [];
-  return arr.slice(0, 20).map((entry, i) => {
-    const v = entry as Record<string, string | number>;
-    const cid = String(v["clubId"] ?? v["id"] ?? "");
-    return {
-      rank: i + 1, name: String(v["name"] ?? v["clubName"] ?? `Club #${cid}`),
-      wins: Number(v["wins"] ?? 0), losses: Number(v["losses"] ?? 0), ties: Number(v["ties"] ?? 0),
-      goals: Number(v["goals"] ?? 0), sr: String(v["skillRating"] ?? "—"),
-    };
-  }).filter((r) => r.wins + r.losses + r.ties > 0 || r.name !== `Club #`);
-  void myClubId;
-}
-
-// ─── Season History ────────────────────────────────────────────────────────────
-function SeasonHistorySection({ clubId, platform }: { clubId: string; platform: string }) {
-  const t = useT();
-  const [seasons, setSeasons] = useState<SeasonRow[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [tried, setTried] = useState(false);
-
-  useEffect(() => {
-    setSeasons([]); setTried(false);
-  }, [clubId]);
-
-  const load = () => {
-    if (tried) return;
-    setLoading(true); setTried(true);
-    getSeasonHistory(clubId, platform)
-      .then((raw) => setSeasons(parseSeasonHistory(raw, clubId)))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  };
-
-  const maxW = Math.max(...seasons.map((s) => s.wins), 1);
-
-  return (
-    <div style={{ background: "var(--card)", borderRadius: 8, padding: "14px 16px" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-        <p style={{ fontSize: 9, color: "var(--muted)", letterSpacing: "0.12em", fontFamily: "'Bebas Neue', sans-serif" }}>
-          {t("charts.seasonHistory")}
-        </p>
-        {!tried && (
-          <button onClick={load} style={{
-            fontSize: 10, padding: "4px 10px", borderRadius: 4, cursor: "pointer",
-            background: "none", border: "1px solid var(--accent)", color: "var(--accent)",
-            fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.08em",
-          }}>
-            {t("charts.load")}
-          </button>
-        )}
-      </div>
-      {loading && <p style={{ fontSize: 12, color: "var(--muted)", textAlign: "center" }}>{t("misc.loading")}</p>}
-      {tried && !loading && seasons.length === 0 && (
-        <p style={{ fontSize: 12, color: "var(--muted)", textAlign: "center" }}>{t("charts.noDataClub")}</p>
-      )}
-      {seasons.length > 0 && (
-        <>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {seasons.map((s) => {
-              const total = s.wins + s.losses + s.ties;
-              const pct = total > 0 ? Math.round((s.wins / total) * 100) : 0;
-              return (
-                <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ width: 28, fontSize: 9, color: "var(--muted)", flexShrink: 0, fontFamily: "'Bebas Neue', sans-serif" }}>{s.label}</div>
-                  <div style={{ flex: 1, background: "var(--bg)", borderRadius: 3, height: 24, overflow: "hidden" }}>
-                    <div style={{ width: `${(s.wins / maxW) * 100}%`, height: "100%",
-                      background: "linear-gradient(90deg,#16a34a,#22c55e)", borderRadius: "0 3px 3px 0", minWidth: 4 }} />
-                  </div>
-                  <div style={{ display: "flex", gap: 8, fontSize: 10, flexShrink: 0 }}>
-                    <span style={{ color: "#22c55e" }}>{s.wins}V</span>
-                    <span style={{ color: "#eab308" }}>{s.ties}N</span>
-                    <span style={{ color: "var(--red)" }}>{s.losses}D</span>
-                    <span style={{ color: "var(--muted)" }}>{pct}%</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Stacked bar chart N vs N-1 */}
-          {seasons.length >= 2 && (
-            <div style={{ marginTop: 14 }}>
-              <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: "0.12em",
-                fontFamily: "'Bebas Neue', sans-serif", marginBottom: 6 }}>
-                V / N / D PAR SAISON
-              </div>
-              <ResponsiveContainer width="100%" height={80}>
-                <BarChart data={seasons} margin={{ top: 0, right: 4, left: -28, bottom: 0 }} barSize={14}>
-                  <XAxis dataKey="label" tick={{ fill: "var(--muted)", fontSize: 8 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: "var(--muted)", fontSize: 8 }} axisLine={false} tickLine={false} />
-                  <Tooltip
-                    contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 10 }}
-                    formatter={(v: any, name: any) => [v, name === "wins" ? "V" : name === "ties" ? "N" : "D"]}
-                  />
-                  <Bar dataKey="wins" stackId="a" fill="#22c55e" name="V" />
-                  <Bar dataKey="ties" stackId="a" fill="#eab308" name="N" />
-                  <Bar dataKey="losses" stackId="a" fill="#ef4444" name="D" radius={[2, 2, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-
-          {/* Season comparison N vs N-1 */}
-          {seasons.length >= 2 && (() => {
-            const cur  = seasons[seasons.length - 1];
-            const prev = seasons[seasons.length - 2];
-            const curT  = cur.wins  + cur.losses  + cur.ties;
-            const prevT = prev.wins + prev.losses + prev.ties;
-            const curWr  = curT  > 0 ? Math.round(cur.wins  / curT  * 100) : 0;
-            const prevWr = prevT > 0 ? Math.round(prev.wins / prevT * 100) : 0;
-            const rows: { label: string; c: number; p: number; color: string; fmt?: (v: number) => string }[] = [
-              { label: t("main.wins"),   c: cur.wins,   p: prev.wins,   color: "#22c55e" },
-              { label: t("main.draws"),  c: cur.ties,   p: prev.ties,   color: "#eab308" },
-              { label: t("main.losses"), c: cur.losses, p: prev.losses, color: "var(--red)" },
-              { label: t("main.goals"),  c: cur.goals,  p: prev.goals,  color: "var(--accent)" },
-              { label: t("main.winRate"), c: curWr, p: prevWr, color: "var(--text)", fmt: (v) => `${v}%` },
-            ];
-            return (
-              <div style={{ marginTop: 14, padding: "10px 12px", background: "var(--bg)", borderRadius: 8, border: "1px solid var(--border)" }}>
-                <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: "0.12em", fontFamily: "'Bebas Neue', sans-serif", marginBottom: 8 }}>
-                  {t("charts.seasonCompare")}
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 60px 1fr", gap: "3px 8px" }}>
-                  <div style={{ textAlign: "right", fontSize: 10, color: "var(--accent)", fontFamily: "'Bebas Neue', sans-serif" }}>{cur.label}</div>
-                  <div />
-                  <div style={{ fontSize: 10, color: "var(--muted)", fontFamily: "'Bebas Neue', sans-serif" }}>{prev.label}</div>
-                  {rows.map(({ label, c, p, color, fmt }) => {
-                    const f = fmt ?? String;
-                    return (
-                      <Fragment key={label}>
-                        <div style={{ textAlign: "right", fontSize: 14, fontFamily: "'Bebas Neue', sans-serif", color: c >= p ? color : "var(--muted)" }}>{f(c)}</div>
-                        <div style={{ textAlign: "center", fontSize: 9, color: "var(--muted)", fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.06em", alignSelf: "center" }}>{label}</div>
-                        <div style={{ fontSize: 14, fontFamily: "'Bebas Neue', sans-serif", color: p > c ? color : "var(--muted)" }}>{f(p)}</div>
-                      </Fragment>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })()}
-        </>
-      )}
-    </div>
-  );
-}
-
-// ─── SR Evolution ──────────────────────────────────────────────────────────────
-function SrEvolutionSection({ clubId, platform }: { clubId: string; platform: string }) {
-  const t = useT();
-  const [seasons, setSeasons] = useState<SeasonRow[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [tried, setTried] = useState(false);
-
-  useEffect(() => { setSeasons([]); setTried(false); }, [clubId]);
-
-  const load = () => {
-    if (tried) return;
-    setLoading(true); setTried(true);
-    getSeasonHistory(clubId, platform)
-      .then((raw) => setSeasons(parseSeasonHistory(raw, clubId)))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  };
-
-  const srData = seasons.filter((s) => s.sr && s.sr > 0).map((s) => ({ label: s.label, sr: s.sr! }));
-
-  return (
-    <div style={{ background: "var(--card)", borderRadius: 8, padding: "14px 16px" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-        <p style={{ fontSize: 9, color: "var(--muted)", letterSpacing: "0.12em", fontFamily: "'Bebas Neue', sans-serif" }}>
-          ÉVOLUTION DU SKILL RATING
-        </p>
-        {!tried && (
-          <button onClick={load} style={{
-            fontSize: 10, padding: "4px 10px", borderRadius: 4, cursor: "pointer",
-            background: "none", border: "1px solid var(--accent)", color: "var(--accent)",
-            fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.08em",
-          }}>
-            {t("charts.load")}
-          </button>
-        )}
-      </div>
-      {loading && <p style={{ fontSize: 12, color: "var(--muted)", textAlign: "center" }}>{t("misc.loading")}</p>}
-      {tried && !loading && srData.length === 0 && (
-        <p style={{ fontSize: 12, color: "var(--muted)", textAlign: "center" }}>SR non disponible pour ce club</p>
-      )}
-      {srData.length > 0 && (
-        <>
-          <ResponsiveContainer width="100%" height={140}>
-            <LineChart data={srData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="label" tick={{ fill: "var(--muted)", fontSize: 9 }} />
-              <YAxis tick={{ fill: "var(--muted)", fontSize: 9 }} domain={["auto", "auto"]} />
-              <Tooltip
-                contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 11 }}
-                labelStyle={{ color: "var(--muted)" }}
-                itemStyle={{ color: "var(--accent)" }}
-                formatter={(v: any) => [v, "SR"]}
-              />
-              <Line type="monotone" dataKey="sr" stroke="var(--accent)" strokeWidth={2}
-                dot={{ fill: "var(--accent)", r: 3 }} activeDot={{ r: 5 }} />
-            </LineChart>
-          </ResponsiveContainer>
-          <div style={{ display: "flex", justifyContent: "space-around", marginTop: 8 }}>
-            {[
-              { label: "MIN", value: Math.min(...srData.map((s) => s.sr)), color: "var(--red)" },
-              { label: "MAX", value: Math.max(...srData.map((s) => s.sr)), color: "var(--green)" },
-              { label: "ACTUEL", value: srData[srData.length - 1].sr, color: "var(--accent)" },
-            ].map(({ label, value, color }) => (
-              <div key={label} style={{ textAlign: "center" }}>
-                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, color, lineHeight: 1 }}>{value}</div>
-                <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: "0.08em", marginTop: 2 }}>{label}</div>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-// ─── Leaderboard ───────────────────────────────────────────────────────────────
-function LeaderboardSection({ clubId, platform }: { clubId: string; platform: string }) {
-  const t = useT();
-  const [rows, setRows] = useState<LeaderRow[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [tried, setTried] = useState(false);
-
-  useEffect(() => { setRows([]); setTried(false); }, [clubId]);
-
-  const load = () => {
-    if (tried) return;
-    setLoading(true); setTried(true);
-    getLeaderboard(platform, 25)
-      .then((raw) => setRows(parseLeaderboard(raw, clubId)))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  };
-
-  return (
-    <div style={{ background: "var(--card)", borderRadius: 8, padding: "14px 16px" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-        <p style={{ fontSize: 9, color: "var(--muted)", letterSpacing: "0.12em", fontFamily: "'Bebas Neue', sans-serif" }}>
-          {t("charts.leaderboardTitle") + " — " + platform.toUpperCase()}
-        </p>
-        {!tried && (
-          <button onClick={load} style={{
-            fontSize: 10, padding: "4px 10px", borderRadius: 4, cursor: "pointer",
-            background: "none", border: "1px solid var(--accent)", color: "var(--accent)",
-            fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.08em",
-          }}>
-            {t("charts.load")}
-          </button>
-        )}
-      </div>
-      {loading && <p style={{ fontSize: 12, color: "var(--muted)", textAlign: "center" }}>{t("misc.loading")}</p>}
-      {tried && !loading && rows.length === 0 && (
-        <p style={{ fontSize: 12, color: "var(--muted)", textAlign: "center" }}>{t("charts.noData")}</p>
-      )}
-      {rows.length > 0 && (
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-            <thead>
-              <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                {["#", "Club", "V", "N", "D", "Buts", "SR"].map((h) => (
-                  <th key={h} style={{ padding: "4px 8px", textAlign: "left", fontSize: 10, color: "var(--muted)", fontWeight: "normal" }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.rank} style={{ borderBottom: "1px solid var(--border)" }}>
-                  <td style={{ padding: "5px 8px", color: r.rank <= 3 ? "#ffd700" : "var(--muted)",
-                    fontFamily: "'Bebas Neue', sans-serif", fontSize: 14 }}>{r.rank}</td>
-                  <td style={{ padding: "5px 8px", color: "var(--text)", fontWeight: 600,
-                    maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</td>
-                  <td style={{ padding: "5px 8px", color: "#22c55e" }}>{r.wins}</td>
-                  <td style={{ padding: "5px 8px", color: "#eab308" }}>{r.ties}</td>
-                  <td style={{ padding: "5px 8px", color: "var(--red)" }}>{r.losses}</td>
-                  <td style={{ padding: "5px 8px", color: "var(--accent)" }}>{r.goals}</td>
-                  <td style={{ padding: "5px 8px", color: "var(--muted)" }}>{r.sr}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Radar collectif ──────────────────────────────────────────────────────────
 function TeamRadarSection({ matches, clubId }: { matches: Match[]; clubId: string }) {
   const data = useMemo(() => {
     if (matches.length === 0) return [];
@@ -473,39 +209,43 @@ function TeamRadarSection({ matches, clubId }: { matches: Match[]; clubId: strin
     const clamp = (v: number, max: number) => Math.min(Math.round((v / max) * 100), 100);
     return [
       { label: "Possession", value: possCount > 0 ? Math.round(totalPoss / possCount) : 50 },
-      { label: "Tirs/match",  value: clamp(totalShots  / n, 15) },
-      { label: "Passes/match", value: clamp(totalPasses / n, 200) },
-      { label: "Buts/match",  value: clamp(totalGoals  / n, 4) },
+      { label: "Tirs/M",     value: clamp(totalShots  / n, 15) },
+      { label: "Passes/M",   value: clamp(totalPasses / n, 200) },
+      { label: "Buts/M",     value: clamp(totalGoals  / n, 4) },
       { label: "% Victoires", value: Math.round((totalWins / n) * 100) },
     ];
   }, [matches, clubId]);
 
   return (
-    <ChartCard title="RADAR COLLECTIF">
-      {data.length === 0 ? <NoData text="Aucun match chargé" /> : (
+    <Card>
+      <SectionLabel>Radar Collectif</SectionLabel>
+      {data.length === 0 ? <NoData text="Aucun match chargé" icon={Activity} /> : (
         <>
-          <ResponsiveContainer width="100%" height={180}>
-            <RadarChart data={data} margin={{ top: 10, right: 20, left: 20, bottom: 10 }}>
-              <PolarGrid stroke="var(--border)" />
-              <PolarAngleAxis dataKey="label" tick={{ fill: "var(--muted)", fontSize: 9 }} />
-              <Radar name="Équipe" dataKey="value" stroke="var(--accent)"
-                fill="var(--accent)" fillOpacity={0.22} strokeWidth={1.5} />
-              <Tooltip
-                contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 10 }}
-                formatter={(v: any) => [`${v} / 100`, ""]}
-              />
+          <ResponsiveContainer width="100%" height={190}>
+            <RadarChart data={data} margin={{ top: 8, right: 24, left: 24, bottom: 8 }}>
+              <defs>
+                <linearGradient id={GRAD_IDS.radar} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#00f2ff" stopOpacity={0.3} />
+                  <stop offset="100%" stopColor="#00f2ff" stopOpacity={0.03} />
+                </linearGradient>
+              </defs>
+              <PolarGrid stroke="rgba(255,255,255,0.06)" />
+              <PolarAngleAxis dataKey="label" tick={{ fill: "var(--muted)", fontSize: 9, fontFamily: "'Bebas Neue', sans-serif" }} />
+              <Radar name="Équipe" dataKey="value" stroke="#00f2ff" strokeWidth={2}
+                fill={`url(#${GRAD_IDS.radar})`} fillOpacity={1} />
+              <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={TOOLTIP_LABEL}
+                formatter={(v: unknown) => [`${v} / 100`, "Score"]} />
             </RadarChart>
           </ResponsiveContainer>
-          <p style={{ fontSize: 9, color: "var(--muted)", textAlign: "center", marginTop: 2 }}>
-            Normalisé · {matches.length} match{matches.length > 1 ? "s" : ""}
-          </p>
+          <p style={{ fontSize: 9, color: "var(--muted)", textAlign: "center", marginTop: 4 }}>Normalisé · {matches.length} match{matches.length > 1 ? "s" : ""}</p>
         </>
       )}
-    </ChartCard>
+    </Card>
   );
 }
 
-// ─── Graphique de possession ──────────────────────────────────────────────────
+/* ─── Possession trend ────────────────────────────────────────────────────── */
+
 function PossessionTrendSection({ matches, clubId }: { matches: Match[]; clubId: string }) {
   const data = useMemo(() => {
     const sorted = [...matches].sort((a, b) => Number(a.timestamp) - Number(b.timestamp)).slice(-20);
@@ -519,34 +259,41 @@ function PossessionTrendSection({ matches, clubId }: { matches: Match[]; clubId:
   const avg = data.length > 0 ? Math.round(data.reduce((s, d) => s + d.poss, 0) / data.length) : null;
 
   return (
-    <ChartCard
-      title="POSSESSION MOYENNE"
-      action={avg !== null ? (
-        <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 18,
-          color: avg >= 50 ? "var(--green)" : "var(--red)" }}>{avg}%</span>
-      ) : undefined}
-    >
-      {data.length < 3 ? <NoData text="Données de possession non disponibles" /> : (
-        <ResponsiveContainer width="100%" height={140}>
-          <LineChart data={data} margin={{ top: 4, right: 8, left: -28, bottom: 0 }}>
-            <XAxis dataKey="n" tick={{ fontSize: 8, fill: "var(--muted)" }} axisLine={false} tickLine={false} />
-            <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]}
-              tick={{ fontSize: 8, fill: "var(--muted)" }} axisLine={false} tickLine={false} />
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-            <Tooltip
-              contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 10 }}
-              formatter={(v: any) => [`${v}%`, "Possession"]}
-            />
-            <Line type="monotone" dataKey="poss" stroke="var(--accent)" strokeWidth={2}
-              dot={{ fill: "var(--accent)", r: 3 }} activeDot={{ r: 5 }} />
-          </LineChart>
-        </ResponsiveContainer>
-      )}
-    </ChartCard>
+    <Card>
+      <div className="flex items-center justify-between mb-3">
+        <SectionLabel>Possession moyenne</SectionLabel>
+        {avg !== null && (
+          <span className={`font-['Bebas_Neue'] text-xl leading-none ${avg >= 50 ? "text-emerald-400" : "text-red-400"}`}>{avg}%</span>
+        )}
+      </div>
+      {data.length < 3
+        ? <NoData text="Données de possession non disponibles" icon={Activity} />
+        : (
+          <ResponsiveContainer width="100%" height={130}>
+            <AreaChart data={data} margin={{ top: 4, right: 8, left: -28, bottom: 0 }}>
+              <defs>
+                <linearGradient id={GRAD_IDS.poss} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#00f2ff" stopOpacity={0.25} />
+                  <stop offset="100%" stopColor="#00f2ff" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <XAxis dataKey="n" tick={{ fontSize: 8, fill: "var(--muted)" }} axisLine={false} tickLine={false} />
+              <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tick={{ fontSize: 8, fill: "var(--muted)" }} axisLine={false} tickLine={false} />
+              <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.04)" vertical={false} />
+              <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={TOOLTIP_LABEL}
+                formatter={(v: unknown) => [`${v}%`, "Possession"]} />
+              <Area type="monotone" dataKey="poss" stroke="#00f2ff" strokeWidth={2}
+                fill={`url(#${GRAD_IDS.poss})`}
+                dot={{ fill: "#00f2ff", r: 2, strokeWidth: 0 }} activeDot={{ r: 4, fill: "#00f2ff" }} />
+            </AreaChart>
+          </ResponsiveContainer>
+        )}
+    </Card>
   );
 }
 
-// ─── Distribution des scores ──────────────────────────────────────────────────
+/* ─── Distribution des scores ─────────────────────────────────────────────── */
+
 function ScoreDistSection({ matches, clubId }: { matches: Match[]; clubId: string }) {
   const data = useMemo(() => {
     const map: Record<string, { score: string; count: number; win: number; draw: number; loss: number }> = {};
@@ -559,35 +306,35 @@ function ScoreDistSection({ matches, clubId }: { matches: Match[]; clubId: strin
       const key  = `${myG}-${oppG}`;
       if (!map[key]) map[key] = { score: key, count: 0, win: 0, draw: 0, loss: 0 };
       map[key].count++;
-      if      (my["wins"]   === "1") map[key].win++;
+      if (my["wins"] === "1") map[key].win++;
       else if (my["losses"] === "1") map[key].loss++;
-      else                            map[key].draw++;
+      else map[key].draw++;
     }
     return Object.values(map).sort((a, b) => b.count - a.count).slice(0, 10);
   }, [matches, clubId]);
 
   return (
-    <ChartCard title="DISTRIBUTION DES SCORES">
-      {data.length === 0 ? <NoData text="Aucun match chargé" /> : (
-        <ResponsiveContainer width="100%" height={160}>
-          <BarChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }} barSize={20}>
-            <XAxis dataKey="score" tick={{ fontSize: 9, fill: "var(--muted)" }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 8, fill: "var(--muted)" }} axisLine={false} tickLine={false} />
-            <Tooltip
-              contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 10 }}
-              formatter={(v: any, name: any) => [v, name === "win" ? "Victoire" : name === "draw" ? "Nul" : "Défaite"]}
-            />
-            <Bar dataKey="win"  stackId="a" fill="#22c55e" name="win" />
+    <Card>
+      <SectionLabel>Distribution des scores</SectionLabel>
+      {data.length === 0 ? <NoData text="Aucun match chargé" icon={BarChart2} /> : (
+        <ResponsiveContainer width="100%" height={155}>
+          <BarChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }} barSize={16}>
+            <XAxis dataKey="score" tick={{ fontSize: 9, fill: "#949ba4", fontFamily: "'Bebas Neue', sans-serif" }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 8, fill: "#949ba4" }} axisLine={false} tickLine={false} />
+            <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={TOOLTIP_LABEL}
+              formatter={(v: unknown, name: unknown) => [v, name === "win" ? "Victoires" : name === "draw" ? "Nuls" : "Défaites"]} />
+            <Bar dataKey="win"  stackId="a" fill="#22c55e" radius={[0, 0, 0, 0]} name="win" />
             <Bar dataKey="draw" stackId="a" fill="#eab308" name="draw" />
-            <Bar dataKey="loss" stackId="a" fill="#ef4444" name="loss" radius={[2, 2, 0, 0]} />
+            <Bar dataKey="loss" stackId="a" fill="#ef4444" radius={[3, 3, 0, 0]} name="loss" />
           </BarChart>
         </ResponsiveContainer>
       )}
-    </ChartCard>
+    </Card>
   );
 }
 
-// ─── Heatmap jour / heure ─────────────────────────────────────────────────────
+/* ─── Heatmap Jour / Heure ────────────────────────────────────────────────── */
+
 function DayHourHeatmapSection({ matches, clubId }: { matches: Match[]; clubId: string }) {
   const { grid, days, hours } = useMemo(() => {
     const days  = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
@@ -596,8 +343,8 @@ function DayHourHeatmapSection({ matches, clubId }: { matches: Match[]; clubId: 
     for (const m of matches) {
       const ts = Number(m.timestamp);
       const d  = new Date(ts > 1e12 ? ts : ts * 1000);
-      const day  = (d.getDay() + 6) % 7; // 0=Mon
-      const hour = Math.floor(d.getHours() / 4); // 0=00h, 5=20h
+      const day  = (d.getDay() + 6) % 7;
+      const hour = Math.floor(d.getHours() / 4);
       const key  = `${day}-${hour}`;
       if (!map[key]) map[key] = { wins: 0, total: 0 };
       map[key].total++;
@@ -610,94 +357,68 @@ function DayHourHeatmapSection({ matches, clubId }: { matches: Match[]; clubId: 
   const hasData = Object.values(grid).some(v => v.total > 0);
 
   return (
-    <ChartCard title="HEATMAP JOUR / HEURE (% VICTOIRES)">
-      {!hasData ? <NoData text="Aucun match chargé" /> : (
-        <div style={{ overflowX: "auto" }}>
-          <div style={{ display: "grid", gridTemplateColumns: `32px repeat(7, 1fr)`, gap: 2, minWidth: 280 }}>
-            <div />
-            {days.map(d => (
-              <div key={d} style={{ textAlign: "center", fontSize: 8, color: "var(--muted)",
-                fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.06em", paddingBottom: 2 }}>{d}</div>
-            ))}
-            {hours.map((h, hi) => (
-              <Fragment key={h}>
-                <div style={{ fontSize: 8, color: "var(--muted)", alignSelf: "center",
-                  fontFamily: "'Bebas Neue', sans-serif" }}>{h}</div>
-                {days.map((_, di) => {
-                  const cell = grid[`${di}-${hi}`];
-                  const wr   = cell && cell.total > 0 ? cell.wins / cell.total : -1;
-                  const bg   = wr < 0 ? "var(--bg)"
-                    : `hsl(${Math.round(wr * 120)}, 65%, ${wr > 0.5 ? "30%" : "25%"})`;
-                  return (
-                    <div key={di} title={cell ? `${cell.wins}V/${cell.total}M (${Math.round(wr * 100)}%)` : ""}
-                      style={{ height: 22, borderRadius: 3, background: bg,
-                        border: "1px solid var(--border)", display: "flex", alignItems: "center",
-                        justifyContent: "center" }}>
-                      {cell && cell.total > 0 && (
-                        <span style={{ fontSize: 8, fontWeight: 700,
-                          color: wr > 0.6 ? "#86efac" : wr > 0.4 ? "#fde68a" : "#fca5a5" }}>
-                          {Math.round(wr * 100)}%
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-              </Fragment>
-            ))}
+    <Card>
+      <SectionLabel>Heatmap Jour / Heure (% Victoires)</SectionLabel>
+      {!hasData ? <NoData text="Aucun match chargé" icon={Activity} /> : (
+        <>
+          <div className="overflow-x-auto">
+            <div className="min-w-[280px]" style={{ display: "grid", gridTemplateColumns: "28px repeat(7, 1fr)", gap: 3 }}>
+              {/* Day headers */}
+              <div />
+              {days.map(d => (
+                <div key={d} className="text-center font-['Bebas_Neue'] tracking-wider pb-1" style={{ fontSize: 8, color: "var(--muted)" }}>{d}</div>
+              ))}
+              {/* Rows */}
+              {hours.map((h, hi) => (
+                <Fragment key={h}>
+                  <div className="font-['Bebas_Neue'] self-center pr-1 text-right" style={{ fontSize: 8, color: "var(--muted)" }}>{h}</div>
+                  {days.map((_, di) => {
+                    const cell = grid[`${di}-${hi}`];
+                    const wr = cell && cell.total > 0 ? cell.wins / cell.total : -1;
+                    const intensity = wr < 0 ? 0 : wr;
+                    return (
+                      <div
+                        key={di}
+                        title={cell ? `${cell.wins}V / ${cell.total}M · ${Math.round(wr * 100)}%` : "Aucun match"}
+                        className="rounded-sm h-6 flex items-center justify-center transition-transform hover:scale-110 cursor-default"
+                        style={{
+                          border: "1px solid var(--border)",
+                          background: wr < 0
+                            ? "var(--surface)"
+                            : `rgba(34,211,238,${0.08 + intensity * 0.82})`,
+                        }}
+                      >
+                        {cell && cell.total > 0 && (
+                          <span className="text-[8px] font-bold"
+                            style={{ color: wr > 0.6 ? "#ecfdf5" : wr > 0.4 ? "#fef9c3" : "#fee2e2" }}>
+                            {Math.round(wr * 100)}%
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </Fragment>
+              ))}
+            </div>
           </div>
-          <p style={{ fontSize: 9, color: "var(--muted)", marginTop: 6, textAlign: "center" }}>
-            Basé sur {matches.length} match{matches.length > 1 ? "s" : ""}
-          </p>
-        </div>
+          <div className="flex items-center justify-end gap-2 mt-3">
+            <span style={{ fontSize: 9, color: "var(--muted)" }}>Faible</span>
+            <div className="flex gap-0.5">
+              {[0.08, 0.27, 0.46, 0.65, 0.9].map((op, i) => (
+                <div key={i} className="w-3 h-3 rounded-sm" style={{ background: `rgba(34,211,238,${op})` }} />
+              ))}
+            </div>
+            <span style={{ fontSize: 9, color: "var(--muted)" }}>Élevé</span>
+          </div>
+          <p style={{ fontSize: 9, color: "var(--muted)", textAlign: "center", marginTop: 4 }}>{matches.length} match{matches.length > 1 ? "s" : ""} analysés</p>
+        </>
       )}
-    </ChartCard>
+    </Card>
   );
 }
 
-// ─── Évolution de l'effectif ──────────────────────────────────────────────────
-function PlayerCountSection({ matches, clubId }: { matches: Match[]; clubId: string }) {
-  const data = useMemo(() =>
-    [...matches]
-      .sort((a, b) => Number(a.timestamp) - Number(b.timestamp))
-      .slice(-20)
-      .map((m, i) => {
-        const clubPlayers = m.players[clubId] as Record<string, unknown> | undefined;
-        const count = clubPlayers ? Object.keys(clubPlayers).length : 0;
-        return { n: i + 1, count };
-      }),
-  [matches, clubId]);
+/* ─── Form Calendar (GitHub-style) ───────────────────────────────────────── */
 
-  const avg = data.length > 0 ? (data.reduce((s, d) => s + d.count, 0) / data.length).toFixed(1) : null;
-
-  return (
-    <ChartCard
-      title="ÉVOLUTION DE L'EFFECTIF"
-      action={avg !== null ? (
-        <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 14, color: "var(--accent)" }}>
-          Moy. {avg}
-        </span>
-      ) : undefined}
-    >
-      {data.length < 2 ? <NoData text="Aucun match chargé" /> : (
-        <ResponsiveContainer width="100%" height={140}>
-          <LineChart data={data} margin={{ top: 4, right: 8, left: -28, bottom: 0 }}>
-            <XAxis dataKey="n" tick={{ fontSize: 8, fill: "var(--muted)" }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 8, fill: "var(--muted)" }} axisLine={false} tickLine={false} allowDecimals={false} />
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-            <Tooltip
-              contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 10 }}
-              formatter={(v: any) => [v, "Joueurs"]}
-            />
-            <Line type="monotone" dataKey="count" stroke="#a855f7" strokeWidth={2}
-              dot={{ fill: "#a855f7", r: 3 }} activeDot={{ r: 5 }} />
-          </LineChart>
-        </ResponsiveContainer>
-      )}
-    </ChartCard>
-  );
-}
-
-// ─── Heatmap de forme (GitHub-style calendar) ─────────────────────────────────
 function FormCalendarSection({ matches, clubId }: { matches: Match[]; clubId: string }) {
   const today = useMemo(() => { const d = new Date(); d.setHours(23, 59, 59, 0); return d; }, []);
 
@@ -749,45 +470,282 @@ function FormCalendarSection({ matches, clubId }: { matches: Match[]; clubId: st
   }, [resultMap]);
 
   return (
-    <ChartCard title="HEATMAP DE FORME — 3 MOIS">
-      <div style={{ display: "grid", gridTemplateColumns: `20px repeat(${weeks.length}, 1fr)`, gap: 2, marginBottom: 2 }}>
+    <Card>
+      <SectionLabel>Heatmap de forme — 3 mois</SectionLabel>
+      {/* Month labels */}
+      <div style={{ display: "grid", gridTemplateColumns: `18px repeat(${weeks.length}, 1fr)`, gap: 2, marginBottom: 2 }}>
         <div />
         {weeks.map((_, ci) => {
           const ml = monthLabels.find(m => m.col === ci);
-          return <div key={ci} style={{ fontSize: 7, color: "var(--muted)", textAlign: "center", fontFamily: "'Bebas Neue', sans-serif", overflow: "hidden" }}>{ml?.label ?? ""}</div>;
+          return (
+            <div key={ci} className="font-['Bebas_Neue'] text-center overflow-hidden" style={{ fontSize: 7, color: "var(--muted)" }}>
+              {ml?.label ?? ""}
+            </div>
+          );
         })}
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: `20px repeat(${weeks.length}, 1fr)`, gap: 2 }}>
-        {(["L","M","M","J","V","S","D"] as const).map((dl, di) => (
+      {/* Grid */}
+      <div style={{ display: "grid", gridTemplateColumns: `18px repeat(${weeks.length}, 1fr)`, gap: 2 }}>
+        {(["L", "M", "M", "J", "V", "S", "D"] as const).map((dl, di) => (
           <Fragment key={di}>
-            <div style={{ fontSize: 7, color: di % 2 === 0 ? "var(--muted)" : "transparent", fontFamily: "'Bebas Neue', sans-serif", alignSelf: "center", textAlign: "right", paddingRight: 2, gridRow: di + 2 }}>{dl}</div>
+            <div className="text-[7px] font-['Bebas_Neue'] text-right pr-0.5 self-center"
+              style={{ color: di % 2 === 0 ? "#949ba4" : "transparent", gridRow: di + 2 }}>
+              {dl}
+            </div>
             {weeks.map((week, ci) => {
               const cell = week[di];
               const isFuture = cell.date > today;
-              const bg = isFuture ? "transparent" : !cell.result ? "var(--bg)" : cell.result === "W" ? "#22c55e" : cell.result === "D" ? "#eab308" : "#ef4444";
+              const resCls = !cell.result || isFuture ? ""
+                : cell.result === "W" ? "bg-emerald-500"
+                : cell.result === "D" ? "bg-yellow-500"
+                : "bg-red-500";
               return (
-                <div key={`${ci}-${di}`}
-                  title={cell.result ? `${cell.key} — ${cell.result === "W" ? "Victoire" : cell.result === "D" ? "Nul" : "Défaite"}` : cell.key}
-                  style={{ height: 11, borderRadius: 2, background: bg, opacity: !cell.result && !isFuture ? 0.3 : 1,
-                    border: "1px solid rgba(255,255,255,0.04)", gridColumn: ci + 2, gridRow: di + 2, transition: "transform 0.1s", cursor: cell.result ? "default" : undefined }}
-                  onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.3)")}
-                  onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")}
+                <div
+                  key={`${ci}-${di}`}
+                  title={cell.result
+                    ? `${cell.key} — ${cell.result === "W" ? "Victoire" : cell.result === "D" ? "Nul" : "Défaite"}`
+                    : cell.key}
+                  className={`rounded-sm transition-transform hover:scale-125 cursor-default border border-white/[0.03] ${resCls}`}
+                  style={{
+                    height: 11,
+                    background: !cell.result && !isFuture ? "var(--surface)" : isFuture ? "transparent" : undefined,
+                    opacity: !cell.result && !isFuture ? 0.35 : 1,
+                    gridColumn: ci + 2, gridRow: di + 2,
+                  }}
                 />
               );
             })}
           </Fragment>
         ))}
       </div>
-      <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 8, marginTop: 8 }}>
-        <div style={{ width: 8, height: 8, borderRadius: 2, background: "#22c55e" }} /><span style={{ fontSize: 9, color: "var(--muted)" }}>{counts.W}V</span>
-        <div style={{ width: 8, height: 8, borderRadius: 2, background: "#eab308" }} /><span style={{ fontSize: 9, color: "var(--muted)" }}>{counts.D}N</span>
-        <div style={{ width: 8, height: 8, borderRadius: 2, background: "#ef4444" }} /><span style={{ fontSize: 9, color: "var(--muted)" }}>{counts.L}D</span>
+      {/* Legend */}
+      <div className="flex justify-end items-center gap-3 mt-3">
+        {([["bg-emerald-500", `${counts.W}V`, "#22c55e"], ["bg-yellow-500", `${counts.D}N`, "#eab308"], ["bg-red-500", `${counts.L}D`, "#ef4444"]] as const).map(([cls, label, color]) => (
+          <div key={label} className="flex items-center gap-1">
+            <div className={`w-2.5 h-2.5 rounded-sm ${cls}`} />
+            <span className="text-[9px]" style={{ color }}>{label}</span>
+          </div>
+        ))}
       </div>
-    </ChartCard>
+    </Card>
   );
 }
 
-// ─── ChartsTab ────────────────────────────────────────────────────────────────
+/* ─── Season History ──────────────────────────────────────────────────────── */
+
+function parseSeasonHistory(raw: unknown, clubId: string): SeasonRow[] {
+  if (!raw || typeof raw !== "object") return [];
+  const obj = raw as Record<string, unknown>;
+  const seasons: unknown[] = (
+    (obj[clubId] as Record<string, unknown>)?.["history"] as unknown[]
+    ?? obj["history"] as unknown[]
+    ?? (Array.isArray(raw) ? raw : [])
+  );
+  return seasons.map((s) => {
+    const v = s as Record<string, string | number>;
+    const w = Number(v["wins"] ?? 0), l = Number(v["losses"] ?? 0), t = Number(v["ties"] ?? 0);
+    const g = Number(v["goals"] ?? 0), ga = Number(v["goalsAgainst"] ?? 0);
+    const sid = String(v["seasonId"] ?? v["season"] ?? "");
+    const sr = Number(v["skillRating"] ?? v["skill_rating"] ?? 0) || undefined;
+    return { wins: w, losses: l, ties: t, goals: g, goalDiff: g - ga, label: sid ? `S${sid}` : "?", sr };
+  }).filter((s) => s.wins + s.losses + s.ties > 0).slice(-10);
+}
+
+function SeasonHistorySection({ clubId, platform }: { clubId: string; platform: string }) {
+  const t = useT();
+  const [seasons, setSeasons] = useState<SeasonRow[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [tried, setTried] = useState(false);
+
+  useEffect(() => { setSeasons([]); setTried(false); }, [clubId]);
+
+  const load = () => {
+    if (tried) return;
+    setLoading(true); setTried(true);
+    getSeasonHistory(clubId, platform)
+      .then((raw) => setSeasons(parseSeasonHistory(raw, clubId)))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  };
+
+  const srData = seasons.filter(s => s.sr && s.sr > 0).map(s => ({ label: s.label, sr: s.sr! }));
+
+  return (
+    <Card>
+      <div className="flex items-center justify-between mb-3">
+        <SectionLabel>{t("charts.seasonHistory")}</SectionLabel>
+        {!tried && (
+          <button onClick={load} className="font-['Bebas_Neue'] tracking-wider cursor-pointer rounded transition-colors" style={{ fontSize: 10, padding: "3px 10px", border: "1px solid var(--border)", color: "var(--accent)", background: "transparent" }}>
+            {t("charts.load")}
+          </button>
+        )}
+      </div>
+      {loading && <NoData text="Chargement…" icon={TrendingUp} />}
+      {tried && !loading && seasons.length === 0 && <NoData text={t("charts.noDataClub")} icon={BarChart2} />}
+      {seasons.length > 0 && (
+        <div className="space-y-2">
+          {seasons.map((s) => {
+            const total = s.wins + s.losses + s.ties;
+            const pct = total > 0 ? Math.round((s.wins / total) * 100) : 0;
+            return (
+              <div key={s.label} className="flex items-center gap-2">
+                <span className="w-7 font-['Bebas_Neue'] flex-shrink-0" style={{ fontSize: 9, color: "var(--muted)" }}>{s.label}</span>
+                <div className="flex-1 h-5 rounded overflow-hidden" style={{ background: "var(--surface)" }}>
+                  <div className="h-full bg-gradient-to-r from-emerald-800 to-emerald-500 rounded-full transition-all"
+                    style={{ width: `${pct}%`, minWidth: s.wins > 0 ? "4px" : 0 }} />
+                </div>
+                <div className="flex gap-2 text-[10px] flex-shrink-0">
+                  <span className="text-emerald-400">{s.wins}V</span>
+                  <span className="text-yellow-400">{s.ties}N</span>
+                  <span className="text-red-400">{s.losses}D</span>
+                  <span style={{ color: "var(--muted)" }}>{pct}%</span>
+                </div>
+              </div>
+            );
+          })}
+
+          {/* SR line chart */}
+          {srData.length > 1 && (
+            <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--border)" }}>
+              <p className="category-header">SKILL RATING</p>
+              <ResponsiveContainer width="100%" height={80}>
+                <LineChart data={srData} margin={{ top: 4, right: 8, left: -28, bottom: 0 }}>
+                  <XAxis dataKey="label" tick={{ fill: "#949ba4", fontSize: 8 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: "#949ba4", fontSize: 8 }} domain={["auto", "auto"]} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v: unknown) => [v, "SR"]} />
+                  <Line type="monotone" dataKey="sr" stroke="#22d3ee" strokeWidth={2}
+                    dot={{ fill: "#22d3ee", r: 3 }} activeDot={{ r: 5 }} />
+                </LineChart>
+              </ResponsiveContainer>
+              <div className="flex justify-around mt-2">
+                {[
+                  { label: "MIN",    value: Math.min(...srData.map(s => s.sr)), color: "#ef4444" },
+                  { label: "MAX",    value: Math.max(...srData.map(s => s.sr)), color: "#22c55e" },
+                  { label: "ACTUEL", value: srData[srData.length - 1].sr,      color: "#22d3ee" },
+                ].map(({ label, value, color }) => (
+                  <div key={label} className="text-center">
+                    <div className="font-['Bebas_Neue'] text-xl leading-none" style={{ color }}>{value}</div>
+                    <div style={{ fontSize: 8, color: "var(--muted)", marginTop: 2 }}>{label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+/* ─── Leaderboard ─────────────────────────────────────────────────────────── */
+
+function parseLeaderboard(raw: unknown, myClubId: string): LeaderRow[] {
+  if (!raw || typeof raw !== "object") return [];
+  const arr: unknown[] = Array.isArray(raw) ? raw
+    : (raw as Record<string, unknown[]>)["clubs"] ?? (raw as Record<string, unknown[]>)["data"] ?? [];
+  return arr.slice(0, 20).map((entry, i) => {
+    const v = entry as Record<string, string | number>;
+    const cid = String(v["clubId"] ?? v["id"] ?? "");
+    return {
+      rank: i + 1, name: String(v["name"] ?? v["clubName"] ?? `Club #${cid}`),
+      wins: Number(v["wins"] ?? 0), losses: Number(v["losses"] ?? 0), ties: Number(v["ties"] ?? 0),
+      goals: Number(v["goals"] ?? 0), sr: String(v["skillRating"] ?? "—"),
+    };
+  }).filter((r) => r.wins + r.losses + r.ties > 0 || r.name !== "Club #");
+  void myClubId;
+}
+
+function LeaderboardSection({ clubId, platform }: { clubId: string; platform: string }) {
+  const t = useT();
+  const [rows, setRows] = useState<LeaderRow[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [tried, setTried] = useState(false);
+
+  useEffect(() => { setRows([]); setTried(false); }, [clubId]);
+
+  const load = () => {
+    if (tried) return;
+    setLoading(true); setTried(true);
+    getLeaderboard(platform, 25)
+      .then((raw) => setRows(parseLeaderboard(raw, clubId)))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  };
+
+  return (
+    <Card>
+      <div className="flex items-center justify-between mb-3">
+        <SectionLabel>{t("charts.leaderboardTitle")} — {platform.toUpperCase()}</SectionLabel>
+        {!tried && (
+          <button onClick={load} className="font-['Bebas_Neue'] tracking-wider cursor-pointer rounded transition-colors" style={{ fontSize: 10, padding: "3px 10px", border: "1px solid var(--border)", color: "var(--accent)", background: "transparent" }}>
+            {t("charts.load")}
+          </button>
+        )}
+      </div>
+      {loading && <NoData text="Chargement…" icon={TrendingUp} />}
+      {tried && !loading && rows.length === 0 && <NoData text={t("charts.noData")} icon={BarChart2} />}
+      {rows.length > 0 && (
+        <div className="space-y-1 overflow-y-auto max-h-48">
+          {rows.map((r) => {
+            const total = r.wins + r.ties + r.losses;
+            const wr = total > 0 ? Math.round((r.wins / total) * 100) : 0;
+            return (
+              <div key={r.rank} className="channel-item flex items-center gap-2 px-2 py-1.5">
+                <span className="w-5 text-center font-['Bebas_Neue'] text-sm flex-shrink-0" style={{ color: r.rank <= 3 ? "var(--gold)" : "var(--muted)" }}>{r.rank}</span>
+                <span className="flex-1 text-xs font-medium truncate" style={{ color: "var(--text)" }}>{r.name}</span>
+                <div className="flex gap-2 text-[10px] flex-shrink-0">
+                  <span className="text-emerald-400">{r.wins}V</span>
+                  <span style={{ color: "var(--muted)" }}>{wr}%</span>
+                  <span style={{ color: "var(--muted)" }}>{r.sr}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+/* ─── Effectif evolution ──────────────────────────────────────────────────── */
+
+function PlayerCountSection({ matches, clubId }: { matches: Match[]; clubId: string }) {
+  const data = useMemo(() =>
+    [...matches]
+      .sort((a, b) => Number(a.timestamp) - Number(b.timestamp))
+      .slice(-20)
+      .map((m, i) => {
+        const clubPlayers = m.players[clubId] as Record<string, unknown> | undefined;
+        return { n: i + 1, count: clubPlayers ? Object.keys(clubPlayers).length : 0 };
+      }),
+  [matches, clubId]);
+
+  const avg = data.length > 0 ? (data.reduce((s, d) => s + d.count, 0) / data.length).toFixed(1) : null;
+
+  return (
+    <Card>
+      <div className="flex items-center justify-between mb-3">
+        <SectionLabel>Évolution de l'effectif</SectionLabel>
+        {avg !== null && <span className="font-['Bebas_Neue'] text-base text-violet-400">Moy. {avg}</span>}
+      </div>
+      {data.length < 2 ? <NoData text="Aucun match chargé" icon={Users} /> : (
+        <ResponsiveContainer width="100%" height={130}>
+          <LineChart data={data} margin={{ top: 4, right: 8, left: -28, bottom: 0 }}>
+            <XAxis dataKey="n" tick={{ fontSize: 8, fill: "#949ba4" }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 8, fill: "#949ba4" }} axisLine={false} tickLine={false} allowDecimals={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#3f4147" />
+            <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v: unknown) => [v, "Joueurs"]} />
+            <Line type="monotone" dataKey="count" stroke="#a78bfa" strokeWidth={2}
+              dot={{ fill: "#a78bfa", r: 3 }} activeDot={{ r: 5 }} />
+          </LineChart>
+        </ResponsiveContainer>
+      )}
+    </Card>
+  );
+}
+
+/* ─── ChartsTab ───────────────────────────────────────────────────────────── */
+
 export function ChartsTab() {
   const t = useT();
   const [mode, setMode] = useState<Mode>("last10");
@@ -824,9 +782,10 @@ export function ChartsTab() {
       { name: t("charts.drawsShort"),  value: src.ties,   color: "#eab308" },
       { name: t("charts.lossesShort"), value: src.losses, color: "#ef4444" },
     ];
-  }, [currentClub, mode, last10]);
+  }, [currentClub, mode, last10, t]);
 
   const wdlTotal = wdlData.reduce((s, d) => s + d.value, 0);
+  const winRate = wdlTotal > 0 ? Math.round((wdlData[0].value / wdlTotal) * 100) : 0;
 
   const butsData = useMemo(() => {
     if (!currentClub) return { data: [], total: 0 };
@@ -834,12 +793,12 @@ export function ChartsTab() {
     const assists = mode === "alltime" ? allTimeAssists    : last10.assists;
     return {
       data: [
-        { name: t("charts.goalsShort"),   value: goals,   color: "#00d4ff" },
+        { name: t("charts.goalsShort"),   value: goals,   color: "#22d3ee" },
         { name: t("charts.assistsShort"), value: assists, color: "#22c55e" },
       ],
       total: goals + assists,
     };
-  }, [currentClub, mode, last10, allTimeAssists]);
+  }, [currentClub, mode, last10, allTimeAssists, t]);
 
   const playerSource = useMemo(() => {
     if (mode === "alltime" || !currentClub) return players;
@@ -854,74 +813,131 @@ export function ChartsTab() {
   if (!currentClub) return null;
 
   return (
-    <div style={{ height: "100%", overflowY: "auto", padding: "16px 20px" }}>
+    <div className="h-full overflow-y-auto px-5 py-4" style={{ background: "var(--main-bg)" }}>
 
-      {/* Toggle + export */}
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, marginBottom: 20 }}>
-        {(["last10", "alltime"] as Mode[]).map((m) => (
-          <button key={m} onClick={() => setMode(m)} style={{
-            padding: "6px 18px", borderRadius: 20, fontSize: 11,
-            fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.1em", cursor: "pointer",
-            border: `1px solid ${mode === m ? "var(--accent)" : "var(--border)"}`,
-            background: "transparent", color: mode === m ? "var(--accent)" : "var(--muted)",
-            transition: "all 0.15s",
-          }}>
-            {m === "last10" ? t("charts.last10") : t("charts.allTime")}
-          </button>
-        ))}
-        <button onClick={() => setExportModal(true)} style={{ ...BTN, marginLeft: 8 }}>
+      {/* ── Header: mode switch + export ──────────────────────────── */}
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center p-1 gap-1 rounded" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+          {(["last10", "alltime"] as Mode[]).map((m) => (
+            <button key={m} onClick={() => setMode(m)}
+              className="px-4 py-1.5 rounded font-['Bebas_Neue'] tracking-wider transition-all cursor-pointer"
+              style={{
+                fontSize: 11,
+                background: mode === m ? "var(--active)" : "transparent",
+                color: mode === m ? "var(--accent)" : "var(--muted)",
+                border: mode === m ? "1px solid var(--border)" : "1px solid transparent",
+              }}>
+              {m === "last10" ? t("charts.last10") : t("charts.allTime")}
+            </button>
+          ))}
+        </div>
+        <button onClick={() => setExportModal(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded cursor-pointer"
+          style={{ border: "1px solid var(--border)", color: "var(--muted)", fontSize: 11, background: "transparent" }}>
           <Download size={11} /> PNG
         </button>
       </div>
 
-      <div ref={contentRef} style={{ background: "var(--card)" }}>
-        {/* Row 1: WDL + Goals + Top Scorers */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 14 }}>
-          <ChartCard title={t("charts.wdl")}>
-            <DonutChart data={wdlData} centerValue={wdlTotal} centerSub={t("charts.matchesLabel")} />
-            <WdlLegend data={wdlData} total={wdlTotal} />
-          </ChartCard>
-          <ChartCard title={t("charts.goalsAssists")}>
-            <DonutChart data={butsData.data} centerValue={butsData.total} centerSub={t("charts.totalLabel")} />
-            <WdlLegend data={butsData.data} total={butsData.total} />
-          </ChartCard>
-          <ChartCard title={t("charts.topScorers")}>
-            <HBarChart players={topScorers} valueKey="goals" color="cyan" />
-          </ChartCard>
-        </div>
+      <div ref={contentRef} className="space-y-4">
 
-        {/* Row 2: Top Assists + Top Passes */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
-          <ChartCard title={t("charts.topAssists")}>
-            <HBarChart players={topAssists} valueKey="assists" color="orange" />
-          </ChartCard>
-          <ChartCard title={t("charts.topPasses")}>
-            <HBarChart players={topPasses} valueKey="passesMade" color="purple" />
-          </ChartCard>
-        </div>
+        {/* ── Section 1 : Core — Donuts + KPI ──────────────────────── */}
+        <section>
+          <h2 className="font-['Bebas_Neue'] text-sm tracking-widest mb-3 flex items-center gap-2" style={{ color: "var(--muted)" }}>
+            <Target size={13} className="text-cyan-500" /> Core Performance
+          </h2>
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            {/* WDL donut */}
+            <Card className="col-span-1">
+              <SectionLabel>{t("charts.wdl")}</SectionLabel>
+              <DonutChart data={wdlData} centerValue={`${winRate}%`} centerSub={t("charts.matchesLabel")} />
+              <DonutLegend data={wdlData} total={wdlTotal} />
+            </Card>
 
-        {/* Row 3: Season History + SR Evolution + Leaderboard */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 14 }}>
-          <SeasonHistorySection clubId={currentClub.id} platform={currentClub.platform} />
-          <SrEvolutionSection   clubId={currentClub.id} platform={currentClub.platform} />
-          <LeaderboardSection   clubId={currentClub.id} platform={currentClub.platform} />
-        </div>
+            {/* Goals donut */}
+            <Card className="col-span-1">
+              <SectionLabel>{t("charts.goalsAssists")}</SectionLabel>
+              <DonutChart data={butsData.data} centerValue={butsData.total} centerSub={t("charts.totalLabel")} />
+              <DonutLegend data={butsData.data} total={butsData.total} />
+            </Card>
 
-        {/* Row 4: Team Radar + Possession + Player Count */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 14 }}>
-          <TeamRadarSection       matches={matches} clubId={currentClub.id} />
-          <PossessionTrendSection matches={matches} clubId={currentClub.id} />
-          <PlayerCountSection     matches={matches} clubId={currentClub.id} />
-        </div>
+            {/* KPI grid */}
+            <Card className="col-span-2">
+              <SectionLabel>Chiffres clés</SectionLabel>
+              <div className="grid grid-cols-3 gap-2 h-[calc(100%-1.5rem)]">
+                {[
+                  { label: "Victoires",    value: wdlData[0]?.value ?? 0, color: "#22c55e" },
+                  { label: "Nuls",         value: wdlData[1]?.value ?? 0, color: "#eab308" },
+                  { label: "Défaites",     value: wdlData[2]?.value ?? 0, color: "#ef4444" },
+                  { label: "Buts",         value: butsData.data[0]?.value ?? 0, color: "#22d3ee" },
+                  { label: "Passes D.",    value: butsData.data[1]?.value ?? 0, color: "#22c55e" },
+                  { label: "% Victoires",  value: `${winRate}%`,               color: winRate >= 50 ? "#22c55e" : "#ef4444" },
+                ].map(({ label, value, color }) => (
+                  <div key={label} className="flex flex-col items-center justify-center rounded py-3" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+                    <span className="font-['Bebas_Neue'] text-2xl leading-none" style={{ color }}>{value}</span>
+                    <span className="category-header" style={{ marginBottom: 0, marginTop: 3 }}>{label}</span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
+        </section>
 
-        {/* Row 5: Score Distribution + Day/Hour Heatmap */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
-          <ScoreDistSection      matches={matches} clubId={currentClub.id} />
-          <DayHourHeatmapSection matches={matches} clubId={currentClub.id} />
-        </div>
+        {/* ── Section 2 : Scoring — Top Buteurs / Passeurs / Passes ─── */}
+        <section>
+          <h2 className="font-['Bebas_Neue'] text-sm tracking-widest mb-3 flex items-center gap-2" style={{ color: "var(--muted)" }}>
+            <TrendingUp size={13} className="text-orange-400" /> Scoring & Création
+          </h2>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <Card>
+              <SectionLabel>{t("charts.topScorers")}</SectionLabel>
+              <HBarChart players={topScorers} valueKey="goals" color="cyan" />
+            </Card>
+            <Card>
+              <SectionLabel>{t("charts.topAssists")}</SectionLabel>
+              <HBarChart players={topAssists} valueKey="assists" color="orange" />
+            </Card>
+            <Card>
+              <SectionLabel>{t("charts.topPasses")}</SectionLabel>
+              <HBarChart players={topPasses} valueKey="passesMade" color="purple" />
+            </Card>
+          </div>
+        </section>
 
-        {/* Row 6: Form Calendar Heatmap */}
-        <FormCalendarSection matches={matches} clubId={currentClub.id} />
+        {/* ── Section 3 : Club data ─────────────────────────────────── */}
+        <section>
+          <h2 className="font-['Bebas_Neue'] text-sm tracking-widest mb-3 flex items-center gap-2" style={{ color: "var(--muted)" }}>
+            <BarChart2 size={13} className="text-violet-400" /> Historique & Classement
+          </h2>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <SeasonHistorySection clubId={currentClub.id} platform={currentClub.platform} />
+            <LeaderboardSection   clubId={currentClub.id} platform={currentClub.platform} />
+            <TeamRadarSection     matches={matches} clubId={currentClub.id} />
+          </div>
+        </section>
+
+        {/* ── Section 4 : Analyse de forme ─────────────────────────── */}
+        <section>
+          <h2 className="font-['Bebas_Neue'] text-sm tracking-widest mb-3 flex items-center gap-2" style={{ color: "var(--muted)" }}>
+            <Activity size={13} className="text-emerald-400" /> Analyse de Forme
+          </h2>
+          {/* Form calendar full-width */}
+          <FormCalendarSection matches={matches} clubId={currentClub.id} />
+
+          {/* Row: Score Dist + Day/Hour Heatmap + Possession + Effectif */}
+          <div className="grid grid-cols-2 gap-4 mt-4 lg:grid-cols-4">
+            <div className="col-span-2 lg:col-span-1">
+              <ScoreDistSection matches={matches} clubId={currentClub.id} />
+            </div>
+            <div className="col-span-2 lg:col-span-2">
+              <DayHourHeatmapSection matches={matches} clubId={currentClub.id} />
+            </div>
+            <div className="col-span-2 lg:col-span-1 flex flex-col gap-4">
+              <PossessionTrendSection matches={matches} clubId={currentClub.id} />
+              <PlayerCountSection     matches={matches} clubId={currentClub.id} />
+            </div>
+          </div>
+        </section>
+
       </div>
 
       {exportModal && (

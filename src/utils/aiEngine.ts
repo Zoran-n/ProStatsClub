@@ -92,7 +92,7 @@ export function generateSessionSummary(session: Session): AISummary {
 
   const narrative = narratives[sentiment][Math.floor(Math.random() * narratives[sentiment].length)];
 
-  const keyPoints = [];
+  const keyPoints: string[] = [];
   if (goalsFor / total >= 2) keyPoints.push("🔥 Attaque de feu (avg > 2 buts)");
   if (goalsAgainst / total < 1) keyPoints.push("🛡️ Défense de fer (avg < 1 but)");
   if (winRate === 100) keyPoints.push("🏆 Invaincus sur toute la session");
