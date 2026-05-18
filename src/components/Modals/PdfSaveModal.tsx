@@ -22,7 +22,7 @@ export function PdfSaveModal({ filename, onConfirm, onCancel }: Props) {
         onClick={(e) => e.stopPropagation()}
         style={{
           background: "var(--card)", border: "1px solid var(--border)",
-          borderRadius: 12, width: 380, overflow: "hidden",
+          borderRadius: 12, width: 570, overflow: "hidden",
         }}
       >
         {/* Header */}

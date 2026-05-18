@@ -148,7 +148,7 @@ export function CrossClubsModal({ onClose }: { onClose: () => void }) {
       onClick={onClose}
     >
       <div
-        style={{ background: "var(--card)", borderRadius: 12, width: 760, maxWidth: "96vw",
+        style={{ background: "var(--card)", borderRadius: 12, width: 1140, maxWidth: "96vw",
           maxHeight: "92vh", display: "flex", flexDirection: "column",
           border: "1px solid var(--border)", animation: "fadeSlideIn 0.15s ease-out" }}
         onClick={(e) => e.stopPropagation()}
