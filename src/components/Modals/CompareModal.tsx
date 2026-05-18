@@ -91,19 +91,19 @@ export function CompareModal({ players, allPlayers, onClose }: {
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 50,
       display: "flex", alignItems: "center", justifyContent: "center" }} onClick={onClose}>
-      <div style={{ background: "var(--card)", borderRadius: 12, padding: 24, width: 560,
+      <div style={{ background: "var(--card)", borderRadius: 12, padding: 32, width: 840,
         maxHeight: "90vh", overflowY: "auto",
         border: "1px solid var(--border)", animation: "fadeSlideIn 0.15s ease-out" }}
         onClick={(e) => e.stopPropagation()}>
 
         {/* Header */}
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 22 }}>
           <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", flex: 1, paddingRight: 8 }}>
             {players.map((p, i) => (
               <span key={p.name} style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                {i > 0 && <span style={{ color: "var(--muted)", fontSize: 11, fontWeight: 700, margin: "0 2px" }}>VS</span>}
-                <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, color: COLORS[i],
-                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 120 }}>
+                {i > 0 && <span style={{ color: "var(--muted)", fontSize: 14, fontWeight: 700, margin: "0 4px" }}>VS</span>}
+                <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 24, color: COLORS[i],
+                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 160 }}>
                   {p.name}
                 </span>
               </span>
@@ -112,30 +112,30 @@ export function CompareModal({ players, allPlayers, onClose }: {
           <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
             {discordWebhook && (
               <button onClick={handleShareDiscord} disabled={sharing} title="Envoyer sur Discord"
-                style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px",
+                style={{ display: "flex", alignItems: "center", gap: 7, padding: "7px 14px",
                   background: "rgba(88,101,242,0.15)", border: "1px solid rgba(88,101,242,0.35)",
-                  borderRadius: 6, color: "#8b9cf4", fontSize: 11, cursor: sharing ? "default" : "pointer",
+                  borderRadius: 6, color: "#8b9cf4", fontSize: 13, cursor: sharing ? "default" : "pointer",
                   opacity: sharing ? 0.5 : 1 }}>
-                <Send size={12} /> Discord
+                <Send size={15} /> Discord
               </button>
             )}
             <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--muted)",
-              cursor: "pointer", fontSize: 18, lineHeight: 1, padding: 4 }}>✕</button>
+              cursor: "pointer", fontSize: 22, lineHeight: 1, padding: 4 }}>✕</button>
           </div>
         </div>
 
         {/* Radar chart */}
-        <ResponsiveContainer width="100%" height={260}>
+        <ResponsiveContainer width="100%" height={380}>
           <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="75%">
             <PolarGrid stroke="var(--border)" />
             <PolarAngleAxis dataKey="stat"
-              tick={{ fill: "var(--muted)", fontSize: 10, fontFamily: "'Bebas Neue', sans-serif" }} />
+              tick={{ fill: "var(--muted)", fontSize: 13, fontFamily: "'Bebas Neue', sans-serif" }} />
             <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
             {players.map((p, i) => (
               <Radar key={p.name} name={p.name} dataKey={`p${i}`}
                 stroke={COLORS[i]} fill={COLORS[i]} fillOpacity={0.18} />
             ))}
-            <Legend wrapperStyle={{ fontSize: 11, fontFamily: "'Bebas Neue', sans-serif" }}
+            <Legend wrapperStyle={{ fontSize: 14, fontFamily: "'Bebas Neue', sans-serif" }}
               formatter={(value: string) => <span style={{ color: "var(--text)" }}>{value}</span>} />
           </RadarChart>
         </ResponsiveContainer>
@@ -144,13 +144,13 @@ export function CompareModal({ players, allPlayers, onClose }: {
         <div style={{
           display: "grid",
           gridTemplateColumns: `auto repeat(${players.length}, 1fr)`,
-          gap: "6px 8px", marginTop: 14,
-          padding: "12px 14px", background: "var(--bg)", borderRadius: 8, border: "1px solid var(--border)",
+          gap: "8px 12px", marginTop: 18,
+          padding: "16px 20px", background: "var(--bg)", borderRadius: 8, border: "1px solid var(--border)",
         }}>
           {/* Column headers */}
           <div />
           {players.map((p, i) => (
-            <div key={p.name} style={{ textAlign: "center", fontSize: 9,
+            <div key={p.name} style={{ textAlign: "center", fontSize: 12,
               color: COLORS[i], fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.06em",
               overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {p.name}
@@ -162,14 +162,14 @@ export function CompareModal({ players, allPlayers, onClose }: {
             const maxVal = Math.max(...values);
             return (
               <Fragment key={label}>
-                <div style={{ fontSize: 9, color: "var(--muted)", fontFamily: "'Bebas Neue', sans-serif",
-                  letterSpacing: "0.08em", alignSelf: "center", paddingRight: 4, whiteSpace: "nowrap" }}>
+                <div style={{ fontSize: 12, color: "var(--muted)", fontFamily: "'Bebas Neue', sans-serif",
+                  letterSpacing: "0.08em", alignSelf: "center", paddingRight: 6, whiteSpace: "nowrap" }}>
                   {label}
                 </div>
                 {values.map((v, i) => {
                   const isBest = v === maxVal && maxVal > 0;
                   return (
-                    <div key={i} style={{ textAlign: "center", fontFamily: "'Bebas Neue', sans-serif", fontSize: 17,
+                    <div key={i} style={{ textAlign: "center", fontFamily: "'Bebas Neue', sans-serif", fontSize: 22,
                       color: isBest ? COLORS[i] : "var(--muted)" }}>
                       {f(v)}
                     </div>

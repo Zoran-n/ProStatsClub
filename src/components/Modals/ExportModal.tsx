@@ -56,29 +56,29 @@ export function ExportModal({ type, pngSourceEl, csvHeaders, csvRows, defaultFil
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.82)", zIndex: 200,
       display: "flex", alignItems: "center", justifyContent: "center" }}
       onClick={onClose}>
-      <div style={{ background: "var(--card)", borderRadius: 12, padding: 24, width: 560,
-        maxHeight: "88vh", display: "flex", flexDirection: "column", gap: 16,
+      <div style={{ background: "var(--card)", borderRadius: 12, padding: 32, width: 840,
+        maxHeight: "88vh", display: "flex", flexDirection: "column", gap: 22,
         border: "1px solid var(--border)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)" }}
         onClick={(e) => e.stopPropagation()}>
 
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h3 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, color: "var(--text)",
+          <h3 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 26, color: "var(--text)",
             letterSpacing: "0.06em", margin: 0 }}>
             EXPORTER — {type.toUpperCase()}
           </h3>
           <button onClick={onClose} style={{ background: "none", border: "none",
-            color: "var(--muted)", cursor: "pointer", fontSize: 20, lineHeight: 1, padding: 4 }}>✕</button>
+            color: "var(--muted)", cursor: "pointer", fontSize: 24, lineHeight: 1, padding: 4 }}>✕</button>
         </div>
 
         {/* Preview area */}
         <div style={{ flex: 1, overflowY: "auto", background: "var(--bg)", borderRadius: 8,
-          border: "1px solid var(--border)", padding: 12, minHeight: 160, maxHeight: 420 }}>
+          border: "1px solid var(--border)", padding: 16, minHeight: 220, maxHeight: 560 }}>
 
           {type === "png" && (
             loading ? (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center",
-                height: 160, color: "var(--muted)", fontSize: 13 }}>
+                height: 220, color: "var(--muted)", fontSize: 16 }}>
                 Génération du aperçu…
               </div>
             ) : dataUrl ? (
@@ -86,19 +86,19 @@ export function ExportModal({ type, pngSourceEl, csvHeaders, csvRows, defaultFil
                 display: "block" }} />
             ) : (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center",
-                height: 160, color: "var(--muted)", fontSize: 12 }}>
+                height: 220, color: "var(--muted)", fontSize: 14 }}>
                 Aperçu indisponible
               </div>
             )
           )}
 
           {type === "csv" && csvHeaders && csvRows && (
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
               <thead>
                 <tr>
                   {csvHeaders.map((h) => (
-                    <th key={h} style={{ padding: "5px 8px", borderBottom: "1px solid var(--border)",
-                      textAlign: "left", color: "var(--muted)", fontSize: 10, fontWeight: "normal",
+                    <th key={h} style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)",
+                      textAlign: "left", color: "var(--muted)", fontSize: 13, fontWeight: "normal",
                       fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.06em",
                       whiteSpace: "nowrap" }}>
                       {h}
@@ -110,7 +110,7 @@ export function ExportModal({ type, pngSourceEl, csvHeaders, csvRows, defaultFil
                 {csvRows.slice(0, 20).map((row, i) => (
                   <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
                     {row.map((cell, j) => (
-                      <td key={j} style={{ padding: "5px 8px", color: "var(--text)", whiteSpace: "nowrap" }}>
+                      <td key={j} style={{ padding: "8px 12px", color: "var(--text)", whiteSpace: "nowrap" }}>
                         {String(cell ?? "—")}
                       </td>
                     ))}
@@ -131,30 +131,30 @@ export function ExportModal({ type, pngSourceEl, csvHeaders, csvRows, defaultFil
 
         {/* Filename */}
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 11, color: "var(--muted)", flexShrink: 0 }}>Nom du fichier :</span>
+          <span style={{ fontSize: 14, color: "var(--muted)", flexShrink: 0 }}>Nom du fichier :</span>
           <input value={filename} onChange={(e) => setFilename(e.target.value)}
             style={{ flex: 1, background: "var(--bg)", border: "1px solid var(--border)",
-              color: "var(--text)", padding: "6px 10px", borderRadius: 6, fontSize: 12,
+              color: "var(--text)", padding: "8px 14px", borderRadius: 6, fontSize: 15,
               outline: "none", transition: "border-color 0.15s" }}
             onFocus={(e) => (e.target.style.borderColor = "var(--accent)")}
             onBlur={(e) => (e.target.style.borderColor = "var(--border)")}
           />
-          <span style={{ fontSize: 11, color: "var(--muted)", flexShrink: 0 }}>.{ext}</span>
+          <span style={{ fontSize: 14, color: "var(--muted)", flexShrink: 0 }}>.{ext}</span>
         </div>
 
         {/* Actions */}
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-          <button onClick={onClose} style={{ padding: "8px 18px", background: "var(--bg)",
+          <button onClick={onClose} style={{ padding: "11px 24px", background: "var(--bg)",
             border: "1px solid var(--border)", borderRadius: 6, color: "var(--muted)",
-            fontSize: 12, cursor: "pointer" }}>
+            fontSize: 15, cursor: "pointer" }}>
             Annuler
           </button>
           <button onClick={handleDownload} disabled={!ready}
-            style={{ padding: "8px 22px", background: ready ? "var(--accent)" : "var(--muted)",
-              border: "none", borderRadius: 6, color: "#000", fontSize: 13, cursor: ready ? "pointer" : "default",
+            style={{ padding: "11px 28px", background: ready ? "var(--accent)" : "var(--muted)",
+              border: "none", borderRadius: 6, color: "#000", fontSize: 16, cursor: ready ? "pointer" : "default",
               fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.08em",
-              display: "flex", alignItems: "center", gap: 6, opacity: ready ? 1 : 0.5 }}>
-            <Download size={13} /> TÉLÉCHARGER
+              display: "flex", alignItems: "center", gap: 8, opacity: ready ? 1 : 0.5 }}>
+            <Download size={16} /> TÉLÉCHARGER
           </button>
         </div>
       </div>

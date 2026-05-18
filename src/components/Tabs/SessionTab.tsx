@@ -1208,116 +1208,129 @@ export function SessionTab() {
             const wld = sessionWLD(s.matches, s.clubId);
             const isEditingNote = editingNoteId === s.id;
             const isEditingTags = editingTagsId === s.id;
+            const cardColor = wld.w > wld.l ? "#23a559" : wld.l > wld.w ? "#da373c" : "#faa81a";
+            const recentForm = [...s.matches]
+              .sort((a, b) => Number(a.timestamp) - Number(b.timestamp))
+              .slice(-6)
+              .map((m) => matchResult(m, s.clubId));
+
+            const ICON_BTN: React.CSSProperties = {
+              display: "flex", alignItems: "center", gap: 5,
+              padding: "6px 10px", borderRadius: 6, cursor: "pointer",
+              background: "var(--bg)", border: "1px solid var(--border)",
+              color: "var(--muted)", fontSize: 12, transition: "all 0.12s",
+            };
 
             return (
-              <div key={s.id} style={{ background: "var(--card)", border: "1px solid var(--border)",
-                borderRadius: 8, padding: 14 }}>
-                {/* Card header */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-                  <div>
-                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 16, color: "var(--text)",
-                      letterSpacing: "0.06em" }}>{s.clubName}</div>
-                    <div style={{ fontSize: 11, color: "var(--muted)", display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
-                      <span>{new Date(s.date).toLocaleDateString()} · {s.matches.length} match{s.matches.length !== 1 ? "s" : ""}</span>
-                      <span style={{ color: "#23a559", fontWeight: 600 }}>{wld.w}V</span>
-                      <span style={{ color: "var(--muted)" }}>{wld.d}N</span>
-                      <span style={{ color: "#da373c", fontWeight: 600 }}>{wld.l}D</span>
+              <div key={s.id} style={{
+                background: "var(--card)", border: "1px solid var(--border)",
+                borderRadius: 10, overflow: "hidden",
+                borderLeft: `4px solid ${cardColor}`,
+                transition: "border-color 0.15s, box-shadow 0.15s",
+              }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.boxShadow = `0 0 0 1px ${cardColor}44`; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.boxShadow = "none"; }}
+              >
+                {/* ── Clickable header ── */}
+                <div
+                  onClick={() => setDetailSession(s)}
+                  style={{ padding: "14px 16px 12px", cursor: "pointer" }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div>
+                      <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 22, color: "var(--text)",
+                        letterSpacing: "0.06em", lineHeight: 1 }}>{s.clubName}</div>
+                      <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>
+                        {new Date(s.date).toLocaleDateString()} · {s.matches.length} match{s.matches.length !== 1 ? "s" : ""}
+                      </div>
+                    </div>
+                    {/* W/N/D */}
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <div style={{ textAlign: "center" }}>
+                        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 26, color: "#23a559", lineHeight: 1 }}>{wld.w}</div>
+                        <div style={{ fontSize: 10, color: "#23a559", opacity: 0.7, letterSpacing: "0.06em" }}>V</div>
+                      </div>
+                      <div style={{ textAlign: "center" }}>
+                        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 26, color: "#faa81a", lineHeight: 1 }}>{wld.d}</div>
+                        <div style={{ fontSize: 10, color: "#faa81a", opacity: 0.7, letterSpacing: "0.06em" }}>N</div>
+                      </div>
+                      <div style={{ textAlign: "center" }}>
+                        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 26, color: "#da373c", lineHeight: 1 }}>{wld.l}</div>
+                        <div style={{ fontSize: 10, color: "#da373c", opacity: 0.7, letterSpacing: "0.06em" }}>D</div>
+                      </div>
+                      <div style={{ width: 10, height: 10, borderRadius: "50%", background: cardColor, marginLeft: 4, flexShrink: 0 }} />
                     </div>
                   </div>
-                  <div style={{ display: "flex", gap: 5 }}>
-                    <button onClick={() => setDetailSession(s)} title={t("session.details")}
-                      style={{ ...BTN, color: "var(--accent)" }}>
-                      <Info size={11} />
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (isEditingNote) {
-                          setEditingNoteId(null);
-                        } else {
-                          setNoteValue(s.notes ?? "");
-                          setEditingNoteId(s.id);
-                        }
-                      }}
-                      title={t("session.notes")}
-                      style={{ ...BTN, color: isEditingNote ? "var(--accent)" : "var(--muted)" }}>
-                      <FileText size={11} />
-                    </button>
-                    <button
-                      onClick={() => setEditingTagsId(isEditingTags ? null : s.id)}
-                      title={t("session.tags")}
-                      style={{ ...BTN, color: isEditingTags ? "var(--accent)" : "var(--muted)" }}>
-                      <Tag size={11} />
-                    </button>
-                    {discordWebhook && (
-                      <button onClick={() => shareToDiscord(s)} title={t("discord.share")}
-                        disabled={sharingId === s.id}
-                        style={{ ...BTN, color: "var(--accent)", opacity: sharingId === s.id ? 0.5 : 1 }}>
-                        <Send size={11} />
-                      </button>
-                    )}
-                    <button onClick={() => { archiveSession(s.id); persistSettings(); }}
-                      title={s.archived ? t("session.unarchive") : t("session.archive")}
-                      style={{ ...BTN, color: (s.archived ? "var(--accent)" : "var(--muted)") as string }}>
-                      <Archive size={11} />
-                    </button>
-                    <button onClick={() => { deleteSession(s.id); persistSettings(); }} title={t("misc.delete")}
-                      style={{ ...BTN }}
-                      onMouseEnter={(e) => (e.currentTarget.style.color = "#ef4444")}
-                      onMouseLeave={(e) => (e.currentTarget.style.color = "var(--muted)")}>
-                      <Trash2 size={11} />
-                    </button>
-                  </div>
+
+                  {/* Recent form bar */}
+                  {recentForm.length > 0 && (
+                    <div style={{ display: "flex", gap: 3, marginTop: 10, alignItems: "center" }}>
+                      <span style={{ fontSize: 10, color: "var(--muted)", marginRight: 4, letterSpacing: "0.06em" }}>FORME</span>
+                      {recentForm.map((r, i) => (
+                        <div key={i} style={{
+                          width: 20, height: 20, borderRadius: 4, display: "flex", alignItems: "center",
+                          justifyContent: "center", fontSize: 10, fontWeight: 700, flexShrink: 0,
+                          background: r === "W" ? "rgba(35,165,89,0.2)" : r === "L" ? "rgba(218,55,60,0.2)" : "rgba(250,168,26,0.2)",
+                          color: r === "W" ? "#23a559" : r === "L" ? "#da373c" : "#faa81a",
+                          border: `1px solid ${r === "W" ? "rgba(35,165,89,0.4)" : r === "L" ? "rgba(218,55,60,0.4)" : "rgba(250,168,26,0.4)"}`,
+                        }}>{r}</div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                {/* KPI row */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 4, textAlign: "center", marginBottom: 8 }}>
+                {/* ── KPI row ── */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 1,
+                  borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}>
                   {[
-                    { l: t("players.gp"),      v: s.matches.length },
-                    { l: t("players.goals"),   v: k.goals          },
-                    { l: t("players.assists"), v: k.assists        },
-                    { l: t("players.passes"),  v: k.passes         },
-                    { l: t("session.motm"),    v: k.motm           },
-                  ].map(({ l, v }) => (
-                    <div key={l}>
-                      <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 16, color: "var(--accent)" }}>{v}</div>
-                      <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: "0.06em" }}>{l}</div>
+                    { icon: "🎮", l: t("players.gp"),      v: s.matches.length, color: "var(--text)"   },
+                    { icon: "⚽", l: t("players.goals"),   v: k.goals,          color: "var(--accent)" },
+                    { icon: "🅰️", l: t("players.assists"), v: k.assists,        color: "#a855f7"       },
+                    { icon: "🎯", l: t("players.passes"),  v: k.passes,         color: "var(--muted)"  },
+                    { icon: "⭐", l: t("session.motm"),    v: k.motm,           color: "#ffd700"       },
+                  ].map(({ icon, l, v, color }) => (
+                    <div key={l} style={{ textAlign: "center", padding: "10px 4px",
+                      background: "var(--bg)", cursor: "pointer" }}
+                      onClick={() => setDetailSession(s)}>
+                      <div style={{ fontSize: 13, lineHeight: 1, marginBottom: 3 }}>{icon}</div>
+                      <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, color, lineHeight: 1 }}>{v}</div>
+                      <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 3, letterSpacing: "0.06em" }}>{l}</div>
                     </div>
                   ))}
                 </div>
 
-                {/* Tags display */}
-                {(s.tags ?? []).length > 0 && !isEditingTags && (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 6 }}>
-                    {(s.tags ?? []).map((tag) => (
-                      <span key={tag} style={{
-                        padding: "2px 8px", borderRadius: 10, fontSize: 10,
-                        border: "1px solid var(--border)", color: "var(--muted)",
-                        background: "var(--bg)",
+                {/* ── Tags + Notes (read-only) ── */}
+                {((s.tags ?? []).length > 0 || s.notes?.trim()) && !isEditingNote && !isEditingTags && (
+                  <div style={{ padding: "8px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
+                    {(s.tags ?? []).length > 0 && (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                        {(s.tags ?? []).map((tag) => (
+                          <span key={tag} style={{
+                            padding: "2px 8px", borderRadius: 10, fontSize: 11,
+                            border: "1px solid var(--accent)", color: "var(--accent)",
+                            background: "rgba(0,212,255,0.07)",
+                          }}>#{tag}</span>
+                        ))}
+                      </div>
+                    )}
+                    {s.notes?.trim() && (
+                      <div style={{
+                        fontSize: 11, color: "var(--text)", padding: "6px 10px",
+                        background: "var(--bg)", borderRadius: 5, borderLeft: "3px solid var(--accent)",
                       }}>
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                {/* Notes display */}
-                {s.notes?.trim() && !isEditingNote && (
-                  <div style={{
-                    fontSize: 11, color: "var(--muted)", padding: "6px 8px",
-                    background: "var(--bg)", borderRadius: 5, borderLeft: "2px solid var(--accent)",
-                    marginBottom: 6,
-                  }}>
-                    {s.notes}
+                        {s.notes}
+                      </div>
+                    )}
                   </div>
                 )}
 
                 {/* Tags editor */}
                 {isEditingTags && (
-                  <div style={{ marginTop: 8, padding: "10px 0 4px" }}>
-                    <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 6, letterSpacing: "0.06em" }}>
+                  <div style={{ padding: "10px 14px" }}>
+                    <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 8, letterSpacing: "0.06em" }}>
                       {t("session.tags")}
                     </div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                       {PRESET_TAGS.map((tag) => {
                         const active = (s.tags ?? []).includes(tag);
                         return (
@@ -1329,7 +1342,7 @@ export function SessionTab() {
                               persistSettings();
                             }}
                             style={{
-                              padding: "3px 10px", borderRadius: 10, fontSize: 10, cursor: "pointer",
+                              padding: "4px 12px", borderRadius: 10, fontSize: 12, cursor: "pointer",
                               border: `1px solid ${active ? "var(--accent)" : "var(--border)"}`,
                               background: active ? "rgba(0,212,255,0.15)" : "var(--card)",
                               color: active ? "var(--accent)" : "var(--muted)",
@@ -1344,7 +1357,7 @@ export function SessionTab() {
 
                 {/* Notes editor */}
                 {isEditingNote && (
-                  <div style={{ marginTop: 8 }}>
+                  <div style={{ padding: "10px 14px" }}>
                     <textarea
                       value={noteValue}
                       onChange={(e) => setNoteValue(e.target.value)}
@@ -1352,12 +1365,12 @@ export function SessionTab() {
                       rows={3}
                       style={{
                         width: "100%", background: "var(--bg)", border: "1px solid var(--border)",
-                        color: "var(--text)", padding: "6px 8px", borderRadius: 5, fontSize: 11,
+                        color: "var(--text)", padding: "8px 10px", borderRadius: 6, fontSize: 12,
                         outline: "none", resize: "vertical", fontFamily: "inherit", boxSizing: "border-box",
                       }}
                     />
-                    <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", marginTop: 4 }}>
-                      <button onClick={() => setEditingNoteId(null)} style={{ ...BTN }}>
+                    <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", marginTop: 6 }}>
+                      <button onClick={() => setEditingNoteId(null)} style={{ ...ICON_BTN }}>
                         {t("session.noThanks")}
                       </button>
                       <button
@@ -1366,15 +1379,54 @@ export function SessionTab() {
                           persistSettings();
                           setEditingNoteId(null);
                         }}
-                        style={{
-                          ...BTN, color: "var(--accent)",
-                          border: "1px solid var(--accent)", background: "rgba(0,212,255,0.1)",
-                        }}>
+                        style={{ ...ICON_BTN, color: "var(--accent)", border: "1px solid var(--accent)", background: "rgba(0,212,255,0.1)" }}>
                         ✓ Sauvegarder
                       </button>
                     </div>
                   </div>
                 )}
+
+                {/* ── Action bar ── */}
+                <div style={{ display: "flex", gap: 4, padding: "8px 12px",
+                  borderTop: "1px solid var(--border)", background: "rgba(0,0,0,0.1)",
+                  flexWrap: "wrap" }}>
+                  <button onClick={() => setDetailSession(s)} style={{ ...ICON_BTN, color: "var(--accent)", border: "1px solid rgba(0,212,255,0.3)", background: "rgba(0,212,255,0.07)" }}>
+                    <Info size={14} /> Détails
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (isEditingNote) { setEditingNoteId(null); }
+                      else { setNoteValue(s.notes ?? ""); setEditingNoteId(s.id); }
+                    }}
+                    style={{ ...ICON_BTN, color: isEditingNote ? "var(--accent)" : "var(--muted)",
+                      border: isEditingNote ? "1px solid var(--accent)" : "1px solid var(--border)" }}>
+                    <FileText size={14} /> Notes
+                  </button>
+                  <button
+                    onClick={() => setEditingTagsId(isEditingTags ? null : s.id)}
+                    style={{ ...ICON_BTN, color: isEditingTags ? "var(--accent)" : "var(--muted)",
+                      border: isEditingTags ? "1px solid var(--accent)" : "1px solid var(--border)" }}>
+                    <Tag size={14} /> Tags
+                  </button>
+                  {discordWebhook && (
+                    <button onClick={() => shareToDiscord(s)} disabled={sharingId === s.id}
+                      style={{ ...ICON_BTN, color: "#8b9cf4", border: "1px solid rgba(88,101,242,0.3)",
+                        background: "rgba(88,101,242,0.07)", opacity: sharingId === s.id ? 0.5 : 1 }}>
+                      <Send size={14} /> Discord
+                    </button>
+                  )}
+                  <button onClick={() => { archiveSession(s.id); persistSettings(); }}
+                    style={{ ...ICON_BTN, color: s.archived ? "var(--accent)" : "var(--muted)",
+                      border: s.archived ? "1px solid var(--accent)" : "1px solid var(--border)" }}>
+                    <Archive size={14} /> {s.archived ? "Désarchiver" : "Archiver"}
+                  </button>
+                  <button onClick={() => { deleteSession(s.id); persistSettings(); }}
+                    style={{ ...ICON_BTN, marginLeft: "auto" }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#ef4444"; (e.currentTarget as HTMLButtonElement).style.borderColor = "#ef4444"; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "var(--muted)"; (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border)"; }}>
+                    <Trash2 size={14} /> Supprimer
+                  </button>
+                </div>
               </div>
             );
           })}

@@ -54,11 +54,11 @@ export function ratingColor(r: number) {
 function StatCell({ label, value, color }: { label: string; value: string | number; color: string }) {
   return (
     <div style={{ background: "var(--bg)", border: "1px solid var(--border)",
-      borderRadius: 8, padding: "10px 8px", textAlign: "center" }}>
-      <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 22, color, lineHeight: 1 }}>
+      borderRadius: 8, padding: "14px 10px", textAlign: "center" }}>
+      <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 28, color, lineHeight: 1 }}>
         {String(value)}
       </div>
-      <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: "0.08em", marginTop: 4,
+      <div style={{ fontSize: 12, color: "var(--muted)", letterSpacing: "0.08em", marginTop: 6,
         fontFamily: "'Bebas Neue', sans-serif" }}>
         {label}
       </div>
@@ -539,32 +539,32 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
   ];
 
   const BTN_SM: React.CSSProperties = {
-    padding: "2px 8px", borderRadius: 4, fontSize: 10, cursor: "pointer", fontWeight: 600,
+    padding: "4px 11px", borderRadius: 4, fontSize: 13, cursor: "pointer", fontWeight: 600,
   };
 
   return (
     <>
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 50,
       display: "flex", alignItems: "center", justifyContent: "center" }} onClick={onClose}>
-      <div style={{ background: "var(--card)", borderRadius: 12, padding: 24, width: 520,
+      <div style={{ background: "var(--card)", borderRadius: 12, padding: 32, width: 780,
         maxHeight: "92vh", overflowY: "auto",
         border: "1px solid var(--border)", animation: "fadeSlideIn 0.15s ease-out" }}
         onClick={(e) => e.stopPropagation()}>
 
         {/* Header */}
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <PlayerAvatar name={player.name} size={44} />
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 26 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <PlayerAvatar name={player.name} size={58} />
             <div>
-              <h3 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 24, color: "var(--text)",
+              <h3 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 32, color: "var(--text)",
                 letterSpacing: "0.06em", lineHeight: 1 }}>{player.name}</h3>
-              <span style={{ display: "inline-block", marginTop: 6, padding: "2px 8px", borderRadius: 4,
+              <span style={{ display: "inline-block", marginTop: 8, padding: "3px 11px", borderRadius: 4,
                 background: "var(--bg)", border: "1px solid var(--border)",
-                fontSize: 11, color: "var(--muted)", fontFamily: "'Bebas Neue', sans-serif" }}>
+                fontSize: 14, color: "var(--muted)", fontFamily: "'Bebas Neue', sans-serif" }}>
                 {posLabel}
               </span>
               {trendSummary && (
-                <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 700, color: trendSummary.dirColor }}>
+                <span style={{ marginLeft: 8, fontSize: 14, fontWeight: 700, color: trendSummary.dirColor }}>
                   {trendSummary.direction}
                 </span>
               )}
@@ -572,55 +572,55 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <button onClick={() => setShowCardModal(true)} title="Carte joueur FIFA"
-              style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px",
+              style={{ display: "flex", alignItems: "center", gap: 7, padding: "7px 14px",
                 background: "rgba(249,192,12,0.1)", border: "1px solid rgba(249,192,12,0.3)",
-                borderRadius: 6, color: "#F9C00C", fontSize: 11, cursor: "pointer" }}>
-              <CreditCard size={12} /> Carte
+                borderRadius: 6, color: "#F9C00C", fontSize: 14, cursor: "pointer" }}>
+              <CreditCard size={15} /> Carte
             </button>
             <button onClick={() => setShowPdfModal(true)} disabled={exporting} title="Exporter en PDF"
-              style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px",
+              style={{ display: "flex", alignItems: "center", gap: 7, padding: "7px 14px",
                 background: "rgba(255,107,53,0.12)", border: "1px solid rgba(255,107,53,0.3)",
-                borderRadius: 6, color: "#ff6b35", fontSize: 11,
+                borderRadius: 6, color: "#ff6b35", fontSize: 14,
                 cursor: exporting ? "default" : "pointer", opacity: exporting ? 0.5 : 1 }}>
-              <FileText size={12} /> PDF
+              <FileText size={15} /> PDF
             </button>
             {discordWebhook && (
               <button onClick={handleShareDiscord} disabled={sharing} title="Envoyer sur Discord"
-                style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px",
+                style={{ display: "flex", alignItems: "center", gap: 7, padding: "7px 14px",
                   background: "rgba(88,101,242,0.15)", border: "1px solid rgba(88,101,242,0.35)",
-                  borderRadius: 6, color: "#8b9cf4", fontSize: 11,
+                  borderRadius: 6, color: "#8b9cf4", fontSize: 14,
                   cursor: sharing ? "default" : "pointer", opacity: sharing ? 0.5 : 1 }}>
-                <Send size={12} /> Discord
+                <Send size={15} /> Discord
               </button>
             )}
             <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--muted)",
-              cursor: "pointer", fontSize: 18, lineHeight: 1, padding: 4 }}>✕</button>
+              cursor: "pointer", fontSize: 24, lineHeight: 1, padding: 4 }}>✕</button>
           </div>
         </div>
         
         {/* IA Insights Section */}
-        <div style={{ marginTop: 16, padding: 12, background: "rgba(var(--accent-rgb,0,212,255),0.05)", 
+        <div style={{ marginTop: 22, padding: 16, background: "rgba(var(--accent-rgb,0,212,255),0.05)",
           borderRadius: 10, border: "1px solid var(--border)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10, color: "var(--accent)" }}>
-            <BrainCircuit size={14} />
-            <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 13, letterSpacing: "0.1em" }}>CONSEILS IA</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, color: "var(--accent)" }}>
+            <BrainCircuit size={18} />
+            <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 16, letterSpacing: "0.1em" }}>CONSEILS IA</span>
           </div>
-          
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontSize: 11, color: "var(--muted)" }}>Position recommandée :</span>
-              <span style={{ fontSize: 11, fontWeight: 700, color: "var(--green)" }}>
+              <span style={{ fontSize: 14, color: "var(--muted)" }}>Position recommandée :</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--green)" }}>
                 {suggestPosition(player)[0].pos}
               </span>
             </div>
             {allEvoData.rating.length >= 5 && (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 11, color: "var(--muted)" }}>Analyse de forme :</span>
+                <span style={{ fontSize: 14, color: "var(--muted)" }}>Analyse de forme :</span>
                 {(() => {
                   const status = detectPerformanceAnomaly(allEvoData.rating.map(r => ({ rating: r })));
-                  if (status === 'peak') return <span style={{ fontSize: 11, fontWeight: 700, color: "var(--green)" }}>🔥 Exceptionnelle</span>;
-                  if (status === 'slump') return <span style={{ fontSize: 11, fontWeight: 700, color: "var(--red)" }}>⚠️ En baisse</span>;
-                  return <span style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)" }}>Standard</span>;
+                  if (status === 'peak') return <span style={{ fontSize: 14, fontWeight: 700, color: "var(--green)" }}>🔥 Exceptionnelle</span>;
+                  if (status === 'slump') return <span style={{ fontSize: 14, fontWeight: 700, color: "var(--red)" }}>⚠️ En baisse</span>;
+                  return <span style={{ fontSize: 14, fontWeight: 700, color: "var(--muted)" }}>Standard</span>;
                 })()}
               </div>
             )}
@@ -628,7 +628,7 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
         </div>
 
         {/* Base stats */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
           {baseStats.map(([label, value, color]) => (
             <StatCell key={label} label={label} value={value} color={color} />
           ))}
@@ -637,11 +637,11 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
         {/* Advanced stats */}
         {advStats.length > 0 && (
           <>
-            <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: "0.12em",
-              fontFamily: "'Bebas Neue', sans-serif", margin: "14px 0 8px" }}>
+            <div style={{ fontSize: 12, color: "var(--muted)", letterSpacing: "0.12em",
+              fontFamily: "'Bebas Neue', sans-serif", margin: "18px 0 10px" }}>
               {t("players.advancedStats")}
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
               {advStats.map(([label, value, color]) => (
                 <StatCell key={label} label={label} value={value} color={color} />
               ))}
@@ -653,8 +653,8 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
         {(evoData.length > 1 || monthlyData.length > 1) && (
           <>
             {/* Row 1: chart view toggle (Par match / Par mois) */}
-            <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "16px 0 0" }}>
-              <span style={{ fontSize: 9, color: "var(--muted)", letterSpacing: "0.12em",
+            <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "22px 0 0" }}>
+              <span style={{ fontSize: 12, color: "var(--muted)", letterSpacing: "0.12em",
                 fontFamily: "'Bebas Neue', sans-serif" }}>{t("players.evolution")}</span>
               <div style={{ display: "flex", gap: 2, background: "var(--bg)", borderRadius: 4, padding: 2 }}>
                 {(["match", "monthly"] as const).map((v) => (
@@ -694,14 +694,14 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
             {/* Chart — par match */}
             {chartView === "match" && evoData.length > 1 && (
               <>
-                <ResponsiveContainer width="100%" height={160}>
+                <ResponsiveContainer width="100%" height={220}>
                   <LineChart data={trendChartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                    <XAxis dataKey="match" tick={{ fill: "var(--muted)", fontSize: 9 }} />
-                    <YAxis tick={{ fill: "var(--muted)", fontSize: 9 }}
+                    <XAxis dataKey="match" tick={{ fill: "var(--muted)", fontSize: 11 }} />
+                    <YAxis tick={{ fill: "var(--muted)", fontSize: 11 }}
                       domain={evoStat === "rating" ? [0, 10] : [0, "auto"]} />
                     <Tooltip
-                      contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 11 }}
+                      contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 13 }}
                       labelStyle={{ color: "var(--muted)" }}
                       formatter={(v: unknown, name: unknown) => {
                         const n = Number(v);
@@ -740,7 +740,7 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
                 {/* Trend summary card */}
                 {showTrend && trendSummary && (
                   <div style={{ background: "rgba(139,92,246,0.07)", border: "1px solid rgba(139,92,246,0.2)",
-                    borderRadius: 6, padding: "8px 12px", marginTop: 8, fontSize: 11,
+                    borderRadius: 6, padding: "11px 16px", marginTop: 10, fontSize: 13,
                     display: "flex", gap: 16, flexWrap: "wrap" }}>
                     <span style={{ color: trendSummary.dirColor, fontWeight: 700 }}>{trendSummary.direction}</span>
                     <span style={{ color: "var(--muted)" }}>Moy. 5 derniers : <strong style={{ color: "var(--text)" }}>{trendSummary.avg5}</strong></span>
@@ -762,13 +762,13 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
                     </span>
                   ))}
                 </div>
-                <ResponsiveContainer width="100%" height={200}>
+                <ResponsiveContainer width="100%" height={280}>
                   <BarChart data={monthlyData} margin={{ top: 4, right: 4, bottom: 4, left: -10 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                    <XAxis dataKey="month" tick={{ fill: "var(--muted)", fontSize: 8 }} />
-                    <YAxis yAxisId="left" tick={{ fill: "var(--muted)", fontSize: 8 }} />
+                    <XAxis dataKey="month" tick={{ fill: "var(--muted)", fontSize: 11 }} />
+                    <YAxis yAxisId="left" tick={{ fill: "var(--muted)", fontSize: 11 }} />
                     <YAxis yAxisId="right" orientation="right" domain={[0, 10]}
-                      tick={{ fill: "var(--muted)", fontSize: 8 }} />
+                      tick={{ fill: "var(--muted)", fontSize: 11 }} />
                     <Tooltip
                       contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 11 }}
                       formatter={(v: unknown, name: unknown) => {
@@ -784,7 +784,7 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
                       strokeWidth={2} dot={{ r: 3, fill: "#ffd700" }} name="rating" />
                   </BarChart>
                 </ResponsiveContainer>
-                <div style={{ fontSize: 9, color: "var(--muted)", marginTop: 4, textAlign: "center" }}>
+                <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6, textAlign: "center" }}>
                   {monthlyData.length} mois · tous types de matchs
                 </div>
               </>
@@ -793,14 +793,14 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
         )}
 
         {/* ── Comparaison de périodes ────────────────────────────────────── */}
-        <div style={{ marginTop: 16 }}>
+        <div style={{ marginTop: 22 }}>
           <button onClick={() => setShowPeriods(v => !v)}
             style={{
-              width: "100%", padding: "6px 12px", borderRadius: 6, cursor: "pointer",
+              width: "100%", padding: "9px 16px", borderRadius: 6, cursor: "pointer",
               background: showPeriods ? "rgba(0,212,255,0.08)" : "var(--bg)",
               border: `1px solid ${showPeriods ? "var(--accent)" : "var(--border)"}`,
               color: showPeriods ? "var(--accent)" : "var(--muted)",
-              fontFamily: "'Bebas Neue', sans-serif", fontSize: 12, letterSpacing: "0.08em",
+              fontFamily: "'Bebas Neue', sans-serif", fontSize: 15, letterSpacing: "0.08em",
               display: "flex", alignItems: "center", justifyContent: "space-between",
             }}>
             <span>COMPARER 2 PÉRIODES</span>
@@ -859,20 +859,20 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
 
             const dateInput = (label: string, field: "start" | "end", period: typeof periodA, setter: typeof setPeriodA) => (
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 9, color: "var(--muted)", marginBottom: 2 }}>{label}</div>
+                <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 3 }}>{label}</div>
                 <input type="date" value={period[field]}
                   onChange={e => setter(p => ({ ...p, [field]: e.target.value }))}
                   style={{ width: "100%", background: "var(--bg)", border: "1px solid var(--border)",
-                    borderRadius: 4, padding: "4px 6px", color: "var(--text)", fontSize: 11, outline: "none" }} />
+                    borderRadius: 4, padding: "6px 9px", color: "var(--text)", fontSize: 14, outline: "none" }} />
               </div>
             );
 
             return (
               <div style={{ marginTop: 10 }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
                   {/* Period A */}
                   <div style={{ background: "var(--bg)", borderRadius: 6, padding: "8px 10px", border: "1px solid rgba(0,212,255,0.25)" }}>
-                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 11, color: "var(--accent)", marginBottom: 6 }}>PÉRIODE A</div>
+                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 14, color: "var(--accent)", marginBottom: 8 }}>PÉRIODE A</div>
                     <div style={{ display: "flex", gap: 6 }}>
                       {dateInput("Début", "start", periodA, setPeriodA)}
                       {dateInput("Fin",   "end",   periodA, setPeriodA)}
@@ -880,7 +880,7 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
                   </div>
                   {/* Period B */}
                   <div style={{ background: "var(--bg)", borderRadius: 6, padding: "8px 10px", border: "1px solid rgba(139,92,246,0.25)" }}>
-                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 11, color: "#8b5cf6", marginBottom: 6 }}>PÉRIODE B</div>
+                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 14, color: "#8b5cf6", marginBottom: 8 }}>PÉRIODE B</div>
                     <div style={{ display: "flex", gap: 6 }}>
                       {dateInput("Début", "start", periodB, setPeriodB)}
                       {dateInput("Fin",   "end",   periodB, setPeriodB)}
@@ -891,10 +891,10 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
                 {(statsA || statsB) && (
                   <div style={{ border: "1px solid var(--border)", borderRadius: 6, overflow: "hidden" }}>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto auto", background: "var(--surface)" }}>
-                      <div style={{ padding: "6px 10px", fontSize: 9, color: "var(--muted)", fontFamily: "'Bebas Neue', sans-serif" }}>STAT</div>
-                      <div style={{ padding: "6px 12px", fontSize: 9, color: "var(--accent)", fontFamily: "'Bebas Neue', sans-serif", textAlign: "center" }}>A</div>
-                      <div style={{ padding: "6px 8px", fontSize: 9, color: "var(--muted)", textAlign: "center" }}></div>
-                      <div style={{ padding: "6px 12px", fontSize: 9, color: "#8b5cf6", fontFamily: "'Bebas Neue', sans-serif", textAlign: "center" }}>B</div>
+                      <div style={{ padding: "9px 14px", fontSize: 12, color: "var(--muted)", fontFamily: "'Bebas Neue', sans-serif" }}>STAT</div>
+                      <div style={{ padding: "9px 16px", fontSize: 12, color: "var(--accent)", fontFamily: "'Bebas Neue', sans-serif", textAlign: "center" }}>A</div>
+                      <div style={{ padding: "9px 10px", fontSize: 12, color: "var(--muted)", textAlign: "center" }}></div>
+                      <div style={{ padding: "9px 16px", fontSize: 12, color: "#8b5cf6", fontFamily: "'Bebas Neue', sans-serif", textAlign: "center" }}>B</div>
                     </div>
                     {ROWS.map(({ label, key }) => {
                       const a = statsA?.[key] ?? 0;
@@ -903,14 +903,14 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
                       return (
                         <div key={key} style={{ display: "grid", gridTemplateColumns: "1fr auto auto auto",
                           borderTop: "1px solid var(--border)", alignItems: "center" }}>
-                          <div style={{ padding: "7px 10px", fontSize: 11, color: "var(--text)" }}>{label}</div>
-                          <div style={{ padding: "7px 12px", fontSize: 13, fontFamily: "'Bebas Neue', sans-serif",
-                            color: "var(--accent)", textAlign: "center", minWidth: 48 }}>
+                          <div style={{ padding: "9px 14px", fontSize: 14, color: "var(--text)" }}>{label}</div>
+                          <div style={{ padding: "9px 16px", fontSize: 17, fontFamily: "'Bebas Neue', sans-serif",
+                            color: "var(--accent)", textAlign: "center", minWidth: 56 }}>
                             {statsA ? String(key === "avgRating" ? Number(a).toFixed(1) : a) : "—"}
                           </div>
-                          <div style={{ padding: "7px 6px", fontSize: 13, color, fontWeight: 700, textAlign: "center" }}>{icon}</div>
-                          <div style={{ padding: "7px 12px", fontSize: 13, fontFamily: "'Bebas Neue', sans-serif",
-                            color: "#8b5cf6", textAlign: "center", minWidth: 48 }}>
+                          <div style={{ padding: "9px 8px", fontSize: 16, color, fontWeight: 700, textAlign: "center" }}>{icon}</div>
+                          <div style={{ padding: "9px 16px", fontSize: 17, fontFamily: "'Bebas Neue', sans-serif",
+                            color: "#8b5cf6", textAlign: "center", minWidth: 56 }}>
                             {statsB ? String(key === "avgRating" ? Number(b).toFixed(1) : b) : "—"}
                           </div>
                         </div>
@@ -920,7 +920,7 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
                 )}
 
                 {!statsA && !statsB && (periodA.start || periodB.start) && (
-                  <p style={{ fontSize: 11, color: "var(--muted)", textAlign: "center", padding: "8px 0" }}>
+                  <p style={{ fontSize: 14, color: "var(--muted)", textAlign: "center", padding: "11px 0" }}>
                     Aucune donnée trouvée pour {player.name} dans ces plages.
                   </p>
                 )}

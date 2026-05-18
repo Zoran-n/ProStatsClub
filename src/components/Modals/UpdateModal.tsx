@@ -49,7 +49,7 @@ export function UpdateModal() {
     }}>
       <div style={{
         background: "var(--card)", border: "1px solid var(--border)",
-        borderRadius: 14, width: 420, overflow: "hidden",
+        borderRadius: 14, width: 630, overflow: "hidden",
         boxShadow: "0 24px 64px rgba(0,0,0,0.5)",
         animation: "fadeSlideIn 0.2s ease-out",
       }}>

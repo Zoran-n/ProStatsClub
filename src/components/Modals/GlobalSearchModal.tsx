@@ -95,9 +95,9 @@ export function GlobalSearchModal() {
     const pls    = results.filter((r) => r.type === "player");
     const sess   = results.filter((r) => r.type === "session");
     return [
-      { key: "club",    label: t("global.clubs"),    icon: <Star size={11} />,   items: clubs  },
-      { key: "player",  label: t("global.players"),  icon: <Users size={11} />,  items: pls    },
-      { key: "session", label: t("global.sessions"), icon: <Trophy size={11} />, items: sess   },
+      { key: "club",    label: t("global.clubs"),    icon: <Star size={14} />,   items: clubs  },
+      { key: "player",  label: t("global.players"),  icon: <Users size={14} />,  items: pls    },
+      { key: "session", label: t("global.sessions"), icon: <Trophy size={14} />, items: sess   },
     ].filter((g) => g.items.length > 0);
   }, [results, t]);
 
@@ -147,7 +147,7 @@ export function GlobalSearchModal() {
         onClick={(e) => e.stopPropagation()}
         style={{
           background: "var(--surface)", border: "1px solid var(--border)",
-          borderRadius: 12, width: 560, maxHeight: "65vh",
+          borderRadius: 12, width: 840, maxHeight: "65vh",
           display: "flex", flexDirection: "column",
           boxShadow: "0 32px 80px rgba(0,0,0,0.7)",
           overflow: "hidden",
@@ -155,10 +155,10 @@ export function GlobalSearchModal() {
       >
         {/* Search input */}
         <div style={{
-          display: "flex", alignItems: "center", gap: 10,
-          padding: "12px 16px", borderBottom: "1px solid var(--border)", flexShrink: 0,
+          display: "flex", alignItems: "center", gap: 14,
+          padding: "16px 22px", borderBottom: "1px solid var(--border)", flexShrink: 0,
         }}>
-          <Search size={16} style={{ color: "var(--accent)", flexShrink: 0 }} />
+          <Search size={20} style={{ color: "var(--accent)", flexShrink: 0 }} />
           <input
             ref={inputRef}
             value={query}
@@ -167,24 +167,24 @@ export function GlobalSearchModal() {
             placeholder={t("global.searchPlaceholder")}
             style={{
               flex: 1, background: "transparent", border: "none", outline: "none",
-              color: "var(--text)", fontSize: 15, fontFamily: "inherit",
+              color: "var(--text)", fontSize: 19, fontFamily: "inherit",
             }}
           />
           <kbd style={{
-            fontSize: 10, color: "var(--muted)", background: "var(--card)",
-            border: "1px solid var(--border)", borderRadius: 4, padding: "2px 6px",
+            fontSize: 13, color: "var(--muted)", background: "var(--card)",
+            border: "1px solid var(--border)", borderRadius: 4, padding: "3px 8px",
           }}>ESC</kbd>
           <button onClick={toggleGlobalSearch} style={{
             background: "none", border: "none", cursor: "pointer", color: "var(--muted)", padding: 2,
           }}>
-            <X size={16} />
+            <X size={20} />
           </button>
         </div>
 
         {/* Results */}
         <div style={{ overflowY: "auto", flex: 1 }}>
           {grouped.length === 0 ? (
-            <div style={{ padding: "32px 0", textAlign: "center", color: "var(--muted)", fontSize: 13 }}>
+            <div style={{ padding: "44px 0", textAlign: "center", color: "var(--muted)", fontSize: 16 }}>
               {query ? t("global.noResults") : t("global.typeToSearch")}
             </div>
           ) : (
@@ -193,8 +193,8 @@ export function GlobalSearchModal() {
                 {/* Group header */}
                 <div style={{
                   display: "flex", alignItems: "center", gap: 6,
-                  padding: "8px 16px 4px",
-                  fontSize: 10, color: "var(--muted)",
+                  padding: "11px 22px 6px",
+                  fontSize: 13, color: "var(--muted)",
                   fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.1em",
                 }}>
                   {group.icon} {group.label}
@@ -216,8 +216,8 @@ export function GlobalSearchModal() {
                       onClick={() => handleSelect(r)}
                       onMouseEnter={() => setCursor(idx)}
                       style={{
-                        display: "flex", alignItems: "center", gap: 10,
-                        padding: "8px 16px", cursor: "pointer",
+                        display: "flex", alignItems: "center", gap: 14,
+                        padding: "11px 22px", cursor: "pointer",
                         background: isActive ? "var(--hover)" : "transparent",
                         borderLeft: isActive ? "2px solid var(--accent)" : "2px solid transparent",
                         transition: "background 0.08s",
@@ -225,33 +225,33 @@ export function GlobalSearchModal() {
                     >
                       {/* Icon */}
                       <div style={{
-                        width: 32, height: 32, borderRadius: 8,
+                        width: 42, height: 42, borderRadius: 10,
                         background: r.type === "club" ? "var(--card)" : r.type === "player" ? "rgba(0,212,255,0.1)" : "rgba(250,168,26,0.1)",
                         border: "1px solid var(--border)",
                         display: "flex", alignItems: "center", justifyContent: "center",
-                        flexShrink: 0, fontSize: 12, color: "var(--accent)",
+                        flexShrink: 0, fontSize: 15, color: "var(--accent)",
                         fontFamily: "'Bebas Neue', sans-serif",
                       }}>
                         {r.type === "club" ? r.label.slice(0, 2).toUpperCase() :
-                         r.type === "player" ? <Users size={14} style={{ color: "var(--accent)" }} /> :
-                         <Clock size={14} style={{ color: "var(--gold)" }} />}
+                         r.type === "player" ? <Users size={18} style={{ color: "var(--accent)" }} /> :
+                         <Clock size={18} style={{ color: "var(--gold)" }} />}
                       </div>
 
                       {/* Text */}
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, color: "var(--text)", fontWeight: 600,
+                        <div style={{ fontSize: 16, color: "var(--text)", fontWeight: 600,
                           overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                           display: "flex", alignItems: "center", gap: 6 }}>
                           {r.label}
-                          {isFav && <Star size={10} fill="var(--gold)" style={{ color: "var(--gold)", flexShrink: 0 }} />}
+                          {isFav && <Star size={13} fill="var(--gold)" style={{ color: "var(--gold)", flexShrink: 0 }} />}
                           {isCurrentClub && (
-                            <span style={{ fontSize: 9, background: "rgba(0,212,255,0.15)", color: "var(--accent)",
-                              border: "1px solid rgba(0,212,255,0.3)", borderRadius: 3, padding: "1px 5px" }}>
+                            <span style={{ fontSize: 12, background: "rgba(0,212,255,0.15)", color: "var(--accent)",
+                              border: "1px solid rgba(0,212,255,0.3)", borderRadius: 3, padding: "2px 7px" }}>
                               ACTIF
                             </span>
                           )}
                         </div>
-                        <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 1,
+                        <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 2,
                           overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {r.sub}
                         </div>
@@ -259,8 +259,8 @@ export function GlobalSearchModal() {
 
                       {/* Enter hint */}
                       {isActive && (
-                        <kbd style={{ fontSize: 9, color: "var(--muted)", background: "var(--card)",
-                          border: "1px solid var(--border)", borderRadius: 3, padding: "1px 5px", flexShrink: 0 }}>
+                        <kbd style={{ fontSize: 12, color: "var(--muted)", background: "var(--card)",
+                          border: "1px solid var(--border)", borderRadius: 3, padding: "2px 7px", flexShrink: 0 }}>
                           ↵
                         </kbd>
                       )}
@@ -274,8 +274,8 @@ export function GlobalSearchModal() {
 
         {/* Footer */}
         <div style={{
-          padding: "6px 16px", borderTop: "1px solid var(--border)",
-          display: "flex", gap: 12, fontSize: 10, color: "var(--muted)", flexShrink: 0,
+          padding: "9px 22px", borderTop: "1px solid var(--border)",
+          display: "flex", gap: 16, fontSize: 13, color: "var(--muted)", flexShrink: 0,
         }}>
           <span>↑↓ Naviguer</span>
           <span>↵ Sélectionner</span>
