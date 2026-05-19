@@ -884,26 +884,28 @@ export function SessionTab() {
                 .sort((a, b) => Number(a.timestamp) - Number(b.timestamp))
                 .slice(-5)
                 .map((m) => matchResult(m, s.clubId));
+              const cardColor = wld.w > wld.l ? "#23a559" : wld.l > wld.w ? "#da373c" : "#faa81a";
 
               return (
                 <div
                   key={s.id}
                   className="flex flex-col rounded-lg transition-all duration-200"
-                  style={{ border: "1px solid var(--border)", background: "var(--card)" }}
-                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; }}
+                  style={{ border: "1px solid var(--border)", background: "var(--card)", borderLeft: `4px solid ${cardColor}` }}
+                  onMouseEnter={(e) => { e.currentTarget.style.boxShadow = `0 0 0 1px ${cardColor}44`; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; }}
                 >
-                  {/* ── Card header ── */}
-                  <div className="px-6 pt-6 pb-4" style={{ borderBottom: "1px solid var(--border)" }}>
+                  {/* ── Card header (clickable → detail) ── */}
+                  <div className="px-6 pt-6 pb-4 cursor-pointer" style={{ borderBottom: "1px solid var(--border)" }}
+                    onClick={() => setDetailSession(s)}>
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div className="min-w-0">
-                        <div className="font-['Bebas_Neue'] text-base tracking-wide truncate" style={{ color: "var(--text)" }}>{s.clubName}</div>
-                        <div className="text-[10px] mt-0.5" style={{ color: "var(--muted)" }}>
+                        <div className="font-['Bebas_Neue'] text-xl tracking-wide truncate" style={{ color: "var(--text)" }}>{s.clubName}</div>
+                        <div className="text-xs mt-0.5" style={{ color: "var(--muted)" }}>
                           {new Date(s.date).toLocaleDateString()} · {total} match{total !== 1 ? "s" : ""}
                         </div>
                       </div>
                       {/* Win rate badge */}
-                      <div className="flex-shrink-0 text-center px-2 py-0.5 rounded text-[10px] font-bold font-['Bebas_Neue'] tracking-wider"
+                      <div className="flex-shrink-0 text-center px-2 py-0.5 rounded text-xs font-bold font-['Bebas_Neue'] tracking-wider"
                         style={{ color: winRateColor, border: `1px solid ${winRateColor}55`, background: winRateColor + "18" }}>
                         {winRate}%
                       </div>
@@ -915,8 +917,8 @@ export function SessionTab() {
                         {recentResults.map((r, i) => {
                           const rc = r === "W" ? "var(--green)" : r === "L" ? "var(--red)" : "var(--muted)";
                           return (
-                            <span key={i} className="w-5 h-5 rounded text-[8px] font-bold flex items-center justify-center"
-                              style={{ background: rc + "22", color: rc }}>{r}</span>
+                            <span key={i} className="w-6 h-6 rounded text-[10px] font-bold flex items-center justify-center"
+                              style={{ background: rc + "22", color: rc, border: `1px solid ${rc}44` }}>{r}</span>
                           );
                         })}
                       </div>
@@ -932,45 +934,45 @@ export function SessionTab() {
                         <div className="text-[9px] tracking-wider mt-0.5 font-['Bebas_Neue'] uppercase" style={{ color: "var(--muted)" }}>{t("players.gp")}</div>
                       </div>
                       <div className="flex-1 flex justify-end gap-3 text-center">
-                        <div><div className="font-['Bebas_Neue'] text-lg leading-none" style={{ color: "var(--green)" }}>{wld.w}</div><div className="text-[8px]" style={{ color: "var(--muted)" }}>V</div></div>
-                        <div><div className="font-['Bebas_Neue'] text-lg leading-none" style={{ color: "var(--gold)" }}>{wld.d}</div><div className="text-[8px]" style={{ color: "var(--muted)" }}>N</div></div>
-                        <div><div className="font-['Bebas_Neue'] text-lg leading-none" style={{ color: "var(--red)" }}>{wld.l}</div><div className="text-[8px]" style={{ color: "var(--muted)" }}>D</div></div>
+                        <div><div className="font-['Bebas_Neue'] text-2xl leading-none" style={{ color: "var(--green)" }}>{wld.w}</div><div className="text-[10px]" style={{ color: "var(--green)", opacity: 0.8 }}>V</div></div>
+                        <div><div className="font-['Bebas_Neue'] text-2xl leading-none" style={{ color: "var(--gold)" }}>{wld.d}</div><div className="text-[10px]" style={{ color: "var(--gold)", opacity: 0.8 }}>N</div></div>
+                        <div><div className="font-['Bebas_Neue'] text-2xl leading-none" style={{ color: "var(--red)" }}>{wld.l}</div><div className="text-[10px]" style={{ color: "var(--red)", opacity: 0.8 }}>D</div></div>
                       </div>
                     </div>
 
                     {/* Buts */}
                     <div className="flex items-center gap-2 rounded-lg px-3 py-2" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
-                      <span className="text-sm">⚽</span>
+                      <span className="text-base">⚽</span>
                       <div>
-                        <div className="font-['Bebas_Neue'] text-lg leading-none" style={{ color: "var(--accent)" }}>{k.goals}</div>
-                        <div className="text-[8px] tracking-wider" style={{ color: "var(--muted)" }}>{t("players.goals")}</div>
+                        <div className="font-['Bebas_Neue'] text-xl leading-none" style={{ color: "var(--accent)" }}>{k.goals}</div>
+                        <div className="text-[10px] tracking-wider" style={{ color: "var(--muted)" }}>{t("players.goals")}</div>
                       </div>
                     </div>
 
                     {/* PD */}
                     <div className="flex items-center gap-2 rounded-lg px-3 py-2" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
-                      <span className="text-sm">🅰️</span>
+                      <span className="text-base">🅰️</span>
                       <div>
-                        <div className="font-['Bebas_Neue'] text-lg leading-none" style={{ color: "#c4b5fd" }}>{k.assists}</div>
-                        <div className="text-[8px] tracking-wider" style={{ color: "var(--muted)" }}>{t("players.assists")}</div>
+                        <div className="font-['Bebas_Neue'] text-xl leading-none" style={{ color: "#c4b5fd" }}>{k.assists}</div>
+                        <div className="text-[10px] tracking-wider" style={{ color: "var(--muted)" }}>{t("players.assists")}</div>
                       </div>
                     </div>
 
                     {/* MOTM */}
                     <div className="flex items-center gap-2 rounded-lg px-3 py-2" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
-                      <span className="text-sm">★</span>
+                      <span className="text-base">★</span>
                       <div>
-                        <div className="font-['Bebas_Neue'] text-lg leading-none" style={{ color: "var(--gold)" }}>{k.motm}</div>
-                        <div className="text-[8px] tracking-wider" style={{ color: "var(--muted)" }}>{t("session.motm")}</div>
+                        <div className="font-['Bebas_Neue'] text-xl leading-none" style={{ color: "var(--gold)" }}>{k.motm}</div>
+                        <div className="text-[10px] tracking-wider" style={{ color: "var(--muted)" }}>{t("session.motm")}</div>
                       </div>
                     </div>
 
                     {/* Passes */}
                     <div className="flex items-center gap-2 rounded-lg px-3 py-2" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
-                      <span className="text-sm">🎯</span>
+                      <span className="text-base">🎯</span>
                       <div>
-                        <div className="font-['Bebas_Neue'] text-lg leading-none" style={{ color: "#fb923c" }}>{k.passes}</div>
-                        <div className="text-[8px] tracking-wider" style={{ color: "var(--muted)" }}>{t("players.passes")}</div>
+                        <div className="font-['Bebas_Neue'] text-xl leading-none" style={{ color: "#fb923c" }}>{k.passes}</div>
+                        <div className="text-[10px] tracking-wider" style={{ color: "var(--muted)" }}>{t("players.passes")}</div>
                       </div>
                     </div>
                   </div>
@@ -1042,55 +1044,41 @@ export function SessionTab() {
                   )}
 
                   {/* ── Footer actions ── */}
-                  <div className="mt-auto px-4 py-2.5 flex items-center justify-between" style={{ borderTop: "1px solid var(--border)" }}>
-                    <button onClick={() => setDetailSession(s)} title={t("session.details")}
-                      className="p-1.5 rounded-lg transition-colors cursor-pointer"
-                      style={{ color: "var(--accent)", background: "none" }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = "var(--active)"; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = "none"; }}>
-                      <Info size={13} />
+                  <div className="mt-auto px-3 py-2 flex items-center gap-1.5 flex-wrap" style={{ borderTop: "1px solid var(--border)", background: "rgba(0,0,0,0.1)" }}>
+                    <button onClick={() => setDetailSession(s)}
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors"
+                      style={{ color: "var(--accent)", background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.25)" }}>
+                      <Info size={13} /> Détails
                     </button>
-                    <div className="flex items-center gap-0.5">
-                      <button onClick={() => { if (isEditingNote) setEditingNoteId(null); else { setNoteValue(s.notes ?? ""); setEditingNoteId(s.id); } }}
-                        title={t("session.notes")}
-                        className="p-1.5 rounded-lg transition-colors cursor-pointer"
-                        style={{ color: isEditingNote ? "var(--accent)" : "var(--muted)", background: isEditingNote ? "var(--active)" : "none" }}
-                        onMouseEnter={(e) => { e.currentTarget.style.color = "var(--accent)"; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.color = isEditingNote ? "var(--accent)" : "var(--muted)"; }}>
-                        <FileText size={13} />
+                    <button onClick={() => { if (isEditingNote) setEditingNoteId(null); else { setNoteValue(s.notes ?? ""); setEditingNoteId(s.id); } }}
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors"
+                      style={{ color: isEditingNote ? "var(--accent)" : "var(--muted)", background: isEditingNote ? "var(--active)" : "var(--bg)", border: `1px solid ${isEditingNote ? "var(--accent)" : "var(--border)"}` }}>
+                      <FileText size={13} /> Notes
+                    </button>
+                    <button onClick={() => setEditingTagsId(isEditingTags ? null : s.id)}
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors"
+                      style={{ color: isEditingTags ? "var(--accent)" : "var(--muted)", background: isEditingTags ? "var(--active)" : "var(--bg)", border: `1px solid ${isEditingTags ? "var(--accent)" : "var(--border)"}` }}>
+                      <Tag size={13} /> Tags
+                    </button>
+                    {discordWebhook && (
+                      <button onClick={() => shareToDiscord(s)} disabled={sharingId === s.id}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors disabled:opacity-40"
+                        style={{ color: "#8b9cf4", background: "rgba(88,101,242,0.08)", border: "1px solid rgba(88,101,242,0.25)" }}>
+                        <Send size={13} /> Discord
                       </button>
-                      <button onClick={() => setEditingTagsId(isEditingTags ? null : s.id)} title={t("session.tags")}
-                        className="p-1.5 rounded-lg transition-colors cursor-pointer"
-                        style={{ color: isEditingTags ? "var(--accent)" : "var(--muted)", background: isEditingTags ? "var(--active)" : "none" }}
-                        onMouseEnter={(e) => { e.currentTarget.style.color = "var(--accent)"; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.color = isEditingTags ? "var(--accent)" : "var(--muted)"; }}>
-                        <Tag size={13} />
-                      </button>
-                      {discordWebhook && (
-                        <button onClick={() => shareToDiscord(s)} title={t("discord.share")} disabled={sharingId === s.id}
-                          className="p-1.5 rounded-lg transition-colors cursor-pointer disabled:opacity-40"
-                          style={{ color: "var(--accent)", background: "none" }}
-                          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--active)"; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.background = "none"; }}>
-                          <Send size={13} />
-                        </button>
-                      )}
-                      <button onClick={() => { archiveSession(s.id); persistSettings(); }}
-                        title={s.archived ? t("session.unarchive") : t("session.archive")}
-                        className="p-1.5 rounded-lg transition-colors cursor-pointer"
-                        style={{ color: s.archived ? "var(--accent)" : "var(--muted)", background: s.archived ? "var(--active)" : "none" }}
-                        onMouseEnter={(e) => { e.currentTarget.style.color = "var(--accent)"; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.color = s.archived ? "var(--accent)" : "var(--muted)"; }}>
-                        <Archive size={13} />
-                      </button>
-                      <button onClick={() => { deleteSession(s.id); persistSettings(); }} title={t("misc.delete")}
-                        className="p-1.5 rounded-lg transition-colors cursor-pointer"
-                        style={{ color: "var(--muted)", background: "none" }}
-                        onMouseEnter={(e) => { e.currentTarget.style.color = "var(--red)"; e.currentTarget.style.background = "rgba(218,55,60,0.1)"; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.color = "var(--muted)"; e.currentTarget.style.background = "none"; }}>
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
+                    )}
+                    <button onClick={() => { archiveSession(s.id); persistSettings(); }}
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors"
+                      style={{ color: s.archived ? "var(--accent)" : "var(--muted)", background: s.archived ? "var(--active)" : "var(--bg)", border: `1px solid ${s.archived ? "var(--accent)" : "var(--border)"}` }}>
+                      <Archive size={13} /> {s.archived ? "Désarchiver" : "Archiver"}
+                    </button>
+                    <button onClick={() => { deleteSession(s.id); persistSettings(); }}
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors ml-auto"
+                      style={{ color: "var(--muted)", background: "var(--bg)", border: "1px solid var(--border)" }}
+                      onMouseEnter={(e) => { e.currentTarget.style.color = "var(--red)"; e.currentTarget.style.borderColor = "var(--red)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.color = "var(--muted)"; e.currentTarget.style.borderColor = "var(--border)"; }}>
+                      <Trash2 size={13} /> Supprimer
+                    </button>
                   </div>
                 </div>
               );
