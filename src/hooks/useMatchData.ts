@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getMatches } from "../api/tauri";
 import { useAppStore } from "../store/useAppStore";
 import type { Match } from "../types";
@@ -28,14 +28,24 @@ export function useMatchData() {
   const [pages, setPages] = useState<Partial<Record<string, Match[]>>>({ leagueMatch: leagueCache });
   const [cursors, setCursors] = useState<Partial<Record<string, string | null>>>({});
   const [loading, setLoading] = useState(false);
+  const loadingRef = useRef(loading);
+  loadingRef.current = loading;
+
+  // Derive the matchCache entry for the current type — used to react to background loader updates
+  const cacheKey = currentClub ? `${currentClub.id}_${currentClub.platform}_${type}` : null;
+  const cachedForCurrentType = cacheKey ? matchCache[cacheKey] : undefined;
 
   // ── Sync store leagueCache → local pages ─────────────────────────────────
   useEffect(() => {
-    setPages((p) => ({ ...p, leagueMatch: leagueCache }));
     if (currentClub && leagueCache.length) {
-      setMatchCache(`${currentClub.id}_${currentClub.platform}_leagueMatch`, leagueCache);
+      const key = `${currentClub.id}_${currentClub.platform}_leagueMatch`;
+      // Merge instead of replace to avoid losing cached history
+      syncMatchCache(key, leagueCache);
+      const full = useAppStore.getState().matchCache[key] ?? leagueCache;
+      setPages((p) => ({ ...p, leagueMatch: full }));
+    } else {
+      setPages((p) => ({ ...p, leagueMatch: leagueCache }));
     }
-   
   }, [leagueCache]);
 
   // ── Reset when club changes ───────────────────────────────────────────────
@@ -105,8 +115,47 @@ export function useMatchData() {
     if (cursor === undefined || cursor === null) return;
     const timer = setTimeout(() => loadMore(), 800);
     return () => clearTimeout(timer);
-   
+
   }, [cursors[type], type, currentClub?.id, eaProfile?.gamertag, loading]);
+
+  // ── React to matchCache updates from the background loader ───────────────
+  // When useAutoLoad adds matches (pagination or periodic sync), update pages[type]
+  // so the match list and calendar reflect the full accumulated history.
+  useEffect(() => {
+    if (!cachedForCurrentType?.length) return;
+    setPages((p) => ({ ...p, [type]: cachedForCurrentType }));
+    setCursors((c) => ({
+      ...c,
+      [type]: cachedForCurrentType.length >= 10 ? oldestTimestamp(cachedForCurrentType) : null,
+    }));
+  }, [cachedForCurrentType, type]);
+
+  // ── Periodic auto-refresh for new matches ─────────────────────────────────
+  useEffect(() => {
+    if (!currentClub) return;
+    const club = currentClub;
+
+    const doRefresh = async () => {
+      if (!navigator.onLine || loadingRef.current) return;
+      const key = `${club.id}_${club.platform}_${type}`;
+      try {
+        const latestPage = await getMatches(club.id, club.platform, type);
+        const added = syncMatchCache(key, latestPage);
+        if (added > 0) {
+          const fresh = useAppStore.getState().matchCache[key];
+          if (fresh) {
+            setPages((p) => ({ ...p, [type]: fresh }));
+            persistSettings();
+          }
+        }
+      } catch {
+        // Silently ignore — auto-refresh is best-effort
+      }
+    };
+
+    const intervalId = setInterval(doRefresh, 60_000);
+    return () => clearInterval(intervalId);
+  }, [currentClub?.id, type]);
 
   const allList = pages[type] ?? [];
   const hasMore  = (cursors[type] ?? null) !== null && !loading;
