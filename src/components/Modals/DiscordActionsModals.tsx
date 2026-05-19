@@ -40,7 +40,7 @@ export function MatchAnnounceModal({ onClose }: { onClose: () => void }) {
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 50,
       display: "flex", alignItems: "center", justifyContent: "center" }} onClick={onClose}>
-      <div style={{ background: "var(--card)", borderRadius: 8, padding: 24, width: 420,
+      <div style={{ background: "var(--card)", borderRadius: 8, padding: 24, width: 630,
         border: "1px solid var(--border)", animation: "fadeSlideIn 0.15s ease-out" }}
         onClick={e => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
@@ -132,7 +132,7 @@ export function DiscordPollModal({ onClose }: { onClose: () => void }) {
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 50,
       display: "flex", alignItems: "center", justifyContent: "center" }} onClick={onClose}>
-      <div style={{ background: "var(--card)", borderRadius: 8, padding: 24, width: 440,
+      <div style={{ background: "var(--card)", borderRadius: 8, padding: 24, width: 660,
         border: "1px solid var(--border)", animation: "fadeSlideIn 0.15s ease-out" }}
         onClick={e => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
@@ -261,7 +261,7 @@ export function HighlightModal({ onClose }: { onClose: () => void }) {
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 50,
       display: "flex", alignItems: "center", justifyContent: "center" }} onClick={onClose}>
-      <div style={{ background: "var(--card)", borderRadius: 8, padding: 24, width: 440,
+      <div style={{ background: "var(--card)", borderRadius: 8, padding: 24, width: 660,
         border: "1px solid var(--border)", animation: "fadeSlideIn 0.15s ease-out" }}
         onClick={e => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
@@ -374,7 +374,7 @@ export function SeasonThreadModal({ onClose }: { onClose: () => void }) {
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 50,
       display: "flex", alignItems: "center", justifyContent: "center" }} onClick={onClose}>
-      <div style={{ background: "var(--card)", borderRadius: 8, padding: 24, width: 460,
+      <div style={{ background: "var(--card)", borderRadius: 8, padding: 24, width: 690,
         border: "1px solid var(--border)", animation: "fadeSlideIn 0.15s ease-out" }}
         onClick={e => e.stopPropagation()}>
 
@@ -561,7 +561,7 @@ export function WeeklyRankingModal({ onClose }: { onClose: () => void }) {
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 50,
       display: "flex", alignItems: "center", justifyContent: "center" }} onClick={onClose}>
-      <div style={{ background: "var(--card)", borderRadius: 8, padding: 24, width: 460,
+      <div style={{ background: "var(--card)", borderRadius: 8, padding: 24, width: 690,
         border: "1px solid var(--border)", animation: "fadeSlideIn 0.15s ease-out" }}
         onClick={e => e.stopPropagation()}>
 
@@ -770,7 +770,7 @@ export function SeasonReportModal({ onClose }: { onClose: () => void }) {
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 50,
       display: "flex", alignItems: "center", justifyContent: "center" }} onClick={onClose}>
-      <div style={{ background: "var(--card)", borderRadius: 8, padding: 24, width: 420,
+      <div style={{ background: "var(--card)", borderRadius: 8, padding: 24, width: 630,
         border: "1px solid var(--border)", animation: "fadeSlideIn 0.15s ease-out" }}
         onClick={e => e.stopPropagation()}>
 
