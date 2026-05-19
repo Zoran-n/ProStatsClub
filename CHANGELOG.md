@@ -1,5 +1,17 @@
 # Changelog — ProClubs Stats
 
+## v0.9.7 — 2026-05-20 (Historique complet des matchs & Cache réactif)
+
+### Cache & Synchronisation
+
+- **Historique complet persistant** : tous les matchs sont accumulés dans un cache local (jusqu'à 2000 par type) — la pagination arrière charge l'intégralité de l'historique au premier lancement, que le club soit chargé via profil EA ou recherche manuelle
+- **Synchronisation incrémentale** : si le cache existe déjà, seule la première page est rechargée et les nouveaux matchs sont prépendés — évite un re-téléchargement complet à chaque session
+- **Chargement arrière-plan universel** : `useAutoLoad` ne dépend plus du profil EA — tous les clubs chargés (manuellement ou via EA) déclenchent la pagination arrière silencieuse
+- **Pages réactives au cache** : `useMatchData` relie maintenant `pages[type]` au `matchCache` en temps réel via un effet dédié — le calendrier et la liste se remplissent progressivement sans action utilisateur
+- **Refresh périodique** : nouvelles parties détectées toutes les 60s dans l'onglet matchs ouvert, et toutes les 3 min en arrière-plan via `useAutoLoad`
+
+---
+
 ## v0.7.2 — 2026-05-11 (Refonte Header & Standardisation du Thème)
 
 ### Thème
