@@ -12,9 +12,10 @@ function oldestTimestamp(matches: { timestamp: string }[]): string | null {
 }
 
 /**
- * Handles two automatic behaviours when an EA profile is linked:
- * 1. Load the linked club at startup (once, right after settings are restored).
- * 2. Silently load every match type in the background so the calendar is fully populated.
+ * Two automatic behaviours:
+ * 1. Load the linked club at startup when an EA profile is configured.
+ * 2. Silently load every match type in the background whenever a club is loaded
+ *    (regardless of EA profile) so the calendar is fully populated.
  *
  * Synchronisation incrémentale : when the cache already has entries, only the
  * newest page is fetched and new matches are prepended — avoiding a full re-download.
@@ -36,11 +37,11 @@ export function useAutoLoad() {
   }, [settingsLoaded, eaProfile?.clubId]);
 
   // ── 2. Background full-match loader with incremental sync ─────────────────
-  // Runs whenever the loaded club changes.
-  // • Cache empty → full backward pagination (initial load)
+  // Runs whenever the loaded club changes (manual search or EA profile auto-load).
+  // • Cache empty → full backward pagination to build complete history
   // • Cache has entries → fetch newest page only, prepend new matches (incremental)
   useEffect(() => {
-    if (!currentClub || !eaProfile?.clubId) return;
+    if (!currentClub) return;
 
     let cancelled = false;
     const club = currentClub;
@@ -122,7 +123,7 @@ export function useAutoLoad() {
 
     return () => { cancelled = true; clearInterval(intervalId); };
 
-  }, [currentClub?.id, eaProfile?.clubId]);
+  }, [currentClub?.id]);
 }
 
 function sleep(ms: number) {

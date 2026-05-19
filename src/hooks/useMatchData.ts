@@ -31,6 +31,10 @@ export function useMatchData() {
   const loadingRef = useRef(loading);
   loadingRef.current = loading;
 
+  // Derive the matchCache entry for the current type — used to react to background loader updates
+  const cacheKey = currentClub ? `${currentClub.id}_${currentClub.platform}_${type}` : null;
+  const cachedForCurrentType = cacheKey ? matchCache[cacheKey] : undefined;
+
   // ── Sync store leagueCache → local pages ─────────────────────────────────
   useEffect(() => {
     if (currentClub && leagueCache.length) {
@@ -113,6 +117,18 @@ export function useMatchData() {
     return () => clearTimeout(timer);
 
   }, [cursors[type], type, currentClub?.id, eaProfile?.gamertag, loading]);
+
+  // ── React to matchCache updates from the background loader ───────────────
+  // When useAutoLoad adds matches (pagination or periodic sync), update pages[type]
+  // so the match list and calendar reflect the full accumulated history.
+  useEffect(() => {
+    if (!cachedForCurrentType?.length) return;
+    setPages((p) => ({ ...p, [type]: cachedForCurrentType }));
+    setCursors((c) => ({
+      ...c,
+      [type]: cachedForCurrentType.length >= 10 ? oldestTimestamp(cachedForCurrentType) : null,
+    }));
+  }, [cachedForCurrentType, type]);
 
   // ── Periodic auto-refresh for new matches ─────────────────────────────────
   useEffect(() => {
