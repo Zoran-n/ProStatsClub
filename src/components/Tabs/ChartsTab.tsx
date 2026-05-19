@@ -2,8 +2,7 @@ import { useState, useMemo, useRef } from "react";
 import { Download, TrendingUp, Target, Users, BarChart2 } from "lucide-react";
 import {
   PieChart, Pie, Cell, Label, ResponsiveContainer,
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  BarChart, Bar,
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
 } from "recharts";
 import { useAppStore } from "../../store/useAppStore";
 import { ExportModal } from "../Modals/ExportModal";
@@ -126,7 +125,7 @@ function DonutLegend({ data, total }: { data: { name: string; value: number; col
 /* ─── Horizontal Bar with Avatar ─────────────────────────────────────────── */
 
 const ACCENT: Record<string, { bar: string; text: string }> = {
-  cyan:   { bar: "from-cyan-800/60 to-cyan-400",   text: "#22d3ee" },
+  cyan:   { bar: "from-cyan-800/60 to-cyan-400",    text: "#22d3ee" },
   orange: { bar: "from-orange-800/60 to-orange-400", text: "#fb923c" },
   purple: { bar: "from-violet-800/60 to-violet-400", text: "#a78bfa" },
 };
@@ -140,18 +139,20 @@ function HBarChart({ players, valueKey, color }: {
     return <NoData text="Aucun joueur" icon={Users} />;
   }
   return (
-    <div className="flex flex-col gap-2.5">
+    <div className="flex flex-col gap-3">
       {players.map((p) => {
         const val = Number(p[valueKey]) || 0;
         const pct = (val / maxVal) * 100;
         const initials = p.name.split(/[\s_-]+/).map(w => w[0]?.toUpperCase() ?? "").join("").slice(0, 2) || "?";
         const bg = avatarColor(p.name);
         return (
-          <div key={p.name} className="flex items-center gap-2.5 group">
+          <div key={p.name} className="flex items-center gap-2.5">
+            {/* Avatar */}
             <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold text-white font-['Bebas_Neue']"
               style={{ background: bg }}>
               {initials}
             </div>
+            {/* Name + bar */}
             <div className="flex-1 min-w-0">
               <div className="text-[10px] truncate mb-1 font-medium" style={{ color: "var(--muted)" }}>{p.name}</div>
               <div className="relative h-5 rounded overflow-hidden" style={{ background: "var(--surface)" }}>
@@ -159,58 +160,16 @@ function HBarChart({ players, valueKey, color }: {
                   className={`absolute inset-y-0 left-0 bg-gradient-to-r ${ac.bar} rounded-full transition-all duration-500`}
                   style={{ width: `${pct}%`, minWidth: val > 0 ? "1.5rem" : 0 }}
                 />
-                {val > 0 && (
-                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold" style={{ color: ac.text }}>
-                    {val}
-                  </span>
-                )}
               </div>
             </div>
+            {/* Valeur hors barre — toujours visible */}
+            <span className="flex-shrink-0 font-['Bebas_Neue'] text-sm text-right" style={{ color: ac.text, minWidth: 36 }}>
+              {val > 0 ? val : ""}
+            </span>
           </div>
         );
       })}
     </div>
-  );
-}
-
-/* ─── Distribution des scores ─────────────────────────────────────────────── */
-
-function ScoreDistSection({ matches, clubId }: { matches: Match[]; clubId: string }) {
-  const data = useMemo(() => {
-    const map: Record<string, { score: string; count: number; win: number; draw: number; loss: number }> = {};
-    for (const m of matches) {
-      const my  = m.clubs[clubId] as Record<string, unknown> | undefined;
-      const opp = Object.entries(m.clubs).find(([k]) => k !== clubId)?.[1] as Record<string, unknown> | undefined;
-      if (!my || !opp) continue;
-      const myG  = Number(my["goals"]  ?? 0);
-      const oppG = Number(opp["goals"] ?? 0);
-      const key  = `${myG}-${oppG}`;
-      if (!map[key]) map[key] = { score: key, count: 0, win: 0, draw: 0, loss: 0 };
-      map[key].count++;
-      if (my["wins"] === "1") map[key].win++;
-      else if (my["losses"] === "1") map[key].loss++;
-      else map[key].draw++;
-    }
-    return Object.values(map).sort((a, b) => b.count - a.count).slice(0, 10);
-  }, [matches, clubId]);
-
-  return (
-    <Card>
-      <SectionLabel>Distribution des scores</SectionLabel>
-      {data.length === 0 ? <NoData text="Aucun match chargé" icon={BarChart2} /> : (
-        <ResponsiveContainer width="100%" height={155}>
-          <BarChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }} barSize={16}>
-            <XAxis dataKey="score" tick={{ fontSize: 9, fill: "#949ba4", fontFamily: "'Bebas Neue', sans-serif" }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 8, fill: "#949ba4" }} axisLine={false} tickLine={false} />
-            <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={TOOLTIP_LABEL}
-              formatter={(v: unknown, name: unknown) => [v, name === "win" ? "Victoires" : name === "draw" ? "Nuls" : "Défaites"]} />
-            <Bar dataKey="win"  stackId="a" fill="#22c55e" radius={[0, 0, 0, 0]} name="win" />
-            <Bar dataKey="draw" stackId="a" fill="#eab308" name="draw" />
-            <Bar dataKey="loss" stackId="a" fill="#ef4444" radius={[3, 3, 0, 0]} name="loss" />
-          </BarChart>
-        </ResponsiveContainer>
-      )}
-    </Card>
   );
 }
 
@@ -276,12 +235,12 @@ function TopMotmSection({ matches, clubId, mode }: { matches: Match[]; clubId: s
                         minWidth: p.motm > 0 ? "1.5rem" : 0,
                         background: "linear-gradient(to right, rgba(250,168,26,0.35), #faa81a)",
                       }} />
-                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold"
-                      style={{ color: "#faa81a" }}>
-                      ★ {p.motm}
-                    </span>
                   </div>
                 </div>
+                {/* MOTM count */}
+                <span className="flex-shrink-0 font-['Bebas_Neue'] text-sm text-right" style={{ color: "#faa81a", minWidth: 28 }}>
+                  ★{p.motm}
+                </span>
                 {/* Note moyenne */}
                 <div className="flex-shrink-0 text-right" style={{ minWidth: 40 }}>
                   <div className="font-['Bebas_Neue'] text-lg leading-none" style={{ color: "var(--accent)" }}>{avg}</div>
@@ -296,77 +255,63 @@ function TopMotmSection({ matches, clubId, mode }: { matches: Match[]; clubId: s
   );
 }
 
-/* ─── Courbe de forme V / N / D ───────────────────────────────────────────── */
+/* ─── Courbe de forme ─────────────────────────────────────────────────────── */
 
 function FormCurveSection({ matches, clubId }: { matches: Match[]; clubId: string }) {
-  const { data, formPills } = useMemo(() => {
+  const { rateData, formPills, totals } = useMemo(() => {
     const sorted = [...matches].sort((a, b) => Number(a.timestamp) - Number(b.timestamp));
     let w = 0, d = 0, l = 0;
-    const pts = sorted.map((m, i) => {
+    const pts = sorted.map((m) => {
       const club = m.clubs[clubId] as Record<string, unknown> | undefined;
       const result = !club ? "L" : Number(club.wins) > 0 ? "W" : Number(club.ties) > 0 ? "D" : "L";
       if (result === "W") w++; else if (result === "D") d++; else l++;
-      return { n: i + 1, V: w, N: d, D: l, result };
+      return result;
     });
-    return { data: pts, formPills: pts.slice(-10) };
+    const rateData = pts.map((_, i) => {
+      const slice = pts.slice(Math.max(0, i - 4), i + 1);
+      const wins = slice.filter(r => r === "W").length;
+      return { n: i + 1, rate: Math.round((wins / slice.length) * 100) };
+    });
+    return { rateData, formPills: pts.slice(-10), totals: { w, d, l } };
   }, [matches, clubId]);
-
-  const rateData = useMemo(() =>
-    data.map((_, i) => {
-      const window = data.slice(Math.max(0, i - 4), i + 1);
-      const wins = window.filter(d => d.result === "W").length;
-      return { n: data[i].n, rate: Math.round((wins / window.length) * 100) };
-    }),
-  [data]);
 
   return (
     <Card>
-      <div className="flex items-center justify-between mb-3">
-        <SectionLabel>Courbe de forme — V / N / D</SectionLabel>
-        <div className="flex gap-3" style={{ fontSize: 9 }}>
-          <span style={{ color: "#22c55e" }}>━ V</span>
-          <span style={{ color: "#eab308" }}>━ N</span>
-          <span style={{ color: "#ef4444" }}>━ D</span>
+      <div className="flex items-center justify-between mb-4">
+        <SectionLabel>Courbe de forme</SectionLabel>
+        <div className="flex gap-4" style={{ fontSize: 11 }}>
+          <span className="font-['Bebas_Neue']" style={{ color: "#22c55e" }}>{totals.w}<span style={{ fontSize: 8, color: "var(--muted)", marginLeft: 2 }}>V</span></span>
+          <span className="font-['Bebas_Neue']" style={{ color: "#eab308" }}>{totals.d}<span style={{ fontSize: 8, color: "var(--muted)", marginLeft: 2 }}>N</span></span>
+          <span className="font-['Bebas_Neue']" style={{ color: "#ef4444" }}>{totals.l}<span style={{ fontSize: 8, color: "var(--muted)", marginLeft: 2 }}>D</span></span>
         </div>
       </div>
 
-      {data.length < 2 ? <NoData text="Pas assez de matchs" icon={TrendingUp} /> : (
+      {rateData.length < 2 ? <NoData text="Pas assez de matchs" icon={TrendingUp} /> : (
         <>
-          {/* Cumul V/N/D */}
-          <ResponsiveContainer width="100%" height={180}>
-            <LineChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+          {/* % victoires glissant 5 matchs */}
+          <ResponsiveContainer width="100%" height={160}>
+            <AreaChart data={rateData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+              <defs>
+                <linearGradient id="ct-form-grad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.3} />
+                  <stop offset="100%" stopColor="var(--accent)" stopOpacity={0} />
+                </linearGradient>
+              </defs>
               <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.04)" vertical={false} />
               <XAxis dataKey="n" tick={{ fontSize: 8, fill: "var(--muted)" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 8, fill: "var(--muted)" }} axisLine={false} tickLine={false} allowDecimals={false} />
+              <YAxis domain={[0, 100]} unit="%" tick={{ fontSize: 8, fill: "var(--muted)" }} axisLine={false} tickLine={false} />
               <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={TOOLTIP_LABEL}
-                formatter={(v: unknown, name: unknown) => [v, name === "V" ? "Victoires" : name === "N" ? "Nuls" : "Défaites"]} />
-              <Line type="monotone" dataKey="V" stroke="#22c55e" strokeWidth={2} dot={false} activeDot={{ r: 3, fill: "#22c55e" }} />
-              <Line type="monotone" dataKey="N" stroke="#eab308" strokeWidth={2} dot={false} activeDot={{ r: 3, fill: "#eab308" }} />
-              <Line type="monotone" dataKey="D" stroke="#ef4444" strokeWidth={2} dot={false} activeDot={{ r: 3, fill: "#ef4444" }} />
-            </LineChart>
+                formatter={(v: unknown) => [`${v}%`, "Win rate (5M)"]} />
+              <Area type="monotone" dataKey="rate" stroke="var(--accent)" strokeWidth={2}
+                fill="url(#ct-form-grad)" dot={false} activeDot={{ r: 4, fill: "var(--accent)" }} />
+            </AreaChart>
           </ResponsiveContainer>
 
-          {/* % Victoires glissant 5 matchs */}
-          <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--border)" }}>
-            <p className="category-header">% Victoires glissant (5 matchs)</p>
-            <ResponsiveContainer width="100%" height={80}>
-              <LineChart data={rateData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                <XAxis dataKey="n" tick={{ fontSize: 8, fill: "var(--muted)" }} axisLine={false} tickLine={false} />
-                <YAxis domain={[0, 100]} tick={{ fontSize: 8, fill: "var(--muted)" }} axisLine={false} tickLine={false} unit="%" />
-                <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.04)" vertical={false} />
-                <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={TOOLTIP_LABEL}
-                  formatter={(v: unknown) => [`${v}%`, "Win rate"]} />
-                <Line type="monotone" dataKey="rate" stroke="var(--accent)" strokeWidth={2}
-                  dot={false} activeDot={{ r: 3 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Pills forme — 10 derniers matchs */}
+          {/* Pills forme 10 derniers matchs */}
           <div className="flex gap-1.5 mt-3 flex-wrap">
-            {formPills.map((d, i) => {
-              const color = d.result === "W" ? "#22c55e" : d.result === "D" ? "#eab308" : "#ef4444";
-              const label = d.result === "W" ? "V" : d.result === "D" ? "N" : "D";
+            {formPills.map((result, i) => {
+              const color = result === "W" ? "#22c55e" : result === "D" ? "#eab308" : "#ef4444";
+              const label = result === "W" ? "V" : result === "D" ? "N" : "D";
               return (
                 <div key={i} className="w-7 h-7 rounded flex items-center justify-center text-[10px] font-bold flex-shrink-0"
                   style={{ background: color + "22", border: `1px solid ${color}44`, color }}>
@@ -375,6 +320,11 @@ function FormCurveSection({ matches, clubId }: { matches: Match[]; clubId: strin
               );
             })}
           </div>
+
+          {/* Légende */}
+          <p style={{ fontSize: 9, color: "var(--muted)", marginTop: 8, textAlign: "center" }}>
+            % victoires glissant sur 5 matchs · {matches.length} match{matches.length > 1 ? "s" : ""} total
+          </p>
         </>
       )}
     </Card>
@@ -443,9 +393,9 @@ export function ChartsTab() {
     return aggregateMatchPlayers(sorted, currentClub.id);
   }, [mode, players, matches, currentClub]);
 
-  const topScorers = useMemo(() => [...playerSource].sort((a, b) => b.goals     - a.goals).slice(0, 5),     [playerSource]);
-  const topAssists = useMemo(() => [...playerSource].sort((a, b) => b.assists    - a.assists).slice(0, 5),   [playerSource]);
-  const topPasses  = useMemo(() => [...playerSource].sort((a, b) => b.passesMade - a.passesMade).slice(0, 5), [playerSource]);
+  const topScorers = useMemo(() => [...playerSource].sort((a, b) => b.goals      - a.goals).slice(0, 5),     [playerSource]);
+  const topAssists = useMemo(() => [...playerSource].sort((a, b) => b.assists     - a.assists).slice(0, 5),   [playerSource]);
+  const topPasses  = useMemo(() => [...playerSource].sort((a, b) => b.passesMade  - a.passesMade).slice(0, 5), [playerSource]);
 
   if (!currentClub) return null;
 
@@ -454,22 +404,31 @@ export function ChartsTab() {
 
       {/* ── Header: mode switch + export ──────────────────────────── */}
       <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center p-1 gap-1 rounded" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
-          {(["last10", "alltime"] as Mode[]).map((m) => (
-            <button key={m} onClick={() => setMode(m)}
-              className="px-4 py-1.5 rounded font-['Bebas_Neue'] tracking-wider transition-all cursor-pointer"
-              style={{
-                fontSize: 11,
-                background: mode === m ? "var(--active)" : "transparent",
-                color: mode === m ? "var(--accent)" : "var(--muted)",
-                border: mode === m ? "1px solid var(--border)" : "1px solid transparent",
-              }}>
-              {m === "last10" ? t("charts.last10") : t("charts.allTime")}
-            </button>
-          ))}
+        {/* Toggle */}
+        <div className="flex items-center gap-0 rounded-xl overflow-hidden"
+          style={{ border: "1px solid var(--border)", background: "var(--bg)" }}>
+          {(["last10", "alltime"] as Mode[]).map((m) => {
+            const active = mode === m;
+            return (
+              <button key={m} onClick={() => setMode(m)}
+                className="px-5 py-2 font-['Bebas_Neue'] tracking-widest transition-all cursor-pointer"
+                style={{
+                  fontSize: 12,
+                  letterSpacing: "0.12em",
+                  background: active ? "var(--accent)" : "transparent",
+                  color: active ? "#000" : "var(--muted)",
+                  border: "none",
+                  boxShadow: active ? "inset 0 0 0 1px rgba(255,255,255,0.15)" : "none",
+                  fontWeight: active ? 700 : 400,
+                }}>
+                {m === "last10" ? "10 DERNIERS" : "ALL TIME"}
+              </button>
+            );
+          })}
         </div>
+
         <button onClick={() => setExportModal(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded cursor-pointer"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg cursor-pointer transition-colors"
           style={{ border: "1px solid var(--border)", color: "var(--muted)", fontSize: 11, background: "transparent" }}>
           <Download size={11} /> PNG
         </button>
@@ -477,12 +436,12 @@ export function ChartsTab() {
 
       <div ref={contentRef} className="space-y-4">
 
-        {/* ── Section 1 : Core — Donuts + Score Dist ──────────────── */}
+        {/* ── Section 1 : Core ─────────────────────────────────────── */}
         <section>
           <h2 className="font-['Bebas_Neue'] text-sm tracking-widest mb-3 flex items-center gap-2" style={{ color: "var(--muted)" }}>
             <Target size={13} className="text-cyan-500" /> Core Performance
           </h2>
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <Card>
               <SectionLabel>{t("charts.wdl")}</SectionLabel>
               <DonutChart data={wdlData} centerValue={`${winRate}%`} centerSub={t("charts.matchesLabel")} />
@@ -493,11 +452,10 @@ export function ChartsTab() {
               <DonutChart data={butsData.data} centerValue={butsData.total} centerSub={t("charts.totalLabel")} />
               <DonutLegend data={butsData.data} total={butsData.total} />
             </Card>
-            <ScoreDistSection matches={matches} clubId={currentClub.id} />
           </div>
         </section>
 
-        {/* ── Section 2 : Scoring ───────────────────────────────── */}
+        {/* ── Section 2 : Scoring ───────────────────────────────────── */}
         <section>
           <h2 className="font-['Bebas_Neue'] text-sm tracking-widest mb-3 flex items-center gap-2" style={{ color: "var(--muted)" }}>
             <TrendingUp size={13} className="text-orange-400" /> Scoring & Création
@@ -518,7 +476,7 @@ export function ChartsTab() {
           </div>
         </section>
 
-        {/* ── Section 3 : MOTM & Forme ──────────────────────────── */}
+        {/* ── Section 3 : MOTM & Forme ─────────────────────────────── */}
         <section>
           <h2 className="font-['Bebas_Neue'] text-sm tracking-widest mb-3 flex items-center gap-2" style={{ color: "var(--muted)" }}>
             <Users size={13} className="text-yellow-400" /> MOTM & Forme
