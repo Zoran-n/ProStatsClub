@@ -878,13 +878,42 @@ export function SessionTab() {
               const isEditingNote = editingNoteId === s.id;
               const isEditingTags = editingTagsId === s.id;
               const total = s.matches.length;
-              const winRate = total > 0 ? Math.round((wld.w / total) * 100) : 0;
-              const winRateColor = winRate >= 60 ? "var(--green)" : winRate >= 40 ? "var(--gold)" : "var(--red)";
+
               const recentResults = [...s.matches]
                 .sort((a, b) => Number(a.timestamp) - Number(b.timestamp))
                 .slice(-5)
                 .map((m) => matchResult(m, s.clubId));
               const cardColor = wld.w > wld.l ? "#23a559" : wld.l > wld.w ? "#da373c" : "#faa81a";
+
+              // MVP : joueur avec le meilleur score combiné
+              const mvpMap: Record<string, { name: string; goals: number; assists: number; motm: number; rating: number; games: number }> = {};
+              for (const m of s.matches) {
+                const clubPlayers = m.players[s.clubId] as Record<string, Record<string, unknown>> | undefined;
+                if (!clubPlayers) continue;
+                for (const p of Object.values(clubPlayers)) {
+                  const name = String(p["name"] ?? p["playername"] ?? "");
+                  if (!name) continue;
+                  if (!mvpMap[name]) mvpMap[name] = { name, goals: 0, assists: 0, motm: 0, rating: 0, games: 0 };
+                  mvpMap[name].goals   += Number(p["goals"] ?? 0);
+                  mvpMap[name].assists += Number(p["assists"] ?? 0);
+                  mvpMap[name].motm    += (p["mom"] === "1" || p["manofthematch"] === "1") ? 1 : 0;
+                  const r = Number(p["rating"] ?? p["ratingAve"] ?? 0);
+                  if (r > 0) { mvpMap[name].rating += r; mvpMap[name].games++; }
+                }
+              }
+              const mvp = Object.values(mvpMap).sort((a, b) => {
+                const scoreA = a.goals * 3 + a.assists * 2 + a.motm * 4 + (a.games > 0 ? (a.rating / a.games) * 1.5 : 0);
+                const scoreB = b.goals * 3 + b.assists * 2 + b.motm * 4 + (b.games > 0 ? (b.rating / b.games) * 1.5 : 0);
+                return scoreB - scoreA;
+              })[0] ?? null;
+
+              // Score de session 0-100
+              const sessionScore = total > 0 ? Math.min(100, Math.round(
+                (wld.w / total) * 55 +
+                Math.min(k.goals / total / 2.5, 1) * 25 +
+                (k.motm / total) * 20
+              )) : 0;
+              const scoreColor = sessionScore >= 70 ? "#23a559" : sessionScore >= 45 ? "#faa81a" : "#da373c";
 
               return (
                 <div
@@ -895,30 +924,51 @@ export function SessionTab() {
                   onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; }}
                 >
                   {/* ── Card header (clickable → detail) ── */}
-                  <div className="px-6 pt-6 pb-4 cursor-pointer" style={{ borderBottom: "1px solid var(--border)" }}
+                  <div className="px-5 pt-4 pb-3 cursor-pointer" style={{ borderBottom: "1px solid var(--border)" }}
                     onClick={() => setDetailSession(s)}>
-                    <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="flex items-center justify-between gap-3 mb-2">
+                      {/* Date + matchs */}
                       <div className="min-w-0">
-                        <div className="font-['Bebas_Neue'] text-xl tracking-wide truncate" style={{ color: "var(--text)" }}>{s.clubName}</div>
-                        <div className="text-xs mt-0.5" style={{ color: "var(--muted)" }}>
-                          {new Date(s.date).toLocaleDateString()} · {total} match{total !== 1 ? "s" : ""}
+                        <div className="text-xs font-semibold" style={{ color: "var(--text)" }}>
+                          {new Date(s.date).toLocaleDateString()}
+                        </div>
+                        <div className="text-[10px] mt-0.5" style={{ color: "var(--muted)" }}>
+                          {total} match{total !== 1 ? "s" : ""}
                         </div>
                       </div>
-                      {/* Win rate badge */}
-                      <div className="flex-shrink-0 text-center px-2 py-0.5 rounded text-xs font-bold font-['Bebas_Neue'] tracking-wider"
-                        style={{ color: winRateColor, border: `1px solid ${winRateColor}55`, background: winRateColor + "18" }}>
-                        {winRate}%
+
+                      {/* V / N / D — cases séparées */}
+                      <div className="flex items-center gap-2">
+                        {[
+                          { val: wld.w, label: "V", color: "#23a559" },
+                          { val: wld.d, label: "N", color: "#faa81a" },
+                          { val: wld.l, label: "D", color: "#da373c" },
+                        ].map(({ val, label, color }) => (
+                          <div key={label} className="flex flex-col items-center justify-center rounded-md"
+                            style={{ width: 32, height: 36, background: color + "18", border: `1px solid ${color}44` }}>
+                            <div className="font-['Bebas_Neue'] text-base leading-none" style={{ color }}>{val}</div>
+                            <div className="text-[9px] leading-none mt-0.5" style={{ color, opacity: 0.75 }}>{label}</div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Score session */}
+                      <div className="flex flex-col items-center justify-center rounded-md flex-shrink-0"
+                        style={{ width: 40, height: 36, background: scoreColor + "18", border: `1px solid ${scoreColor}44` }}>
+                        <div className="font-['Bebas_Neue'] text-base leading-none" style={{ color: scoreColor }}>{sessionScore}</div>
+                        <div className="text-[8px] leading-none mt-0.5" style={{ color: "var(--muted)" }}>SCORE</div>
                       </div>
                     </div>
 
-                    {/* Forme pills */}
+                    {/* Forme pills — V/N/D en français */}
                     {recentResults.length > 0 && (
-                      <div className="flex gap-1">
+                      <div className="flex gap-1 mt-1">
                         {recentResults.map((r, i) => {
-                          const rc = r === "W" ? "var(--green)" : r === "L" ? "var(--red)" : "var(--muted)";
+                          const rc = r === "W" ? "#23a559" : r === "L" ? "#da373c" : "#faa81a";
+                          const label = r === "W" ? "V" : r === "L" ? "D" : "N";
                           return (
-                            <span key={i} className="w-6 h-6 rounded text-[10px] font-bold flex items-center justify-center"
-                              style={{ background: rc + "22", color: rc, border: `1px solid ${rc}44` }}>{r}</span>
+                            <span key={i} className="w-5 h-5 rounded text-[9px] font-bold flex items-center justify-center flex-shrink-0"
+                              style={{ background: rc + "22", color: rc, border: `1px solid ${rc}44` }}>{label}</span>
                           );
                         })}
                       </div>
@@ -926,56 +976,61 @@ export function SessionTab() {
                   </div>
 
                   {/* ── KPI grid ── */}
-                  <div className="px-6 py-4 grid grid-cols-2 gap-2">
-                    {/* MJ — large */}
-                    <div className="col-span-2 flex items-center gap-3 rounded-lg px-3 py-2" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
-                      <div>
-                        <div className="font-['Bebas_Neue'] text-3xl leading-none" style={{ color: "var(--accent)" }}>{total}</div>
-                        <div className="text-[9px] tracking-wider mt-0.5 font-['Bebas_Neue'] uppercase" style={{ color: "var(--muted)" }}>{t("players.gp")}</div>
-                      </div>
-                      <div className="flex-1 flex justify-end gap-3 text-center">
-                        <div><div className="font-['Bebas_Neue'] text-2xl leading-none" style={{ color: "var(--green)" }}>{wld.w}</div><div className="text-[10px]" style={{ color: "var(--green)", opacity: 0.8 }}>V</div></div>
-                        <div><div className="font-['Bebas_Neue'] text-2xl leading-none" style={{ color: "var(--gold)" }}>{wld.d}</div><div className="text-[10px]" style={{ color: "var(--gold)", opacity: 0.8 }}>N</div></div>
-                        <div><div className="font-['Bebas_Neue'] text-2xl leading-none" style={{ color: "var(--red)" }}>{wld.l}</div><div className="text-[10px]" style={{ color: "var(--red)", opacity: 0.8 }}>D</div></div>
-                      </div>
-                    </div>
-
+                  <div className="px-4 py-3 grid grid-cols-2 gap-2">
                     {/* Buts */}
-                    <div className="flex items-center gap-2 rounded-lg px-3 py-2" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
-                      <span className="text-base">⚽</span>
-                      <div>
+                    <div className="flex items-center gap-2 rounded-md px-3 py-2" style={{ background: "var(--bg)", border: "1px solid var(--border)" }}>
+                      <span className="text-sm flex-shrink-0">⚽</span>
+                      <div className="min-w-0">
                         <div className="font-['Bebas_Neue'] text-xl leading-none" style={{ color: "var(--accent)" }}>{k.goals}</div>
-                        <div className="text-[10px] tracking-wider" style={{ color: "var(--muted)" }}>{t("players.goals")}</div>
+                        <div className="text-[10px] tracking-wider truncate" style={{ color: "var(--muted)" }}>{t("players.goals")}</div>
                       </div>
                     </div>
 
                     {/* PD */}
-                    <div className="flex items-center gap-2 rounded-lg px-3 py-2" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
-                      <span className="text-base">🅰️</span>
-                      <div>
+                    <div className="flex items-center gap-2 rounded-md px-3 py-2" style={{ background: "var(--bg)", border: "1px solid var(--border)" }}>
+                      <span className="text-sm flex-shrink-0">🅰️</span>
+                      <div className="min-w-0">
                         <div className="font-['Bebas_Neue'] text-xl leading-none" style={{ color: "#c4b5fd" }}>{k.assists}</div>
-                        <div className="text-[10px] tracking-wider" style={{ color: "var(--muted)" }}>{t("players.assists")}</div>
+                        <div className="text-[10px] tracking-wider truncate" style={{ color: "var(--muted)" }}>{t("players.assists")}</div>
                       </div>
                     </div>
 
                     {/* MOTM */}
-                    <div className="flex items-center gap-2 rounded-lg px-3 py-2" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
-                      <span className="text-base">★</span>
-                      <div>
+                    <div className="flex items-center gap-2 rounded-md px-3 py-2" style={{ background: "var(--bg)", border: "1px solid var(--border)" }}>
+                      <span className="text-sm flex-shrink-0">★</span>
+                      <div className="min-w-0">
                         <div className="font-['Bebas_Neue'] text-xl leading-none" style={{ color: "var(--gold)" }}>{k.motm}</div>
-                        <div className="text-[10px] tracking-wider" style={{ color: "var(--muted)" }}>{t("session.motm")}</div>
+                        <div className="text-[10px] tracking-wider truncate" style={{ color: "var(--muted)" }}>{t("session.motm")}</div>
                       </div>
                     </div>
 
                     {/* Passes */}
-                    <div className="flex items-center gap-2 rounded-lg px-3 py-2" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
-                      <span className="text-base">🎯</span>
-                      <div>
+                    <div className="flex items-center gap-2 rounded-md px-3 py-2" style={{ background: "var(--bg)", border: "1px solid var(--border)" }}>
+                      <span className="text-sm flex-shrink-0">🎯</span>
+                      <div className="min-w-0">
                         <div className="font-['Bebas_Neue'] text-xl leading-none" style={{ color: "#fb923c" }}>{k.passes}</div>
-                        <div className="text-[10px] tracking-wider" style={{ color: "var(--muted)" }}>{t("players.passes")}</div>
+                        <div className="text-[10px] tracking-wider truncate" style={{ color: "var(--muted)" }}>{t("players.passes")}</div>
                       </div>
                     </div>
                   </div>
+
+                  {/* ── MVP joueur ── */}
+                  {mvp && (
+                    <div className="mx-4 mb-2 flex items-center gap-2 rounded-md px-3 py-2"
+                      style={{ background: "rgba(250,168,26,0.06)", border: "1px solid rgba(250,168,26,0.2)" }}>
+                      <span className="text-sm flex-shrink-0">🏆</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-semibold truncate" style={{ color: "var(--text)" }}>{mvp.name}</div>
+                        <div className="text-[10px]" style={{ color: "var(--muted)" }}>
+                          {mvp.goals > 0 && <span className="mr-2">⚽{mvp.goals}</span>}
+                          {mvp.assists > 0 && <span className="mr-2">🅰️{mvp.assists}</span>}
+                          {mvp.motm > 0 && <span className="mr-2">★{mvp.motm}</span>}
+                          {mvp.games > 0 && <span>{(mvp.rating / mvp.games).toFixed(1)} moy.</span>}
+                        </div>
+                      </div>
+                      <div className="text-[9px] font-['Bebas_Neue'] tracking-wider flex-shrink-0" style={{ color: "#faa81a" }}>MVP</div>
+                    </div>
+                  )}
 
                   {/* Tags display */}
                   {(s.tags ?? []).length > 0 && !isEditingTags && (
