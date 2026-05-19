@@ -6,7 +6,6 @@ import {
 } from "recharts";
 import { useAppStore } from "../../store/useAppStore";
 import { ExportModal } from "../Modals/ExportModal";
-import { GlassCard } from "../UI/GlassCard";
 import { useT } from "../../i18n";
 import type { Match, Player } from "../../types";
 import { avatarColor } from "../Modals/PlayerModal";
@@ -38,9 +37,14 @@ type Mode = "last10" | "alltime";
 
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <GlassCard className={className} padding="16px">
+    <div className={className} style={{
+      background: "var(--card)",
+      border: "1px solid var(--border)",
+      borderRadius: 10,
+      padding: 16,
+    }}>
       {children}
-    </GlassCard>
+    </div>
   );
 }
 
@@ -175,11 +179,23 @@ function HBarChart({ players, valueKey, color }: {
 
 /* ─── Top MOTM ────────────────────────────────────────────────────────────── */
 
-function TopMotmSection({ matches, clubId, mode }: { matches: Match[]; clubId: string; mode: Mode }) {
+function TopMotmSection({ matches, storePlayers, clubId, mode }: {
+  matches: Match[]; storePlayers: Player[]; clubId: string; mode: Mode;
+}) {
   const players = useMemo(() => {
-    const src = mode === "last10"
-      ? [...matches].sort((a, b) => Number(a.timestamp) - Number(b.timestamp)).slice(-10)
-      : matches;
+    if (mode === "alltime") {
+      // Utilise les données joueurs du store (agrégation API all-time)
+      return storePlayers
+        .filter(p => p.motm > 0)
+        .map(p => ({ name: p.name, motm: p.motm, rating: p.rating, games: p.gamesPlayed }))
+        .sort((a, b) =>
+          b.motm - a.motm ||
+          (b.games > 0 ? b.rating / b.games : 0) - (a.games > 0 ? a.rating / a.games : 0)
+        )
+        .slice(0, 8);
+    }
+    // last10 : calcul depuis les 10 derniers matchs chargés
+    const src = [...matches].sort((a, b) => Number(a.timestamp) - Number(b.timestamp)).slice(-10);
     const acc: Record<string, { name: string; motm: number; rating: number; games: number }> = {};
     for (const m of src) {
       const clubPlayers = m.players[clubId] as Record<string, Record<string, unknown>> | undefined;
@@ -199,7 +215,7 @@ function TopMotmSection({ matches, clubId, mode }: { matches: Match[]; clubId: s
         (b.games > 0 ? b.rating / b.games : 0) - (a.games > 0 ? a.rating / a.games : 0)
       )
       .slice(0, 8);
-  }, [matches, clubId, mode]);
+  }, [matches, storePlayers, clubId, mode]);
 
   const maxMotm = players.length > 0 ? players[0].motm : 1;
 
@@ -400,7 +416,7 @@ export function ChartsTab() {
   if (!currentClub) return null;
 
   return (
-    <div className="h-full overflow-y-auto px-5 py-4" style={{ background: "var(--main-bg)" }}>
+    <div className="h-full overflow-y-auto px-5 py-4" style={{ background: "var(--bg)" }}>
 
       {/* ── Header: mode switch + export ──────────────────────────── */}
       <div className="flex items-center justify-between mb-5">
@@ -482,7 +498,7 @@ export function ChartsTab() {
             <Users size={13} className="text-yellow-400" /> MOTM & Forme
           </h2>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <TopMotmSection matches={matches} clubId={currentClub.id} mode={mode} />
+            <TopMotmSection matches={matches} storePlayers={players} clubId={currentClub.id} mode={mode} />
             <FormCurveSection matches={matches} clubId={currentClub.id} />
           </div>
         </section>
