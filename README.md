@@ -66,6 +66,7 @@ Application desktop pour suivre les statistiques de votre club EA FC Pro Clubs. 
 - **Filtre par période** : sélectionner une plage de dates (Du / Au) pour n'afficher que les matchs de cette période
 - **Annotations de match** : ajouter une note libre sur chaque match (stockée localement, persistée)
 - **Chargement automatique en arrière-plan** : quand le profil EA est lié, tous les matchs sont chargés silencieusement pour un historique complet et un calendrier rempli
+- **Refresh automatique** : les nouveaux matchs apparaissent toutes les 60s (onglet matches ouvert) ou toutes les 3 min en arrière-plan — sans redémarrer l'app
 - **Vue calendrier** : vue mensuelle des matchs avec navigation mois par mois, résultats colorés par jour
 - **Analyse des adversaires** : vue dédiée (bouton 👥 Adversaires) — tableau de tous les clubs affrontés avec MJ, V, N, D, % victoires, buts pour/contre et différentiel, trié par nombre de confrontations
 - **Filtre résultat combiné** : pills Tous / V / N / D cumulables avec les autres filtres (adversaire, période)
