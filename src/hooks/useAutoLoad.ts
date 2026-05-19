@@ -97,19 +97,31 @@ export function useAutoLoad() {
       }
     }
 
+    let running = false;
+
     async function run() {
-      for (const matchType of MATCH_TYPES) {
-        if (cancelled) break;
-        await loadTypeIncremental(matchType);
-        // Persist after each type so partial progress survives app close
-        if (!cancelled) await persistSettings();
-        await sleep(500);
+      if (running) return;
+      running = true;
+      try {
+        for (const matchType of MATCH_TYPES) {
+          if (cancelled) break;
+          await loadTypeIncremental(matchType);
+          // Persist after each type so partial progress survives app close
+          if (!cancelled) await persistSettings();
+          await sleep(500);
+        }
+      } finally {
+        running = false;
       }
     }
 
     run();
-    return () => { cancelled = true; };
-   
+
+    // Periodic background sync every 3 minutes to catch new matches
+    const intervalId = setInterval(() => { if (!cancelled) run(); }, 3 * 60_000);
+
+    return () => { cancelled = true; clearInterval(intervalId); };
+
   }, [currentClub?.id, eaProfile?.clubId]);
 }
 
