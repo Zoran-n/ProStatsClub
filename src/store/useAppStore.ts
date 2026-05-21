@@ -747,6 +747,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   persistSettings: async () => {
+    // Yield to the main thread before heavy matchCache serialization to prevent UI freeze
+    await new Promise<void>(r => setTimeout(r, 0));
     const { history, favs, tactics, sessions, compareHistory, eaProfile, eaProfiles, syncHistory,
       theme, darkMode, proxyUrl,
       showGrid, showAnimations, showLogs, showIdSearch, fontSize, fontFamily, customAccent, customBg, customSurface, customCard, language, onboarded, matchCache, cacheTimestamps, cacheOwners, discordWebhook, autoUpdate, matchAnnotations, visibleKpis, navLayout, sessionTemplates,
