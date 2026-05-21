@@ -1,6 +1,6 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { List, useListRef } from "react-window";
-import { Search, Download, ChevronUp, ChevronDown, Filter, AlertTriangle, LayoutGrid, Trophy, Globe, DatabaseZap } from "lucide-react";
+import { Search, ChevronUp, ChevronDown, Filter, AlertTriangle, LayoutGrid, Trophy, Globe, DatabaseZap } from "lucide-react";
 import { GlassCard } from "../UI/GlassCard";
 import { detectPerformanceAnomaly } from "../../utils/aiEngine";
 import { useAppStore } from "../../store/useAppStore";
@@ -322,6 +322,82 @@ function PodiumView({ players }: { players: Player[] }) {
   );
 }
 
+/* ─── Leaderboard Panel ───────────────────────────────────────────────────── */
+
+function RankSection({ title, icon, color, entries, onSelect }: {
+  title: string;
+  icon: string;
+  color: string;
+  entries: { player: Player; value: number; display: string }[];
+  onSelect: (p: Player) => void;
+}) {
+  const maxVal = entries.length > 0 ? entries[0].value : 1;
+  return (
+    <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", marginBottom: 8 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", borderBottom: "1px solid var(--border)", background: "var(--surface)" }}>
+        <span style={{ fontSize: 13 }}>{icon}</span>
+        <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 12, letterSpacing: "0.12em", color: "var(--muted)" }}>{title}</span>
+        {entries.length > 0 && (
+          <span style={{ marginLeft: "auto", fontSize: 9, color, fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.08em" }}>
+            {entries.length} joueur{entries.length > 1 ? "s" : ""}
+          </span>
+        )}
+      </div>
+      {entries.length === 0 ? (
+        <div style={{ padding: "14px 12px", fontSize: 10, color: "var(--muted)", textAlign: "center" }}>Aucune donnée</div>
+      ) : entries.map(({ player, value, display }, i) => {
+        const pct = maxVal > 0 ? (value / maxVal) * 100 : 0;
+        const rankColor = i === 0 ? "#f59e0b" : i === 1 ? "#94a3b8" : i === 2 ? "#cd7c3b" : "var(--muted)";
+        return (
+          <div key={player.name}
+            onClick={() => onSelect(player)}
+            style={{ display: "flex", alignItems: "center", gap: 7, padding: "6px 12px", cursor: "pointer", position: "relative", transition: "background 0.1s" }}
+            onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = "var(--hover)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = "transparent"; }}
+          >
+            <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${pct}%`, background: color, opacity: 0.06, pointerEvents: "none" }} />
+            <span style={{ fontSize: 10, fontWeight: 700, color: rankColor, width: 14, textAlign: "center", flexShrink: 0, position: "relative" }}>{i + 1}</span>
+            <div style={{ flexShrink: 0, position: "relative" }}><PlayerAvatar name={player.name} size={22} /></div>
+            <span style={{ flex: 1, fontSize: 11, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", position: "relative" }}>{player.name}</span>
+            <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 19, color, lineHeight: 1, flexShrink: 0, position: "relative" }}>{display}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function LeaderboardPanel({ players, onSelect }: { players: Player[]; onSelect: (p: Player) => void }) {
+  const topMotm = useMemo(() =>
+    [...players].filter(p => p.motm > 0).sort((a, b) => b.motm - a.motm).slice(0, 8)
+      .map(p => ({ player: p, value: p.motm, display: `★${p.motm}` })),
+    [players]);
+
+  const topGoals = useMemo(() =>
+    [...players].filter(p => p.goals > 0).sort((a, b) => b.goals - a.goals).slice(0, 8)
+      .map(p => ({ player: p, value: p.goals, display: String(p.goals) })),
+    [players]);
+
+  const topAssists = useMemo(() =>
+    [...players].filter(p => p.assists > 0).sort((a, b) => b.assists - a.assists).slice(0, 8)
+      .map(p => ({ player: p, value: p.assists, display: String(p.assists) })),
+    [players]);
+
+  const topRating = useMemo(() =>
+    [...players].filter(p => p.gamesPlayed >= 3 && p.rating > 0).sort((a, b) => b.rating - a.rating).slice(0, 8)
+      .map(p => ({ player: p, value: p.rating, display: p.rating.toFixed(1) })),
+    [players]);
+
+  return (
+    <div style={{ width: 248, flexShrink: 0, overflowY: "auto", padding: "10px 8px", borderRight: "1px solid var(--border)" }}>
+      <RankSection title="MOTM" icon="★" color="#faa81a" entries={topMotm} onSelect={onSelect} />
+      <RankSection title="BUTS" icon="⚽" color="var(--accent)" entries={topGoals} onSelect={onSelect} />
+      <RankSection title="PASSES DÉC." icon="🎯" color="#fb923c" entries={topAssists} onSelect={onSelect} />
+      <RankSection title="NOTES — min 3 MJ" icon="📊" color="var(--green)" entries={topRating} onSelect={onSelect} />
+    </div>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function PlayersTab() {
@@ -330,6 +406,7 @@ export function PlayersTab() {
   const matchCache  = useAppStore((s) => s.matchCache);
   const currentClub = useAppStore((s) => s.currentClub);
   const compactMode = useAppStore((s) => s.compactMode);
+  const { setExportActions, clearExportActions } = useAppStore();
 
   const listRef = useListRef(null);
 
@@ -513,6 +590,14 @@ export function PlayersTab() {
   ]);
   const dateStr = new Date().toISOString().slice(0, 10);
 
+  useEffect(() => {
+    setExportActions({
+      png: () => setExportModal("png"),
+      csv: () => setExportModal("csv"),
+    });
+    return () => clearExportActions();
+  }, [setExportActions, clearExportActions]);
+
   const handleCardClick = useCallback((p: Player) => {
     setSelected(p);
   }, []);
@@ -577,9 +662,6 @@ export function PlayersTab() {
           style={{ ...BTN, color: "var(--muted)" }}>
           <Globe size={11} /> Cross-clubs
         </button>
-
-        <button onClick={() => setExportModal("png")} style={BTN}><Download size={11} /> PNG</button>
-        <button onClick={() => setExportModal("csv")} style={BTN}><Download size={11} /> CSV</button>
 
         {/* View mode */}
         <div style={{ display: "flex", gap: 2, marginLeft: "auto", flexShrink: 0,
@@ -723,22 +805,25 @@ export function PlayersTab() {
       )}
       {viewMode === "podium" && <PodiumView players={activePlayers} />}
 
-      {/* Virtualized list */}
-      <div style={{ flex: 1, overflow: "hidden", display: viewMode === "list" ? undefined : "none" }}>
-        {sorted.length === 0 ? (
-          <div style={{ padding: 40, textAlign: "center", color: "var(--muted)", fontSize: 13 }}>
-            {t("players.noPlayers")}
-          </div>
-        ) : (
-          <List
-            listRef={listRef}
-            rowComponent={PlayerRow}
-            rowProps={rowProps}
-            rowCount={sorted.length}
-            rowHeight={ITEM_HEIGHT}
-            style={{ overflowX: "hidden" }}
-          />
-        )}
+      {/* List view: leaderboard + virtualized list */}
+      <div style={{ flex: 1, overflow: "hidden", display: viewMode === "list" ? "flex" : "none" }}>
+        <LeaderboardPanel players={activePlayers} onSelect={setSelected} />
+        <div style={{ flex: 1, overflow: "hidden" }}>
+          {sorted.length === 0 ? (
+            <div style={{ padding: 40, textAlign: "center", color: "var(--muted)", fontSize: 13 }}>
+              {t("players.noPlayers")}
+            </div>
+          ) : (
+            <List
+              listRef={listRef}
+              rowComponent={PlayerRow}
+              rowProps={rowProps}
+              rowCount={sorted.length}
+              rowHeight={ITEM_HEIGHT}
+              style={{ overflowX: "hidden" }}
+            />
+          )}
+        </div>
       </div>
 
       {selected && <PlayerModal player={selected} onClose={() => setSelected(null)} />}
