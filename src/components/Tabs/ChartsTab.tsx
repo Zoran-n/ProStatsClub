@@ -31,7 +31,14 @@ function aggregateMatchPlayers(matches: Match[], clubId: string): Player[] {
   }));
 }
 
-type Mode = "last10" | "alltime";
+type Mode = "last10" | "last20" | "last50" | "alltime";
+const MODE_OPTIONS: { value: Mode; label: string }[] = [
+  { value: "last10",  label: "10 DERNIERS" },
+  { value: "last20",  label: "20 DERNIERS" },
+  { value: "last50",  label: "50 DERNIERS" },
+  { value: "alltime", label: "ALL TIME"    },
+];
+const modeCount = (m: Mode) => m === "last10" ? 10 : m === "last20" ? 20 : m === "last50" ? 50 : Infinity;
 
 /* ─── Shared UI primitives ────────────────────────────────────────────────── */
 
@@ -356,10 +363,11 @@ export function ChartsTab() {
   const contentRef = useRef<HTMLDivElement>(null);
   const { currentClub, players, matches } = useAppStore();
 
-  const last10 = useMemo(() => {
-    if (!currentClub || matches.length === 0)
+  const lastNData = useMemo(() => {
+    if (mode === "alltime" || !currentClub || matches.length === 0)
       return { wins: 0, ties: 0, losses: 0, goals: 0, assists: 0, count: 0 };
-    const sorted = [...matches].sort((a, b) => Number(a.timestamp) - Number(b.timestamp)).slice(-10);
+    const n = modeCount(mode);
+    const sorted = [...matches].sort((a, b) => Number(a.timestamp) - Number(b.timestamp)).slice(-n);
     let wins = 0, ties = 0, losses = 0, goals = 0, assists = 0;
     for (const m of sorted) {
       const c = m.clubs[currentClub.id] as Record<string, string> | undefined;
@@ -371,7 +379,7 @@ export function ChartsTab() {
       assists += Number(c.assists) || 0;
     }
     return { wins, ties, losses, goals, assists, count: sorted.length };
-  }, [matches, currentClub]);
+  }, [mode, matches, currentClub]);
 
   const allTimeAssists = useMemo(() => players.reduce((s, p) => s + p.assists, 0), [players]);
 
@@ -379,21 +387,21 @@ export function ChartsTab() {
     if (!currentClub) return [];
     const src = mode === "alltime"
       ? { wins: currentClub.wins, ties: currentClub.ties, losses: currentClub.losses }
-      : last10;
+      : lastNData;
     return [
       { name: t("charts.winsShort"),   value: src.wins,   color: "#22c55e" },
       { name: t("charts.drawsShort"),  value: src.ties,   color: "#eab308" },
       { name: t("charts.lossesShort"), value: src.losses, color: "#ef4444" },
     ];
-  }, [currentClub, mode, last10, t]);
+  }, [currentClub, mode, lastNData, t]);
 
   const wdlTotal = wdlData.reduce((s, d) => s + d.value, 0);
   const winRate = wdlTotal > 0 ? Math.round((wdlData[0].value / wdlTotal) * 100) : 0;
 
   const butsData = useMemo(() => {
     if (!currentClub) return { data: [], total: 0 };
-    const goals   = mode === "alltime" ? currentClub.goals : last10.goals;
-    const assists = mode === "alltime" ? allTimeAssists    : last10.assists;
+    const goals   = mode === "alltime" ? currentClub.goals : lastNData.goals;
+    const assists = mode === "alltime" ? allTimeAssists    : lastNData.assists;
     return {
       data: [
         { name: t("charts.goalsShort"),   value: goals,   color: "#22d3ee" },
@@ -401,11 +409,12 @@ export function ChartsTab() {
       ],
       total: goals + assists,
     };
-  }, [currentClub, mode, last10, allTimeAssists, t]);
+  }, [currentClub, mode, lastNData, allTimeAssists, t]);
 
   const playerSource = useMemo(() => {
     if (mode === "alltime" || !currentClub) return players;
-    const sorted = [...matches].sort((a, b) => Number(a.timestamp) - Number(b.timestamp)).slice(-10);
+    const n = modeCount(mode);
+    const sorted = [...matches].sort((a, b) => Number(a.timestamp) - Number(b.timestamp)).slice(-n);
     return aggregateMatchPlayers(sorted, currentClub.id);
   }, [mode, players, matches, currentClub]);
 
@@ -420,24 +429,21 @@ export function ChartsTab() {
 
       {/* ── Header: mode switch + export ──────────────────────────── */}
       <div className="flex items-center justify-between mb-5">
-        {/* Toggle */}
-        <div className="flex items-center gap-0 rounded-xl overflow-hidden"
-          style={{ border: "1px solid var(--border)", background: "var(--bg)" }}>
-          {(["last10", "alltime"] as Mode[]).map((m) => {
+        <div className="flex items-center gap-1.5">
+          {MODE_OPTIONS.map(({ value: m, label }) => {
             const active = mode === m;
             return (
               <button key={m} onClick={() => setMode(m)}
-                className="px-5 py-2 font-['Bebas_Neue'] tracking-widest transition-all cursor-pointer"
+                className="px-3 py-1.5 rounded-lg font-['Bebas_Neue'] tracking-widest transition-all cursor-pointer"
                 style={{
-                  fontSize: 12,
-                  letterSpacing: "0.12em",
-                  background: active ? "var(--accent)" : "transparent",
+                  fontSize: 11,
+                  letterSpacing: "0.1em",
+                  background: active ? "var(--accent)" : "var(--surface)",
                   color: active ? "#000" : "var(--muted)",
-                  border: "none",
-                  boxShadow: active ? "inset 0 0 0 1px rgba(255,255,255,0.15)" : "none",
+                  border: active ? "1px solid var(--accent)" : "1px solid var(--border)",
                   fontWeight: active ? 700 : 400,
                 }}>
-                {m === "last10" ? "10 DERNIERS" : "ALL TIME"}
+                {label}
               </button>
             );
           })}

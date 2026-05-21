@@ -12,9 +12,7 @@ import { useAppStore } from "../../store/useAppStore";
 import { useSession } from "../../hooks/useSession";
 import { Badge } from "../UI/Badge";
 import { ExportModal } from "../Modals/ExportModal";
-import { PdfSaveModal } from "../Modals/PdfSaveModal";
 import type { Match, Session as SessionType } from "../../types";
-import { generateSessionPdf, getSessionPdfFilename, generateWeeklyReport } from "../../utils/pdfExport";
 import { generateSessionSummary } from "../../utils/aiEngine";
 import { AIPanel } from "../AI/AIPanel";
 import { sendDiscordWebhook } from "../../api/discord";
@@ -115,8 +113,6 @@ export function SessionTab() {
   const [exportModal, setExportModal] = useState<"png" | "csv" | null>(null);
   const [sharingId, setSharingId] = useState<string | null>(null);
   const [detailSession, setDetailSession] = useState<SessionType | null>(null);
-  const [pdfPrompt, setPdfPrompt] = useState<SessionType | null>(null);
-  const [pdfModal, setPdfModal] = useState<SessionType | null>(null);
   const [page, setPage] = useState(0);
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
@@ -270,12 +266,8 @@ export function SessionTab() {
   // ── Stop handler ──────────────────────────────────────────────────────
 
   const handleStop = () => {
-    const session = useAppStore.getState().activeSession;
     stopSession();
     persistSettings();
-    if (session && session.matches.length > 0) {
-      setPdfPrompt(session);
-    }
   };
 
   // ── Filtered + paginated sessions ─────────────────────────────────────
@@ -825,15 +817,6 @@ export function SessionTab() {
             <button onClick={() => setExportModal("csv")} style={{ ...BTN }}>
               <Download size={11} /> CSV
             </button>
-            <button
-              onClick={() => {
-                const clubName = sessions[0]?.clubName ?? "Club";
-                generateWeeklyReport(sessions, clubName).catch(() => {});
-              }}
-              title="Télécharger le rapport de la semaine en cours (PDF)"
-              style={{ ...BTN }}>
-              <Download size={11} /> Rapport semaine
-            </button>
           </div>
 
           {/* Tag filter chips */}
@@ -1333,12 +1316,6 @@ export function SessionTab() {
                     <Send size={13} /> Discord
                   </button>
                 )}
-                <button onClick={() => { setDetailSession(null); setPdfModal(s); }}
-                  style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px",
-                    background: "rgba(0,212,255,0.12)", border: "1px solid rgba(0,212,255,0.3)",
-                    borderRadius: 7, color: "var(--accent)", fontSize: 12, cursor: "pointer" }}>
-                  <Download size={13} /> PDF
-                </button>
               </div>
             </div>
           </div>
@@ -1684,55 +1661,6 @@ export function SessionTab() {
 
       </div>{/* end session-right-col */}
 
-      {/* ── PDF save modal (detail) ────────────────────────────────────── */}
-      {pdfModal && (
-        <PdfSaveModal
-          filename={getSessionPdfFilename(pdfModal)}
-          onConfirm={() => { generateSessionPdf(pdfModal); setPdfModal(null); }}
-          onCancel={() => setPdfModal(null)}
-        />
-      )}
-
-      {/* ── PDF prompt after session stop ─────────────────────────────── */}
-      {pdfPrompt && (
-        <div style={{
-          position: "fixed", inset: 0, zIndex: 100,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)",
-        }} onClick={() => setPdfPrompt(null)}>
-          <div onClick={(e) => e.stopPropagation()} style={{
-            background: "var(--card)", border: "1px solid var(--border)",
-            borderRadius: 8, padding: 24, width: 340, textAlign: "center",
-          }}>
-            <Download size={28} style={{ color: "var(--accent)", marginBottom: 8 }} />
-            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, color: "var(--text)",
-              letterSpacing: "0.06em", marginBottom: 4 }}>
-              {t("session.ended")}
-            </div>
-            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 16 }}>
-              {pdfPrompt.matches.length} match{pdfPrompt.matches.length !== 1 ? "s" : ""} — {t("session.pdfQuestion")}
-            </div>
-            <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-              <button onClick={() => { setPdfModal(pdfPrompt); setPdfPrompt(null); }}
-                style={{
-                  padding: "8px 18px", background: "rgba(0,212,255,0.15)",
-                  border: "1px solid rgba(0,212,255,0.3)", borderRadius: 8,
-                  color: "var(--accent)", fontSize: 13, cursor: "pointer", fontWeight: 600,
-                }}>
-                {t("session.exportPdfBtn")}
-              </button>
-              <button onClick={() => setPdfPrompt(null)}
-                style={{
-                  padding: "8px 18px", background: "var(--hover)",
-                  border: "1px solid var(--border)", borderRadius: 8,
-                  color: "var(--muted)", fontSize: 13, cursor: "pointer",
-                }}>
-                {t("session.noThanks")}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
