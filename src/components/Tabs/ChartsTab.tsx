@@ -1,5 +1,5 @@
-import { useState, useMemo, useRef } from "react";
-import { Download, TrendingUp, Target, Users, BarChart2 } from "lucide-react";
+import { useState, useMemo, useRef, useEffect } from "react";
+import { TrendingUp, Target, Users, BarChart2 } from "lucide-react";
 import {
   PieChart, Pie, Cell, Label, ResponsiveContainer,
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -201,8 +201,8 @@ function TopMotmSection({ matches, storePlayers, clubId, mode }: {
         )
         .slice(0, 8);
     }
-    // last10 : calcul depuis les 10 derniers matchs chargés
-    const src = [...matches].sort((a, b) => Number(a.timestamp) - Number(b.timestamp)).slice(-10);
+    // matches is pre-sorted and pre-sliced by the parent based on mode
+    const src = matches;
     const acc: Record<string, { name: string; motm: number; rating: number; games: number }> = {};
     for (const m of src) {
       const clubPlayers = m.players[clubId] as Record<string, Record<string, unknown>> | undefined;
@@ -361,15 +361,33 @@ export function ChartsTab() {
   const [mode, setMode] = useState<Mode>("last10");
   const [exportModal, setExportModal] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
-  const { currentClub, players, matches } = useAppStore();
+  const { currentClub, players, matchCache, setExportActions, clearExportActions } = useAppStore();
+
+  const allCachedMatches = useMemo(() => {
+    if (!currentClub) return [];
+    const all: Match[] = [];
+    for (const type of ["leagueMatch", "playoffMatch", "friendlyMatch"]) {
+      const key = `${currentClub.id}_${currentClub.platform}_${type}`;
+      all.push(...(matchCache[key] ?? []));
+    }
+    return all.sort((a, b) => Number(a.timestamp) - Number(b.timestamp));
+  }, [currentClub, matchCache]);
+
+  const modeMatches = useMemo(() => {
+    if (mode === "alltime") return allCachedMatches;
+    return allCachedMatches.slice(-modeCount(mode));
+  }, [mode, allCachedMatches]);
+
+  useEffect(() => {
+    setExportActions({ png: () => setExportModal(true) });
+    return () => clearExportActions();
+  }, [setExportActions, clearExportActions]);
 
   const lastNData = useMemo(() => {
-    if (mode === "alltime" || !currentClub || matches.length === 0)
+    if (mode === "alltime" || !currentClub || modeMatches.length === 0)
       return { wins: 0, ties: 0, losses: 0, goals: 0, assists: 0, count: 0 };
-    const n = modeCount(mode);
-    const sorted = [...matches].sort((a, b) => Number(a.timestamp) - Number(b.timestamp)).slice(-n);
     let wins = 0, ties = 0, losses = 0, goals = 0, assists = 0;
-    for (const m of sorted) {
+    for (const m of modeMatches) {
       const c = m.clubs[currentClub.id] as Record<string, string> | undefined;
       if (!c) continue;
       if (Number(c.wins) > 0) wins++;
@@ -378,8 +396,8 @@ export function ChartsTab() {
       goals   += Number(c.goals)   || 0;
       assists += Number(c.assists) || 0;
     }
-    return { wins, ties, losses, goals, assists, count: sorted.length };
-  }, [mode, matches, currentClub]);
+    return { wins, ties, losses, goals, assists, count: modeMatches.length };
+  }, [mode, modeMatches, currentClub]);
 
   const allTimeAssists = useMemo(() => players.reduce((s, p) => s + p.assists, 0), [players]);
 
@@ -413,10 +431,8 @@ export function ChartsTab() {
 
   const playerSource = useMemo(() => {
     if (mode === "alltime" || !currentClub) return players;
-    const n = modeCount(mode);
-    const sorted = [...matches].sort((a, b) => Number(a.timestamp) - Number(b.timestamp)).slice(-n);
-    return aggregateMatchPlayers(sorted, currentClub.id);
-  }, [mode, players, matches, currentClub]);
+    return aggregateMatchPlayers(modeMatches, currentClub.id);
+  }, [mode, players, modeMatches, currentClub]);
 
   const topScorers = useMemo(() => [...playerSource].sort((a, b) => b.goals      - a.goals).slice(0, 5),     [playerSource]);
   const topAssists = useMemo(() => [...playerSource].sort((a, b) => b.assists     - a.assists).slice(0, 5),   [playerSource]);
@@ -449,11 +465,6 @@ export function ChartsTab() {
           })}
         </div>
 
-        <button onClick={() => setExportModal(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg cursor-pointer transition-colors"
-          style={{ border: "1px solid var(--border)", color: "var(--muted)", fontSize: 11, background: "transparent" }}>
-          <Download size={11} /> PNG
-        </button>
       </div>
 
       <div ref={contentRef} className="space-y-4">
@@ -504,8 +515,8 @@ export function ChartsTab() {
             <Users size={13} className="text-yellow-400" /> MOTM & Forme
           </h2>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <TopMotmSection matches={matches} storePlayers={players} clubId={currentClub.id} mode={mode} />
-            <FormCurveSection matches={matches} clubId={currentClub.id} />
+            <TopMotmSection matches={modeMatches} storePlayers={players} clubId={currentClub.id} mode={mode} />
+            <FormCurveSection matches={modeMatches} clubId={currentClub.id} />
           </div>
         </section>
 

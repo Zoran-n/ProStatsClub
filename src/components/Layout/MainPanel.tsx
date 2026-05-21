@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { BarChart2, Trophy, Search, Sparkles, Settings, Send, Pencil, X, Minimize2, Megaphone, ListChecks, BookOpen, LayoutDashboard } from "lucide-react";
+import { BarChart2, Trophy, Search, Sparkles, Settings, Send, Pencil, X, Minimize2, Megaphone, ListChecks, BookOpen, LayoutDashboard, Download, Table2 } from "lucide-react";
 import { GlassCard } from "../UI/GlassCard";
 import { useAppStore } from "../../store/useAppStore";
 import { ClubOverview } from "../Tabs/ClubOverview";
@@ -276,7 +276,7 @@ function SettingsOverlay({ onClose, t }: { onClose: () => void; t: (k: string) =
 export function MainPanel() {
   const { currentClub, players, matches, activeTab, isLoading, error, activeSession,
     sidebarTab, setSidebarTab, discordWebhook, addToast, visibleKpis, setVisibleKpis,
-    persistSettings, compactMode, setCompactMode, toggleGlobalSearch } = useAppStore();
+    persistSettings, compactMode, setCompactMode, toggleGlobalSearch, exportActions } = useAppStore();
   const t = useT();
   const [logo, setLogo] = useState<string | null>(null);
   const [sharing, setSharing] = useState(false);
@@ -534,6 +534,50 @@ export function MainPanel() {
               <span style={{ fontSize: 10, color: streakColor, fontWeight: 700 }}>{streakText}</span>
             )}
           </div>
+          {/* Export buttons */}
+          {exportActions && (
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              {exportActions.png && (
+                <button onClick={exportActions.png} title="Exporter en PNG"
+                  style={{
+                    display: "flex", alignItems: "center", gap: 4,
+                    padding: "4px 8px", background: "rgba(0,242,255,0.08)",
+                    border: "1px solid rgba(0,242,255,0.2)", borderRadius: 5,
+                    color: "var(--accent)", fontSize: 10, cursor: "pointer",
+                    fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.06em",
+                    transition: "all 0.15s",
+                  }}>
+                  <Download size={11} /> PNG
+                </button>
+              )}
+              {exportActions.csv && (
+                <button onClick={exportActions.csv} title="Exporter en CSV"
+                  style={{
+                    display: "flex", alignItems: "center", gap: 4,
+                    padding: "4px 8px", background: "var(--hover)",
+                    border: "1px solid var(--border)", borderRadius: 5,
+                    color: "var(--muted)", fontSize: 10, cursor: "pointer",
+                    fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.06em",
+                    transition: "all 0.15s",
+                  }}>
+                  <Download size={11} /> CSV
+                </button>
+              )}
+              {exportActions.xls && (
+                <button onClick={exportActions.xls} title="Exporter en Excel"
+                  style={{
+                    display: "flex", alignItems: "center", gap: 4,
+                    padding: "4px 8px", background: "var(--hover)",
+                    border: "1px solid var(--border)", borderRadius: 5,
+                    color: "var(--muted)", fontSize: 10, cursor: "pointer",
+                    fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.06em",
+                    transition: "all 0.15s",
+                  }}>
+                  <Table2 size={11} /> XLS
+                </button>
+              )}
+            </div>
+          )}
           {/* Actions Discord */}
           {discordWebhook && (
             <div style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: 8 }}>
