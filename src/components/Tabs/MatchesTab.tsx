@@ -26,7 +26,9 @@ const BTN: React.CSSProperties = {
 };
 
 export function MatchesTab() {
-  const { currentClub, matchAnnotations, setMatchAnnotation, persistSettings, exportMatchCacheJson, importMatchCacheJson, addToast, setExportActions, clearExportActions } = useAppStore();
+  const { currentClub, matchAnnotations, setMatchAnnotation, persistSettings, exportMatchCacheJson, importMatchCacheJson, addToast } = useAppStore();
+  const setExportActions   = useAppStore((s) => s.setExportActions);
+  const clearExportActions = useAppStore((s) => s.clearExportActions);
   const lang = useAppStore((s) => s.language);
   const t = useT();
   const locale = lang === "fr" ? "fr-FR" : lang === "es" ? "es-ES" : lang === "de" ? "de-DE" : lang === "pt" ? "pt-BR" : "en-US";
@@ -36,11 +38,11 @@ export function MatchesTab() {
     { value: "playoffMatch" as const, label: t("matches.playoff"), icon: "🏆" },
     { value: "friendlyMatch" as const, label: t("matches.friendly"), icon: "🤝" },
   ];
-  const RESULT_LABEL: Record<string, { text: string; color: string }> = {
+  const RESULT_LABEL = useMemo<Record<string, { text: string; color: string }>>(() => ({
     W: { text: t("match.win"), color: "var(--green)" },
     D: { text: t("match.draw"), color: "#eab308" },
     L: { text: t("match.loss"), color: "var(--red)" },
-  };
+  }), [t]);
 
   const { type, setType, allList, loading, loadMore, hasMore, eaProfile } = useMatchData();
 
