@@ -389,11 +389,13 @@ function LeaderboardPanel({ players, onSelect }: { players: Player[]; onSelect: 
     [players]);
 
   return (
-    <div style={{ width: 248, flexShrink: 0, overflowY: "auto", padding: "10px 8px", borderRight: "1px solid var(--border)" }}>
-      <RankSection title="MOTM" icon="★" color="#faa81a" entries={topMotm} onSelect={onSelect} />
-      <RankSection title="BUTS" icon="⚽" color="var(--accent)" entries={topGoals} onSelect={onSelect} />
-      <RankSection title="PASSES DÉC." icon="🎯" color="#fb923c" entries={topAssists} onSelect={onSelect} />
-      <RankSection title="NOTES — min 3 MJ" icon="📊" color="var(--green)" entries={topRating} onSelect={onSelect} />
+    <div style={{ width: 480, flexShrink: 0, overflowY: "auto", padding: "10px 10px", borderLeft: "1px solid var(--border)" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        <RankSection title="MOTM" icon="★" color="#faa81a" entries={topMotm} onSelect={onSelect} />
+        <RankSection title="BUTS" icon="⚽" color="var(--accent)" entries={topGoals} onSelect={onSelect} />
+        <RankSection title="PASSES DÉC." icon="🎯" color="#fb923c" entries={topAssists} onSelect={onSelect} />
+        <RankSection title="NOTES — min 3 MJ" icon="📊" color="var(--green)" entries={topRating} onSelect={onSelect} />
+      </div>
     </div>
   );
 }
@@ -805,9 +807,8 @@ export function PlayersTab() {
       )}
       {viewMode === "podium" && <PodiumView players={activePlayers} />}
 
-      {/* List view: leaderboard + virtualized list */}
+      {/* List view: virtualized list + leaderboard */}
       <div style={{ flex: 1, overflow: "hidden", display: viewMode === "list" ? "flex" : "none" }}>
-        <LeaderboardPanel players={activePlayers} onSelect={setSelected} />
         <div style={{ flex: 1, overflow: "hidden" }}>
           {sorted.length === 0 ? (
             <div style={{ padding: 40, textAlign: "center", color: "var(--muted)", fontSize: 13 }}>
@@ -824,6 +825,7 @@ export function PlayersTab() {
             />
           )}
         </div>
+        <LeaderboardPanel players={activePlayers} onSelect={setSelected} />
       </div>
 
       {selected && <PlayerModal player={selected} onClose={() => setSelected(null)} />}
