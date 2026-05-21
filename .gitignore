@@ -66,6 +66,9 @@ test-results/
 *.orig
 *.local
 
+# Obsidian vault (local uniquement)
+ProStatClub/
+
 # IA & Assistants IA (privé, ne pas publier sur GitHub)
 CLAUDE.md
 AGENTS.md

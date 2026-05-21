@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Send, Shield } from "lucide-react";
+import { Send } from "lucide-react";
 import { useAppStore } from "../../store/useAppStore";
 import { useT } from "../../i18n";
 import type { Match } from "../../types";
@@ -115,7 +115,6 @@ export function MatchModal({ match, clubId, onClose }: { match: Match; clubId: s
   const isVictory = res === "W";
   const isDraw = res === "D";
 
-  const teamStats = extractTeamStats(match, clubId, t);
   const events = extractMatchEvents(match, clubId);
 
   const resultBadge = isVictory
@@ -178,29 +177,20 @@ export function MatchModal({ match, clubId, onClose }: { match: Match; clubId: s
   const oppPlayers = Object.entries(
     (match.players[oppEntry?.[0] ?? ""] ?? {}) as Record<string, Record<string, unknown>>
   ).map(([, p]) => ({
-    name:   String(p["name"] ?? p["playername"] ?? "—"),
-    goals:  Number(p["goals"]   ?? 0),
-    assists:Number(p["assists"] ?? 0),
-    rating: Number(p["rating"]  ?? p["ratingAve"] ?? 0),
+    name:        String(p["name"] ?? p["playername"] ?? "—"),
+    goals:       Number(p["goals"]   ?? 0),
+    assists:     Number(p["assists"] ?? 0),
+    passes:      Number(p["passesMade"] ?? p["passesmade"] ?? 0),
+    tackles:     Number(p["tacklesMade"] ?? p["tacklesmade"] ?? 0),
+    interceptions: Number(p["interceptions"] ?? 0),
+    yellowCards: Number(p["yellowCards"] ?? p["yellowcards"] ?? 0),
+    redCards:    Number(p["redCards"] ?? p["redcards"] ?? 0),
+    rating:      Number(p["rating"]  ?? p["ratingAve"] ?? 0),
+    motm:        p["mom"] === "1" || p["manofthematch"] === "1",
   })).sort((a, b) => b.rating - a.rating);
 
   const TILE = "rounded-xl bg-[#13151A]/80 backdrop-blur-2xl border border-white/5";
-
-  const PlayerRow = ({ name, goals, assists, rating, rank, motm: isMOTM }: {
-    name: string; goals: number; assists: number; rating: number; rank: number; motm: boolean;
-  }) => (
-    <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${isMOTM && isVictory ? "bg-amber-500/5 border border-amber-500/20" : "bg-white/[0.025] border border-white/5"}`}>
-      <span className="font-['Bebas_Neue'] text-xs w-5 text-center text-slate-500">{rank}</span>
-      <span className="flex-1 text-sm font-semibold text-slate-100 truncate">{name}</span>
-      {goals > 0 && <span className="text-xs text-slate-400">⚽{goals}</span>}
-      {assists > 0 && <span className="text-xs text-slate-400">🅰️{assists}</span>}
-      <span className="font-['Bebas_Neue'] text-base leading-none font-bold"
-        style={{ color: rating >= 7.5 ? "#23a559" : rating >= 6.5 ? "#f59e0b" : rating > 0 ? "#da373c" : "#6b7280" }}>
-        {rating > 0 ? rating.toFixed(1) : "—"}
-      </span>
-      {isMOTM && isVictory && <Shield size={12} className="text-amber-400 flex-shrink-0" />}
-    </div>
-  );
+  const ratingColor = (r: number) => r >= 7.5 ? "#23a559" : r >= 6.5 ? "#f59e0b" : r > 0 ? "#da373c" : "#6b7280";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
@@ -241,53 +231,52 @@ export function MatchModal({ match, clubId, onClose }: { match: Match; clubId: s
         </div>
 
         <div className="p-6 space-y-5">
-          {/* ── Layout 3 colonnes ─────────────────────────────── */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
 
             {/* Col gauche — mes joueurs */}
             <div className={`${TILE} p-4 space-y-1.5`}>
               <p className="text-[9px] font-['Bebas_Neue'] tracking-widest text-slate-400 mb-3">MON ÉQUIPE</p>
               {myPlayers.length > 0 ? myPlayers.map((p, i) => (
-                <PlayerRow key={i} rank={i+1} name={p.name} goals={p.goals} assists={p.assists} rating={p.rating} motm={p.motm} />
-              )) : <p className="text-xs text-slate-500 text-center py-4">—</p>}
-            </div>
-
-            {/* Col centre — stats d'équipe */}
-            <div className={`${TILE} p-4`}>
-              <p className="text-[9px] font-['Bebas_Neue'] tracking-widest text-slate-400 mb-3 text-center">{t("matches.teamStats")}</p>
-              {teamStats.length > 0 ? (
-                <div className="space-y-1">
-                  {teamStats.map(({ label, my, opp: oppStat }) => {
-                    const nMy = Number(String(my).replace("%","")), nOpp = Number(String(oppStat).replace("%",""));
-                    const myW = !isNaN(nMy) && !isNaN(nOpp) && nMy > nOpp;
-                    const oppW = !isNaN(nMy) && !isNaN(nOpp) && nOpp > nMy;
-                    return (
-                      <div key={label} className="grid grid-cols-3 items-center py-1.5 border-b border-white/5 last:border-0">
-                        <span className={`text-right text-sm font-['Bebas_Neue'] ${myW ? "text-[var(--accent)]" : "text-slate-200"}`}>{my}</span>
-                        <span className="text-center text-[9px] tracking-wider font-['Bebas_Neue'] uppercase text-slate-500">{label}</span>
-                        <span className={`text-left text-sm font-['Bebas_Neue'] ${oppW ? "text-red-400" : "text-slate-400"}`}>{oppStat}</span>
-                      </div>
-                    );
-                  })}
+                <div key={i} className={`flex items-center gap-2 px-3 py-2.5 rounded-lg ${p.motm && isVictory ? "bg-amber-500/5 border border-amber-500/20" : "bg-white/[0.025] border border-white/5"}`}>
+                  <span className="font-['Bebas_Neue'] text-xs w-5 text-center text-slate-500">{i+1}</span>
+                  <span className="flex-1 text-sm font-semibold text-slate-100 truncate">{p.name}</span>
+                  <div className="flex items-center gap-1.5 text-xs text-slate-400 flex-shrink-0">
+                    {p.redCards > 0 && <span>🟥</span>}
+                    {p.yellowCards > 0 && <span>🟨</span>}
+                    {p.goals > 0 && <span>⚽{p.goals}</span>}
+                    {p.assists > 0 && <span>🅰️{p.assists}</span>}
+                    {p.passes > 0 && <span className="text-slate-500">{p.passes}p</span>}
+                    {p.tackles > 0 && <span className="text-slate-500">{p.tackles}t</span>}
+                    {p.interceptions > 0 && <span className="text-slate-500">{p.interceptions}i</span>}
+                  </div>
+                  <span className="font-['Bebas_Neue'] text-base leading-none font-bold ml-1" style={{ color: ratingColor(p.rating) }}>
+                    {p.rating > 0 ? p.rating.toFixed(1) : "—"}
+                  </span>
+                  {p.motm && isVictory && <span className="text-amber-400 text-xs flex-shrink-0">★</span>}
                 </div>
-              ) : (
-                <p className="text-xs text-slate-500 text-center py-8">Aucune stat d'équipe</p>
-              )}
+              )) : <p className="text-xs text-slate-500 text-center py-4">—</p>}
             </div>
 
             {/* Col droite — joueurs adverses */}
             <div className={`${TILE} p-4 space-y-1.5`}>
               <p className="text-[9px] font-['Bebas_Neue'] tracking-widest text-slate-400 mb-3">{oppName.toUpperCase()}</p>
               {oppPlayers.length > 0 ? oppPlayers.map((p, i) => (
-                <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.025] border border-white/5">
+                <div key={i} className={`flex items-center gap-2 px-3 py-2.5 rounded-lg ${p.motm ? "bg-amber-500/5 border border-amber-500/20" : "bg-white/[0.025] border border-white/5"}`}>
                   <span className="font-['Bebas_Neue'] text-xs w-5 text-center text-slate-500">{i+1}</span>
                   <span className="flex-1 text-sm font-semibold text-slate-300 truncate">{p.name}</span>
-                  {p.goals > 0 && <span className="text-xs text-slate-400">⚽{p.goals}</span>}
-                  {p.assists > 0 && <span className="text-xs text-slate-400">🅰️{p.assists}</span>}
-                  <span className="font-['Bebas_Neue'] text-base leading-none font-bold"
-                    style={{ color: p.rating >= 7.5 ? "#23a559" : p.rating >= 6.5 ? "#f59e0b" : p.rating > 0 ? "#da373c" : "#6b7280" }}>
+                  <div className="flex items-center gap-1.5 text-xs text-slate-400 flex-shrink-0">
+                    {p.redCards > 0 && <span>🟥</span>}
+                    {p.yellowCards > 0 && <span>🟨</span>}
+                    {p.goals > 0 && <span>⚽{p.goals}</span>}
+                    {p.assists > 0 && <span>🅰️{p.assists}</span>}
+                    {p.passes > 0 && <span className="text-slate-500">{p.passes}p</span>}
+                    {p.tackles > 0 && <span className="text-slate-500">{p.tackles}t</span>}
+                    {p.interceptions > 0 && <span className="text-slate-500">{p.interceptions}i</span>}
+                  </div>
+                  <span className="font-['Bebas_Neue'] text-base leading-none font-bold ml-1" style={{ color: ratingColor(p.rating) }}>
                     {p.rating > 0 ? p.rating.toFixed(1) : "—"}
                   </span>
+                  {p.motm && <span className="text-amber-400 text-xs flex-shrink-0">★</span>}
                 </div>
               )) : <p className="text-xs text-slate-500 text-center py-4">Aucun joueur</p>}
             </div>

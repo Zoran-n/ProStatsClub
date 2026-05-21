@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import {
   Search, Download, Trash2, Clock, Users, Plus, X, BarChart3,
-  GitCompare, Activity, Swords, Save, BookOpen, FileText, Bell, BellOff, Pencil, Check,
+  GitCompare, Activity, Swords, Save, BookOpen, Bell, BellOff, Pencil, Check,
 } from "lucide-react";
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -10,7 +10,6 @@ import {
 import { searchClub, loadClub, getLogo, getMatches, getSeasonHistory } from "../../api/tauri";
 import { useAppStore } from "../../store/useAppStore";
 import { ExportModal } from "../Modals/ExportModal";
-import { generateComparePdf } from "../../utils/pdfExport";
 import type { Club, ClubData, Player, Match } from "../../types";
 
 // ─── Position helpers ─────────────────────────────────────────────────────────
@@ -127,7 +126,6 @@ export function CompareTab() {
   const [h2hMatches, setH2h]    = useState<Match[] | null>(null);
   const [h2hLoading, setH2hLoading] = useState(false);
   const [exportModal, setExportModal] = useState<"png" | "csv" | null>(null);
-  const [pdfLoading, setPdfLoading]   = useState(false);
   const [savePrompt, setSavePrompt]   = useState(false);
   const [saveName, setSaveName]       = useState("");
   const [showSaved, setShowSaved]     = useState(false);
@@ -304,30 +302,6 @@ export function CompareTab() {
     setShowSaved(false);
   };
 
-  // ── PDF ────────────────────────────────────────────────────────────────────
-  const handlePdf = async () => {
-    if (loadedData.length < 2) return;
-    setPdfLoading(true);
-    try {
-      const h2hForPdf = h2hMatches?.map(m => {
-        const aId = loadedData[0].club.id;
-        const bId = loadedData[1].club.id;
-        const gA = parseInt((m.clubs[aId]?.goals as string) ?? "0") || 0;
-        const gB = parseInt((m.clubs[bId]?.goals as string) ?? "0") || 0;
-        const ts = parseInt(m.timestamp);
-        return {
-          scoreA: gA,
-          scoreB: gB,
-          date: !isNaN(ts) ? new Date(ts * 1000).toLocaleDateString() : "—",
-        };
-      });
-      await generateComparePdf(loadedData, h2hForPdf);
-    } catch (e) {
-      addToast(`PDF: ${String(e)}`, "error");
-    } finally {
-      setPdfLoading(false);
-    }
-  };
 
   // ── Save named comparison ──────────────────────────────────────────────────
   const handleSave = () => {
@@ -539,10 +513,6 @@ export function CompareTab() {
                 style={{ ...BTN, color: showSaved ? "var(--accent)" : "var(--muted)",
                   borderColor: showSaved ? "var(--accent)" : "var(--border)" }}>
                 <BookOpen size={11} /> Sauvegardées {savedComparisons.length > 0 && `(${savedComparisons.length})`}
-              </button>
-              {/* PDF */}
-              <button onClick={handlePdf} disabled={pdfLoading} style={{ ...BTN }}>
-                <FileText size={11} /> {pdfLoading ? "…" : "PDF"}
               </button>
               <button onClick={() => setExportModal("png")} style={BTN}><Download size={11} /> PNG</button>
               <button onClick={() => setExportModal("csv")} style={BTN}><Download size={11} /> CSV</button>

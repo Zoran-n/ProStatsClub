@@ -4,14 +4,12 @@ import {
   ResponsiveContainer, ReferenceLine,
 } from "recharts";
 import {
-  Send, FileText, CreditCard,
+  Send, CreditCard,
   Target, Shield, Star, Swords, Activity,
 } from "lucide-react";
 import { useAppStore } from "../../store/useAppStore";
 import { useT } from "../../i18n";
 import { sendDiscordWebhook, sendDiscordFile } from "../../api/discord";
-import { generatePlayerPdf, getPlayerPdfFilename } from "../../utils/pdfExport";
-import { PdfSaveModal } from "./PdfSaveModal";
 import type { Player, Match } from "../../types";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -229,8 +227,6 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
   const [showTrend, setShowTrend]   = useState(false);
   const [chartView, setChartView]   = useState<"match" | "monthly">("match");
   const [sharing, setSharing]       = useState(false);
-  const [exporting, setExporting]   = useState(false);
-  const [showPdfModal, setShowPdfModal]   = useState(false);
   const [showCardModal, setShowCardModal] = useState(false);
   const posLabel = POS_LABELS[player.position] ?? player.position ?? "—";
 
@@ -453,11 +449,6 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
                   className="flex items-center gap-1 px-2.5 py-1.5 rounded text-[11px] font-semibold transition-colors cursor-pointer"
                   style={{ background: "#f59e0b18", border: "1px solid #f59e0b44", color: "#fcd34d" }}>
                   <CreditCard size={11} /> Carte
-                </button>
-                <button onClick={() => setShowPdfModal(true)} disabled={exporting}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded text-[11px] font-semibold transition-colors cursor-pointer disabled:opacity-50"
-                  style={{ background: "#fb923c18", border: "1px solid #fb923c44", color: "#fb923c" }}>
-                  <FileText size={11} /> PDF
                 </button>
                 {discordWebhook && (
                   <button onClick={handleShareDiscord} disabled={sharing}
@@ -689,17 +680,6 @@ export function PlayerModal({ player, onClose }: { player: Player; onClose: () =
         </div>{/* end modal container */}
       </div>{/* end backdrop */}
 
-      {showPdfModal && (
-        <PdfSaveModal
-          filename={getPlayerPdfFilename(player.name)}
-          onConfirm={async () => {
-            setShowPdfModal(false); setExporting(true);
-            try { await generatePlayerPdf(player, posLabel, allEvoData.rating, monthlyData); }
-            finally { setExporting(false); }
-          }}
-          onCancel={() => setShowPdfModal(false)}
-        />
-      )}
       {showCardModal && (
         <PlayerCardModal
           player={player} posLabel={posLabel}
