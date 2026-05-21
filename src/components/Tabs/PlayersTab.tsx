@@ -408,7 +408,8 @@ export function PlayersTab() {
   const matchCache  = useAppStore((s) => s.matchCache);
   const currentClub = useAppStore((s) => s.currentClub);
   const compactMode = useAppStore((s) => s.compactMode);
-  const { setExportActions, clearExportActions } = useAppStore();
+  const setExportActions   = useAppStore((s) => s.setExportActions);
+  const clearExportActions = useAppStore((s) => s.clearExportActions);
 
   const listRef = useListRef(null);
 
