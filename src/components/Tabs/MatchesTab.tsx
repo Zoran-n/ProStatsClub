@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { Download, ChevronDown, Search, Calendar, List, ChevronLeft, ChevronRight, PenLine, Table2, Upload, FileDown, DatabaseZap } from "lucide-react";
+import { Download, ChevronDown, Search, Calendar, List, ChevronLeft, ChevronRight, PenLine, Upload, FileDown, DatabaseZap } from "lucide-react";
 import { GlassCard } from "../UI/GlassCard";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 import { useAppStore } from "../../store/useAppStore";
@@ -26,7 +26,7 @@ const BTN: React.CSSProperties = {
 };
 
 export function MatchesTab() {
-  const { currentClub, matchAnnotations, setMatchAnnotation, persistSettings, exportMatchCacheJson, importMatchCacheJson, addToast } = useAppStore();
+  const { currentClub, matchAnnotations, setMatchAnnotation, persistSettings, exportMatchCacheJson, importMatchCacheJson, addToast, setExportActions, clearExportActions } = useAppStore();
   const lang = useAppStore((s) => s.language);
   const t = useT();
   const locale = lang === "fr" ? "fr-FR" : lang === "es" ? "es-ES" : lang === "de" ? "de-DE" : lang === "pt" ? "pt-BR" : "en-US";
@@ -253,6 +253,15 @@ export function MatchesTab() {
     URL.revokeObjectURL(url);
   }, [list, getResult, getScore, getOppName, getHalfTimeScore, locale, type, dateStr, RESULT_LABEL]);
 
+  useEffect(() => {
+    setExportActions({
+      png: () => setExportModal("png"),
+      csv: () => setExportModal("csv"),
+      xls: exportExcel,
+    });
+    return () => clearExportActions();
+  }, [setExportActions, clearExportActions, exportExcel]);
+
   const handleExportCache = useCallback(() => {
     const json = exportMatchCacheJson();
     const blob = new Blob([json], { type: "application/json" });
@@ -413,11 +422,6 @@ export function MatchesTab() {
           style={{ ...BTN, color: viewMode === "opponents" ? "var(--accent)" : "var(--muted)" }}>
           👥 Adversaires
         </button>
-
-        {/* Export */}
-        <button onClick={() => setExportModal("png")} style={BTN}><Download size={11} /> PNG</button>
-        <button onClick={() => setExportModal("csv")} style={BTN}><Download size={11} /> CSV</button>
-        <button onClick={exportExcel} style={BTN} title="Export Excel"><Table2 size={11} /> XLS</button>
 
         {/* Cache JSON export/import */}
         <button onClick={handleExportCache} style={BTN} title="Exporter le cache de matchs en JSON">

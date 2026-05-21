@@ -93,6 +93,7 @@ interface AppState {
   personalRecords: RecordEntry[];
   recordAlerts: RecordEntry[];
   publicProfileConfig: PublicProfileConfig | null;
+  exportActions: { png?: () => void; csv?: () => void; xls?: () => void } | null;
 
   addCompareEntry: (entry: CompareEntry) => void;
   deleteCompareEntry: (id: string) => void;
@@ -190,6 +191,8 @@ interface AppState {
   loadSettings: () => Promise<void>;
   persistSettings: () => Promise<void>;
   setPublicProfileConfig: (config: PublicProfileConfig) => void;
+  setExportActions: (a: { png?: () => void; csv?: () => void; xls?: () => void } | null) => void;
+  clearExportActions: () => void;
 }
 
 // ── Selective persistence: skip apiSave if nothing changed ───────────────────
@@ -245,6 +248,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   personalRecords: [],
   recordAlerts: [],
   publicProfileConfig: null,
+  exportActions: null,
 
   addCompareEntry: (entry) => set((s) => ({
     compareHistory: [entry, ...s.compareHistory.filter((e) => e.id !== entry.id)].slice(0, 20),
@@ -657,6 +661,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     get().persistSettings();
   },
   setPublicProfileConfig: (config) => set({ publicProfileConfig: config }),
+  setExportActions: (a) => set({ exportActions: a }),
+  clearExportActions: () => set({ exportActions: null }),
 
   applyProxy: async (url: string) => {
     await apiSetProxy(url.trim() || null);
