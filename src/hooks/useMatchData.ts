@@ -18,11 +18,13 @@ function oldestTimestamp(list: Match[]): string | null {
  * Handles: type switching, pagination, cache lookup, background auto-loading.
  */
 export function useMatchData() {
-  const {
-    currentClub, eaProfile,
-    matches: leagueCache,
-    matchCache, setMatchCache, syncMatchCache, persistSettings,
-  } = useAppStore();
+  const currentClub    = useAppStore((s) => s.currentClub);
+  const eaProfile      = useAppStore((s) => s.eaProfile);
+  const leagueCache    = useAppStore((s) => s.matches);
+  const matchCache     = useAppStore((s) => s.matchCache);
+  const setMatchCache  = useAppStore((s) => s.setMatchCache);
+  const syncMatchCache = useAppStore((s) => s.syncMatchCache);
+  const persistSettings = useAppStore((s) => s.persistSettings);
 
   const [type, setType] = useState<MatchTabType>("leagueMatch");
   const [pages, setPages] = useState<Partial<Record<string, Match[]>>>({ leagueMatch: leagueCache });
