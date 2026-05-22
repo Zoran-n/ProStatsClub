@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, startTransition } from "react";
 import { Users, Swords, BarChart3, Timer, Star, ChevronDown, Search, Send, ShieldCheck } from "lucide-react";
 import { useAutoRefresh } from "../../hooks/useAutoRefresh";
 import { useAppStore, type ActiveTab } from "../../store/useAppStore";
@@ -158,7 +158,7 @@ function HorizontalSidebar() {
           const active = activeTab === item.id;
           return (
             <button key={item.id} role="tab" aria-selected={active}
-              onClick={() => { setActiveTab(item.id); setSidebarTab("search"); persistSettings(); }}
+              onClick={() => { startTransition(() => setActiveTab(item.id)); setSidebarTab("search"); }}
               style={{
                 display: "flex", alignItems: "center", gap: 5,
                 padding: "0 12px", height: "100%",
@@ -359,9 +359,9 @@ function VerticalSidebar() {
         {NAV_ITEMS.map((item) => (
           <div key={item.id}
             className={`nav-icon-btn ${activeTab === item.id ? "active" : ""}`}
-            onClick={() => { setActiveTab(item.id); setSidebarTab("search"); persistSettings(); }}
+            onClick={() => { startTransition(() => setActiveTab(item.id)); setSidebarTab("search"); }}
             role="tab" aria-selected={activeTab === item.id} tabIndex={0}
-            onKeyDown={(e) => { if (e.key === "Enter") { setActiveTab(item.id); setSidebarTab("search"); persistSettings(); } }}>
+            onKeyDown={(e) => { if (e.key === "Enter") { startTransition(() => setActiveTab(item.id)); setSidebarTab("search"); } }}>
             <span style={{ color: activeTab === item.id ? "var(--text)" : "var(--muted)", flexShrink: 0, display: "flex" }}>{item.icon}</span>
             <span>{item.label}</span>
             {item.id === "session" && activeSession && (
@@ -469,9 +469,9 @@ function VerticalLaunchSidebar() {
         {NAV_ITEMS.map((item) => (
           <div key={item.id}
             className={`nav-icon-btn ${activeTab === item.id ? "active" : ""}`}
-            onClick={() => { setActiveTab(item.id); if (lastClub) load(lastClub.id, lastClub.platform); }}
+            onClick={() => { startTransition(() => setActiveTab(item.id)); if (lastClub) load(lastClub.id, lastClub.platform); }}
             role="tab" aria-selected={activeTab === item.id} tabIndex={0}
-            onKeyDown={(e) => { if (e.key === "Enter") { setActiveTab(item.id); if (lastClub) load(lastClub.id, lastClub.platform); } }}>
+            onKeyDown={(e) => { if (e.key === "Enter") { startTransition(() => setActiveTab(item.id)); if (lastClub) load(lastClub.id, lastClub.platform); } }}>
             <span style={{ color: activeTab === item.id ? "var(--text)" : "var(--muted)", flexShrink: 0, display: "flex" }}>{item.icon}</span>
             <span>{item.label}</span>
           </div>
