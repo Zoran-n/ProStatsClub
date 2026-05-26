@@ -826,12 +826,12 @@ export function MainPanel() {
             streakColor={streakColor}
           />
         ) : (
-          <div key={activeTab} className="tab-content" style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-            {activeTab === "club"     && <ClubOverview />}
-            {activeTab === "players"  && <PlayersTab />}
-            {activeTab === "matches"  && <MatchesTab />}
-            {activeTab === "charts"   && <ChartsTab />}
-            {activeTab === "session"  && <SessionTab />}
+          <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+            {activeTab === "club"    && <div className="tab-content" style={{ height: "100%", display: "flex", flexDirection: "column" }}><ClubOverview /></div>}
+            {activeTab === "players" && <div className="tab-content" style={{ height: "100%", display: "flex", flexDirection: "column" }}><PlayersTab /></div>}
+            {activeTab === "matches" && <div className="tab-content" style={{ height: "100%", display: "flex", flexDirection: "column" }}><MatchesTab /></div>}
+            {activeTab === "charts"  && <div className="tab-content" style={{ height: "100%", display: "flex", flexDirection: "column" }}><ChartsTab /></div>}
+            {activeTab === "session" && <div className="tab-content" style={{ height: "100%", display: "flex", flexDirection: "column" }}><SessionTab /></div>}
           </div>
         )}
       </div>

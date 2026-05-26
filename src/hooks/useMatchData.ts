@@ -6,6 +6,8 @@ import type { Match } from "../types";
 // Re-export store instance for inline access after sync
 export { useAppStore };
 
+const EMPTY_MATCH_LIST: Match[] = [];
+
 export type MatchTabType = "leagueMatch" | "playoffMatch" | "friendlyMatch";
 
 function oldestTimestamp(list: Match[]): string | null {
@@ -159,7 +161,7 @@ export function useMatchData() {
     return () => clearInterval(intervalId);
   }, [currentClub?.id, type]);
 
-  const allList = pages[type] ?? [];
+  const allList = pages[type] ?? EMPTY_MATCH_LIST;
   const hasMore  = (cursors[type] ?? null) !== null && !loading;
 
   return { type, setType, allList, loading, loadMore, hasMore, cursors, eaProfile };

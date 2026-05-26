@@ -237,7 +237,7 @@ export function MatchModal({ match, clubId, onClose }: { match: Match; clubId: s
             <div className={`${TILE} p-4 space-y-1.5`}>
               <p className="text-[9px] font-['Bebas_Neue'] tracking-widest text-slate-400 mb-3">MON ÉQUIPE</p>
               {myPlayers.length > 0 ? myPlayers.map((p, i) => (
-                <div key={i} className={`flex items-center gap-2 px-3 py-2.5 rounded-lg ${p.motm && isVictory ? "bg-amber-500/5 border border-amber-500/20" : "bg-white/[0.025] border border-white/5"}`}>
+                <div key={p.name} className={`flex items-center gap-2 px-3 py-2.5 rounded-lg ${p.motm && isVictory ? "bg-amber-500/5 border border-amber-500/20" : "bg-white/[0.025] border border-white/5"}`}>
                   <span className="font-['Bebas_Neue'] text-xs w-5 text-center text-slate-500">{i+1}</span>
                   <span className="flex-1 text-sm font-semibold text-slate-100 truncate">{p.name}</span>
                   <div className="flex items-center gap-1.5 text-xs text-slate-400 flex-shrink-0">
@@ -261,7 +261,7 @@ export function MatchModal({ match, clubId, onClose }: { match: Match; clubId: s
             <div className={`${TILE} p-4 space-y-1.5`}>
               <p className="text-[9px] font-['Bebas_Neue'] tracking-widest text-slate-400 mb-3">{oppName.toUpperCase()}</p>
               {oppPlayers.length > 0 ? oppPlayers.map((p, i) => (
-                <div key={i} className={`flex items-center gap-2 px-3 py-2.5 rounded-lg ${p.motm ? "bg-amber-500/5 border border-amber-500/20" : "bg-white/[0.025] border border-white/5"}`}>
+                <div key={p.name} className={`flex items-center gap-2 px-3 py-2.5 rounded-lg ${p.motm ? "bg-amber-500/5 border border-amber-500/20" : "bg-white/[0.025] border border-white/5"}`}>
                   <span className="font-['Bebas_Neue'] text-xs w-5 text-center text-slate-500">{i+1}</span>
                   <span className="flex-1 text-sm font-semibold text-slate-300 truncate">{p.name}</span>
                   <div className="flex items-center gap-1.5 text-xs text-slate-400 flex-shrink-0">

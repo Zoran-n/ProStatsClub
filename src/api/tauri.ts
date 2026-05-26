@@ -7,8 +7,17 @@ export const searchClub = (name: string, platform?: string) =>
 export const loadClub = (clubId: string, platform: string) =>
   invoke<ClubData>("load_club", { clubId, platform });
 
-export const getMatches = (clubId: string, platform: string, matchType: string, matchTimeVal?: string | null) =>
-  invoke<Match[]>("get_matches", { clubId, platform, matchType, matchTimeVal: matchTimeVal ?? null });
+const _inflightMatches = new Map<string, Promise<Match[]>>();
+
+export function getMatches(clubId: string, platform: string, matchType: string, matchTimeVal?: string | null): Promise<Match[]> {
+  const key = `${clubId}:${platform}:${matchType}:${matchTimeVal ?? ""}`;
+  const existing = _inflightMatches.get(key);
+  if (existing) return existing;
+  const p = invoke<Match[]>("get_matches", { clubId, platform, matchType, matchTimeVal: matchTimeVal ?? null })
+    .finally(() => _inflightMatches.delete(key));
+  _inflightMatches.set(key, p);
+  return p;
+}
 
 export const getSeasonHistory = (clubId: string, platform: string) =>
   invoke<unknown>("get_season_history", { clubId, platform });

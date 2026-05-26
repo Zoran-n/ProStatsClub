@@ -33,7 +33,7 @@ export const translations: Translations = {
   "sidebar.searchPlaceholder": { fr: "Rechercher...", en: "Search...",      es: "Buscar...",       de: "Suchen...",       pt: "Pesquisar..." },
 
   // ── Settings ──
-  "settings.title":       { fr: "Parametres",        en: "Settings",        es: "Ajustes",         de: "Einstellungen",   pt: "Configuracoes" },
+  "settings.title":       { fr: "Paramètres",        en: "Settings",        es: "Ajustes",         de: "Einstellungen",   pt: "Configuracoes" },
   "settings.appearance":  { fr: "APPARENCE",          en: "APPEARANCE",      es: "APARIENCIA",      de: "ERSCHEINUNGSBILD",pt: "APARENCIA" },
   "settings.darkMode":    { fr: "Mode sombre",        en: "Dark mode",       es: "Modo oscuro",     de: "Dunkelmodus",     pt: "Modo escuro" },
   "settings.accentColor": { fr: "COULEUR D'ACCENT",   en: "ACCENT COLOR",    es: "COLOR DE ACENTO", de: "AKZENTFARBE",     pt: "COR DE DESTAQUE" },
@@ -206,17 +206,17 @@ export const translations: Translations = {
 
   // ── Months ──
   "months.0":  { fr: "Janvier",    en: "January",    es: "Enero",       de: "Januar",      pt: "Janeiro" },
-  "months.1":  { fr: "Fevrier",    en: "February",   es: "Febrero",     de: "Februar",     pt: "Fevereiro" },
+  "months.1":  { fr: "Février",    en: "February",   es: "Febrero",     de: "Februar",     pt: "Fevereiro" },
   "months.2":  { fr: "Mars",       en: "March",      es: "Marzo",       de: "Marz",        pt: "Marco" },
   "months.3":  { fr: "Avril",      en: "April",      es: "Abril",       de: "April",       pt: "Abril" },
   "months.4":  { fr: "Mai",        en: "May",        es: "Mayo",        de: "Mai",         pt: "Maio" },
   "months.5":  { fr: "Juin",       en: "June",       es: "Junio",       de: "Juni",        pt: "Junho" },
   "months.6":  { fr: "Juillet",    en: "July",       es: "Julio",       de: "Juli",        pt: "Julho" },
-  "months.7":  { fr: "Aout",       en: "August",     es: "Agosto",      de: "August",      pt: "Agosto" },
+  "months.7":  { fr: "Août",       en: "August",     es: "Agosto",      de: "August",      pt: "Agosto" },
   "months.8":  { fr: "Septembre",  en: "September",  es: "Septiembre",  de: "September",   pt: "Setembro" },
   "months.9":  { fr: "Octobre",    en: "October",    es: "Octubre",     de: "Oktober",     pt: "Outubro" },
   "months.10": { fr: "Novembre",   en: "November",   es: "Noviembre",   de: "November",    pt: "Novembro" },
-  "months.11": { fr: "Decembre",   en: "December",   es: "Diciembre",   de: "Dezember",    pt: "Dezembro" },
+  "months.11": { fr: "Décembre",   en: "December",   es: "Diciembre",   de: "Dezember",    pt: "Dezembro" },
 
   // ── Day headers ──
   "days.mon": { fr: "LUN", en: "MON", es: "LUN", de: "MO",  pt: "SEG" },
