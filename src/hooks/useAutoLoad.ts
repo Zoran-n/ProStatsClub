@@ -22,7 +22,12 @@ function oldestTimestamp(matches: { timestamp: string }[]): string | null {
  * Full backward pagination only happens on the very first load (empty cache).
  */
 export function useAutoLoad() {
-  const { settingsLoaded, eaProfile, currentClub, matchCache, setMatchCache, persistSettings } = useAppStore();
+  const settingsLoaded  = useAppStore((s) => s.settingsLoaded);
+  const eaProfile       = useAppStore((s) => s.eaProfile);
+  const currentClub     = useAppStore((s) => s.currentClub);
+  const matchCache      = useAppStore((s) => s.matchCache);
+  const setMatchCache   = useAppStore((s) => s.setMatchCache);
+  const persistSettings = useAppStore((s) => s.persistSettings);
   const { load } = useClub();
   const didAutoLoad = useRef(false);
 

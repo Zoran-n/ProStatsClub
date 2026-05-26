@@ -11,11 +11,13 @@ export default defineConfig(async () => ({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          'vendor-react': ['react', 'react-dom'],
-          'vendor-charts': ['recharts'],
-          'vendor-pdf': ['jspdf', 'jspdf-autotable', 'html2canvas'],
-          'vendor-ui': ['lucide-react', 'react-window'],
+        manualChunks: (id) => {
+          if (id.includes('@tauri-apps/')) return 'vendor-tauri';
+          if (id.includes('react-dom') || id.includes('/react/')) return 'vendor-react';
+          if (id.includes('recharts') || id.includes('d3-')) return 'vendor-charts';
+          if (id.includes('jspdf') || id.includes('html2canvas')) return 'vendor-pdf';
+          if (id.includes('lucide-react') || id.includes('react-window')) return 'vendor-ui';
+          if (id.includes('/src/i18n/')) return 'i18n';
         },
       },
     },

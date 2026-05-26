@@ -173,8 +173,8 @@ body {
   position: fixed;
   inset: 0;
   background-image:
-    linear-gradient(rgba(128,128,128,0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(128,128,128,0.05) 1px, transparent 1px);
+    linear-gradient(rgba(0, 242, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 242, 255, 0.02) 1px, transparent 1px);
   background-size: 40px 40px;
   pointer-events: none;
   z-index: 1;
@@ -647,13 +647,6 @@ input[type="range"]::-webkit-slider-thumb { appearance: none; width: 14px; heigh
 }
 .nav-icon-btn.active svg { filter: drop-shadow(0 0 4px rgba(0, 242, 255, 0.4)); }
 
-/* ─── Grid overlay neon ──────────────────────────────────────────────────── */
-#grid-overlay {
-  background-image:
-    linear-gradient(rgba(0, 242, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 242, 255, 0.02) 1px, transparent 1px);
-}
-
 /* ─── Profile page responsive grid ──────────────────────────────────────── */
 @media (max-width: 768px) {
   .profile-grid {
@@ -714,6 +707,7 @@ input[type="range"]::-webkit-slider-thumb { appearance: none; width: 14px; heigh
 /* ─── MatchesTab dashboard grid ──────────────────────────────────────────── */
 .matches-dashboard {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(320px, 38%);
