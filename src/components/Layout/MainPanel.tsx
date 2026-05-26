@@ -274,9 +274,24 @@ function SettingsOverlay({ onClose, t }: { onClose: () => void; t: (k: string) =
 }
 
 export function MainPanel() {
-  const { currentClub, players, matches, activeTab, isLoading, error, activeSession,
-    sidebarTab, setSidebarTab, discordWebhook, addToast, visibleKpis, setVisibleKpis,
-    persistSettings, compactMode, setCompactMode, toggleGlobalSearch, exportActions } = useAppStore();
+  const currentClub       = useAppStore((s) => s.currentClub);
+  const players           = useAppStore((s) => s.players);
+  const matches           = useAppStore((s) => s.matches);
+  const activeTab         = useAppStore((s) => s.activeTab);
+  const isLoading         = useAppStore((s) => s.isLoading);
+  const error             = useAppStore((s) => s.error);
+  const activeSession     = useAppStore((s) => s.activeSession);
+  const sidebarTab        = useAppStore((s) => s.sidebarTab);
+  const setSidebarTab     = useAppStore((s) => s.setSidebarTab);
+  const discordWebhook    = useAppStore((s) => s.discordWebhook);
+  const addToast          = useAppStore((s) => s.addToast);
+  const visibleKpis       = useAppStore((s) => s.visibleKpis);
+  const setVisibleKpis    = useAppStore((s) => s.setVisibleKpis);
+  const persistSettings   = useAppStore((s) => s.persistSettings);
+  const compactMode       = useAppStore((s) => s.compactMode);
+  const setCompactMode    = useAppStore((s) => s.setCompactMode);
+  const toggleGlobalSearch = useAppStore((s) => s.toggleGlobalSearch);
+  const exportActions     = useAppStore((s) => s.exportActions);
   const t = useT();
   const [logo, setLogo] = useState<string | null>(null);
   const [sharing, setSharing] = useState(false);

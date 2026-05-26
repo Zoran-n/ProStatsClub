@@ -26,9 +26,15 @@ const BTN: React.CSSProperties = {
 };
 
 export function MatchesTab() {
-  const { currentClub, matchAnnotations, setMatchAnnotation, persistSettings, exportMatchCacheJson, importMatchCacheJson, addToast } = useAppStore();
-  const setExportActions   = useAppStore((s) => s.setExportActions);
-  const clearExportActions = useAppStore((s) => s.clearExportActions);
+  const currentClub          = useAppStore((s) => s.currentClub);
+  const matchAnnotations     = useAppStore((s) => s.matchAnnotations);
+  const setMatchAnnotation   = useAppStore((s) => s.setMatchAnnotation);
+  const persistSettings      = useAppStore((s) => s.persistSettings);
+  const exportMatchCacheJson = useAppStore((s) => s.exportMatchCacheJson);
+  const importMatchCacheJson = useAppStore((s) => s.importMatchCacheJson);
+  const addToast             = useAppStore((s) => s.addToast);
+  const setExportActions     = useAppStore((s) => s.setExportActions);
+  const clearExportActions   = useAppStore((s) => s.clearExportActions);
   const lang = useAppStore((s) => s.language);
   const t = useT();
   const locale = lang === "fr" ? "fr-FR" : lang === "es" ? "es-ES" : lang === "de" ? "de-DE" : lang === "pt" ? "pt-BR" : "en-US";

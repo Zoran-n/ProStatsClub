@@ -361,7 +361,11 @@ export function ChartsTab() {
   const [mode, setMode] = useState<Mode>("last10");
   const [exportModal, setExportModal] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
-  const { currentClub, players, matchCache, setExportActions, clearExportActions } = useAppStore();
+  const currentClub        = useAppStore((s) => s.currentClub);
+  const players            = useAppStore((s) => s.players);
+  const matchCache         = useAppStore((s) => s.matchCache);
+  const setExportActions   = useAppStore((s) => s.setExportActions);
+  const clearExportActions = useAppStore((s) => s.clearExportActions);
 
   const allCachedMatches = useMemo(() => {
     if (!currentClub) return [];
